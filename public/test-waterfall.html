@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>瀑布流测试页面</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="css/style.css">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'xhs-red': '#FE2C55',
+                        'beige': '#F5E6D3',
+                        'beige-light': '#FAF5F0',
+                        'beige-dark': '#D4B5A0'
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-beige-light min-h-screen">
+    <!-- 顶部导航栏 -->
+    <nav class="sticky top-0 bg-white shadow-sm z-50 border-b border-gray-100">
+        <div class="container mx-auto px-4 py-3 flex items-center justify-between">
+            <div class="text-xhs-red font-bold text-xl">瀑布流测试</div>
+            <div class="flex items-center space-x-3">
+                <button id="addCards" class="px-4 py-2 bg-xhs-red text-white rounded-lg hover:bg-red-600 transition-colors">
+                    添加卡片
+                </button>
+                <button id="refreshLayout" class="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors">
+                    重新布局
+                </button>
+                <button id="toggleTheme" class="p-2 rounded-full hover:bg-gray-100 transition-colors">
+                    🌙
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- 瀑布流容器 -->
+    <div class="waterfall-container" id="waterfallContainer">
+        <!-- 测试卡片将通过JS动态生成 -->
+    </div>
+
+    <!-- 性能监控面板 -->
+    <div id="performancePanel" class="fixed bottom-4 right-4 bg-white p-4 rounded-lg shadow-lg text-sm">
+        <div class="font-bold mb-2">性能监控</div>
+        <div>卡片数量: <span id="cardCount">0</span></div>
+        <div>列数: <span id="columnCount">0</span></div>
+        <div>容器高度: <span id="containerHeight">0</span>px</div>
+        <div>布局耗时: <span id="layoutTime">0</span>ms</div>
+    </div>
+
+    <script>
+        // 测试数据
+        const testNovels = [
+            {
+                id: 1,
+                title: "都市霸总的小娇妻",
+                summary: "她是普通的大学生，他是冷酷的商界霸总。一次意外的相遇，让两个不同世界的人产生了交集。从最初的误会到后来的相知相爱，这是一个关于成长与爱情的故事。",
+                tags: ["#bg", "#霸总", "#都市", "#甜宠"],
+                coverType: "text",
+                coverData: { backgroundColor: "#FFE4E1", textColor: "#8B4513" },
+                views: 15420,
+                likes: 234,
+                favorites: 89,
+                publishTime: "2024-01-10T10:30:00Z"
+            },
+            {
+                id: 2,
+                title: "校园里的小美好",
+                summary: "青春校园里的纯真爱情，学霸男主和可爱女主的甜蜜日常。从同桌到恋人，记录着最美好的青春时光。",
+                tags: ["#校园", "#学霸", "#青春", "#纯爱"],
+                coverType: "text",
+                coverData: { backgroundColor: "#E6F3FF", textColor: "#4169E1" },
+                views: 8930,
+                likes: 156,
+                favorites: 42,
+                publishTime: "2024-01-12T14:20:00Z"
+            },
+            {
+                id: 3,
+                title: "重生之商业女王",
+                summary: "重生回到十年前，她决定用前世的记忆改写人生。从小透明到商业女王，这是一个关于逆袭和复仇的故事。这个故事讲述了一个现代女性如何在商场上披荆斩棘，最终成为商业帝国的女王。",
+                tags: ["#重生", "#女强", "#商战", "#复仇"],
+                coverType: "text",
+                coverData: { backgroundColor: "#F0E68C", textColor: "#8B0000" },
+                views: 23150,
+                likes: 412,
+                favorites: 167,
+                publishTime: "2024-01-08T09:15:00Z"
+            },
+            {
+                id: 4,
+                title: "古代王爷的现代妃",
+                summary: "一场意外让现代女孩穿越到古代，成为了冷面王爷的侧妃。面对复杂的宫廷斗争和王爷的冷漠，她能否用现代的智慧在古代生存下去？",
+                tags: ["#穿越", "#古代", "#王爷", "#宫斗"],
+                coverType: "text",
+                coverData: { backgroundColor: "#DDA0DD", textColor: "#4B0082" },
+                views: 18750,
+                likes: 298,
+                favorites: 123,
+                publishTime: "2024-01-15T16:45:00Z"
+            },
+            {
+                id: 5,
+                title: "星际指挥官的地球恋人",
+                summary: "未来世界，星际战争一触即发。地球女孩意外救了受伤的星际指挥官，从此卷入了一场跨越星系的爱情故事。科技与爱情的碰撞，会擦出怎样的火花？",
+                tags: ["#科幻", "#星际", "#未来", "#异能"],
+                coverType: "text",
+                coverData: { backgroundColor: "#00CED1", textColor: "#191970" },
+                views: 12340,
+                likes: 187,
+                favorites: 76,
+                publishTime: "2024-01-20T11:30:00Z"
+            }
+        ];
+
+        // 全局变量
+        let waterfallInstance = null;
+        let cardIdCounter = 6;
+
+        // 页面加载完成后初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            initTestPage();
+        });
+
+        function initTestPage() {
+            // 初始化瀑布流
+            initWaterfall();
+            
+            // 生成初始卡片
+            generateInitialCards();
+            
+            // 绑定事件
+            bindTestEvents();
+            
+            // 启动性能监控
+            startPerformanceMonitoring();
+        }
+
+        function initWaterfall() {
+            const container = document.getElementById('waterfallContainer');
+            if (!container) return;
+            
+            // 销毁旧实例
+            if (waterfallInstance) {
+                waterfallInstance.destroy();
+            }
+            
+            // 创建新实例
+            const screenWidth = window.innerWidth;
+            let config = {
+                gap: 16,
+                minColumnWidth: 280,
+                maxColumns: 4,
+                padding: 20,
+                animationDuration: 300,
+                debounceDelay: 150
+            };
+            
+            // 响应式配置
+            if (screenWidth >= 1200) {
+                config = { ...config, gap: 20, minColumnWidth: 300, maxColumns: 4, padding: 24 };
+            } else if (screenWidth >= 1024) {
+                config = { ...config, gap: 18, minColumnWidth: 280, maxColumns: 4, padding: 20 };
+            } else if (screenWidth >= 768) {
+                config = { ...config, gap: 16, minColumnWidth: 240, maxColumns: 3, padding: 18 };
+            } else if (screenWidth >= 640) {
+                config = { ...config, gap: 14, minColumnWidth: 200, maxColumns: 2, padding: 16 };
+            } else {
+                config = { ...config, gap: 12, minColumnWidth: 150, maxColumns: 2, padding: 12 };
+            }
+            
+            waterfallInstance = new WaterfallLayout(container, config);
+        }
+
+        function generateInitialCards() {
+            const container = document.getElementById('waterfallContainer');
+            container.innerHTML = '';
+            
+            testNovels.forEach(novel => {
+                const card = createTestCard(novel);
+                container.appendChild(card);
+            });
+            
+            // 执行布局
+            if (waterfallInstance) {
+                waterfallInstance.layout();
+            }
+        }
+
+        function createTestCard(novel) {
+            const card = document.createElement('div');
+            card.className = 'novel-card bg-white rounded-xl shadow-sm hover:shadow-md transition-all duration-300 cursor-pointer';
+            
+            // 生成封面
+            const coverHtml = generateTestCover(novel);
+            
+            // 生成标签
+            const tagsHtml = novel.tags.map(tag => 
+                `<span class="inline-block px-2 py-1 text-xs bg-gray-100 text-gray-600 rounded-full mr-1 mb-1">${tag}</span>`
+            ).join('');
+            
+            card.innerHTML = `
+                ${coverHtml}
+                <div class="card-content p-4">
+                    <h3 class="font-semibold text-gray-800 mb-2">${novel.title}</h3>
+                    <p class="text-sm text-gray-600 mb-3">${novel.summary}</p>
+                    <div class="mb-3">
+                        ${tagsHtml}
+                    </div>
+                    <div class="flex items-center justify-between text-xs text-gray-500">
+                        <span>👁 ${novel.views}</span>
+                        <span>❤️ ${novel.likes}</span>
+                        <span>⭐ ${novel.favorites}</span>
+                    </div>
+                </div>
+            `;
+            
+            return card;
+        }
+
+        function generateTestCover(novel) {
+            const backgroundColor = novel.coverData?.backgroundColor || '#FFE4E1';
+            const textColor = novel.coverData?.textColor || '#8B4513';
+            
+            // 随机选择高度比例
+            const heightClasses = ['square', 'medium', 'tall'];
+            const randomHeight = heightClasses[Math.floor(Math.random() * heightClasses.length)];
+
+            return `
+                <div class="novel-cover text-cover ${randomHeight}"
+                     style="background-color: ${backgroundColor}; color: ${textColor};">
+                    <h2 class="text-lg font-bold text-center">${novel.title}</h2>
+                </div>
+            `;
+        }
+
+        function bindTestEvents() {
+            // 添加卡片按钮
+            document.getElementById('addCards').addEventListener('click', () => {
+                addRandomCards(3);
+            });
+            
+            // 重新布局按钮
+            document.getElementById('refreshLayout').addEventListener('click', () => {
+                if (waterfallInstance) {
+                    waterfallInstance.refresh();
+                }
+            });
+            
+            // 主题切换按钮
+            document.getElementById('toggleTheme').addEventListener('click', () => {
+                document.body.classList.toggle('dark-theme');
+            });
+        }
+
+        function addRandomCards(count) {
+            const container = document.getElementById('waterfallContainer');
+            
+            for (let i = 0; i < count; i++) {
+                const randomNovel = { ...testNovels[Math.floor(Math.random() * testNovels.length)] };
+                randomNovel.id = cardIdCounter++;
+                randomNovel.title = `${randomNovel.title} ${cardIdCounter}`;
+                
+                const card = createTestCard(randomNovel);
+                container.appendChild(card);
+            }
+            
+            // 重新布局
+            if (waterfallInstance) {
+                waterfallInstance.layout();
+            }
+        }
+
+        function startPerformanceMonitoring() {
+            setInterval(() => {
+                updatePerformancePanel();
+            }, 1000);
+        }
+
+        function updatePerformancePanel() {
+            const container = document.getElementById('waterfallContainer');
+            const cards = container.querySelectorAll('.novel-card');
+            
+            document.getElementById('cardCount').textContent = cards.length;
+            document.getElementById('columnCount').textContent = waterfallInstance ? waterfallInstance.columns : 0;
+            document.getElementById('containerHeight').textContent = container.style.height.replace('px', '') || 0;
+        }
+    </script>
+    
+    <!-- 引入瀑布流脚本 -->
+    <script src="js/main.js"></script>
+</body>
+</html>

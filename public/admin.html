@@ -1,0 +1,839 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>管理后台 - 小红书风格小说网站</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.quilljs.com/1.3.7/quill.snow.css" rel="stylesheet">
+    <script src="https://cdn.quilljs.com/1.3.7/quill.min.js"></script>
+    <style>
+        :root {
+            --primary-red: #FE2C55;
+            --primary-beige: #F5E6D3;
+            --beige-light: #FAF5F0;
+            --beige-dark: #D4B5A0;
+            --text-primary: #333333;
+            --text-secondary: #666666;
+            --dark-bg: #1A1A1A;
+            --dark-card: #2A2A2A;
+        }
+
+        .sidebar {
+            width: 250px;
+            min-height: 100vh;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            transition: all 0.3s ease;
+            position: fixed;
+            left: 0;
+            top: 0;
+            overflow-y: auto;
+            z-index: 100;
+            /* 修复滚动问题 */
+            max-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .sidebar-item {
+            display: flex;
+            align-items: center;
+            padding: 12px 20px;
+            color: white;
+            text-decoration: none;
+            transition: all 0.3s ease;
+            border-left: 3px solid transparent;
+        }
+
+        .sidebar-item:hover,
+        .sidebar-item.active {
+            background: rgba(255, 255, 255, 0.1);
+            border-left-color: white;
+        }
+
+        .sidebar-item i {
+            width: 20px;
+            margin-right: 12px;
+        }
+
+        .main-content {
+            flex: 1;
+            background: #f8fafc;
+            min-height: 100vh;
+            margin-left: 250px;
+        }
+
+        .content-section {
+            display: none;
+        }
+
+        .content-section.active {
+            display: block;
+        }
+
+        .card {
+            background: white;
+            border-radius: 12px;
+            padding: 24px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-label {
+            display: block;
+            font-weight: 600;
+            color: #374151;
+            margin-bottom: 8px;
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 12px 16px;
+            border: 2px solid #e5e7eb;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: border-color 0.3s ease;
+        }
+
+        .form-input:focus {
+            outline: none;
+            border-color: var(--primary-red);
+        }
+
+        .form-textarea {
+            width: 100%;
+            padding: 12px 16px;
+            border: 2px solid #e5e7eb;
+            border-radius: 8px;
+            font-size: 14px;
+            resize: vertical;
+            min-height: 100px;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-weight: 600;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            border: none;
+            font-size: 14px;
+        }
+
+        .btn-primary {
+            background: var(--primary-red);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #e02447;
+            transform: translateY(-1px);
+        }
+
+        .btn-secondary {
+            background: #6b7280;
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background: #4b5563;
+        }
+
+        .btn-success {
+            background: #10b981;
+            color: white;
+        }
+
+        .btn-success:hover {
+            background: #059669;
+        }
+
+        .tag-selector {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 8px;
+        }
+
+        .tag-option {
+            padding: 6px 12px;
+            background: #f3f4f6;
+            border: 2px solid #e5e7eb;
+            border-radius: 16px;
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .tag-option:hover {
+            border-color: var(--primary-red);
+        }
+
+        .tag-option.selected {
+            background: var(--primary-red);
+            color: white;
+            border-color: var(--primary-red);
+        }
+
+        .cover-preview {
+            width: 200px;
+            height: 280px;
+            border: 2px dashed #d1d5db;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #6b7280;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .cover-preview.has-cover {
+            border-style: solid;
+            border-color: var(--primary-red);
+        }
+
+        .text-cover {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            padding: 20px;
+            font-weight: bold;
+            font-size: 18px;
+        }
+
+        .quill-editor {
+            height: 400px;
+        }
+
+        .ql-editor {
+            min-height: 350px;
+        }
+
+        .draft-item {
+            background: white;
+            border-radius: 8px;
+            padding: 16px;
+            margin-bottom: 12px;
+            border-left: 4px solid var(--primary-red);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .draft-meta {
+            font-size: 12px;
+            color: #6b7280;
+            margin-top: 8px;
+        }
+
+        .btn-sm {
+            padding: 8px 16px;
+            font-size: 12px;
+        }
+
+        .btn-danger {
+            background: #dc2626;
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background: #b91c1c;
+        }
+
+        .prose {
+            max-width: none;
+        }
+
+        .prose p {
+            margin-bottom: 1em;
+        }
+
+        .prose h1, .prose h2, .prose h3 {
+            margin-top: 1.5em;
+            margin-bottom: 0.5em;
+            font-weight: bold;
+        }
+
+        @media (max-width: 768px) {
+            .sidebar {
+                width: 200px;
+            }
+            
+            .card {
+                padding: 16px;
+            }
+            
+            .main-content {
+                margin-left: 200px;
+            }
+        }
+
+        /* 用户管理样式 */
+        .users-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+
+        .users-table th,
+        .users-table td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #e5e7eb;
+        }
+
+        .users-table th {
+            background: #f9fafb;
+            font-weight: 600;
+            color: #374151;
+            font-size: 14px;
+        }
+
+        .users-table td {
+            font-size: 14px;
+            color: #6b7280;
+        }
+
+        .users-table tr:hover {
+            background: #f9fafb;
+        }
+
+        .user-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            object-fit: cover;
+            margin-right: 12px;
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+        }
+
+        .user-details {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .user-name {
+            font-weight: 600;
+            color: #1f2937;
+            margin-bottom: 2px;
+        }
+
+        .user-email {
+            font-size: 12px;
+            color: #9ca3af;
+        }
+
+        .user-role {
+            display: inline-block;
+            padding: 2px 6px;
+            border-radius: 8px;
+            font-size: 10px;
+            font-weight: 500;
+            text-transform: uppercase;
+            margin-left: 8px;
+        }
+
+        .user-role.admin {
+            background: #dc2626;
+            color: white;
+        }
+
+        .user-role.user {
+            background: #6b7280;
+            color: white;
+        }
+
+        .status-badge {
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 500;
+            text-align: center;
+            min-width: 60px;
+        }
+
+        .status-online {
+            background: #d1fae5;
+            color: #065f46;
+        }
+
+        .status-offline {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+
+        .status-disabled {
+            background: #f3f4f6;
+            color: #9ca3af;
+        }
+
+        .user-stats {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .stat-item {
+            background: #f3f4f6;
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 11px;
+            color: #6b7280;
+            border: 1px solid #e5e7eb;
+        }
+
+        .stat-item.likes {
+            background: #fef3c7;
+            color: #d97706;
+            border-color: #fde68a;
+        }
+
+        .stat-item.favorites {
+            background: #fecaca;
+            color: #dc2626;
+            border-color: #fca5a5;
+        }
+
+        .stat-item.views {
+            background: #dbeafe;
+            color: #2563eb;
+            border-color: #93c5fd;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+
+        .action-btn {
+            padding: 4px 8px;
+            border: none;
+            border-radius: 4px;
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .action-btn.view {
+            background: #3b82f6;
+            color: white;
+        }
+
+        .action-btn.view:hover {
+            background: #2563eb;
+        }
+
+        .action-btn.edit {
+            background: #10b981;
+            color: white;
+        }
+
+        .action-btn.edit:hover {
+            background: #059669;
+        }
+
+        .action-btn.toggle {
+            background: #f59e0b;
+            color: white;
+        }
+
+        .action-btn.toggle:hover {
+            background: #d97706;
+        }
+
+        .online-user-item {
+            display: flex;
+            align-items: center;
+            background: #f0fdf4;
+            padding: 8px 12px;
+            border-radius: 20px;
+            font-size: 13px;
+            border: 1px solid #bbf7d0;
+        }
+
+        .online-user-item img {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            margin-right: 6px;
+        }
+    </style>
+</head>
+<body class="bg-gray-50">
+    <!-- 侧边栏 -->
+    <div class="sidebar">
+        <div class="p-6 border-b border-white/20">
+            <h1 class="text-xl font-bold text-white">📝 管理后台</h1>
+            <p class="text-white/80 text-sm mt-1">内容创作与管理</p>
+        </div>
+        
+        <nav class="py-4 flex-1 overflow-y-auto">
+            <a href="#write" class="sidebar-item active" data-section="write">
+                <i>✏️</i>
+                <span>写作</span>
+            </a>
+            <a href="#drafts" class="sidebar-item" data-section="drafts">
+                <i>📄</i>
+                <span>草稿箱</span>
+            </a>
+            <a href="#manage" class="sidebar-item" data-section="manage">
+                <i>📚</i>
+                <span>作品管理</span>
+            </a>
+            <a href="#users" class="sidebar-item" data-section="users">
+                <i>👥</i>
+                <span>用户管理</span>
+            </a>
+            <a href="#stats" class="sidebar-item" data-section="stats">
+                <i>📊</i>
+                <span>数据统计</span>
+            </a>
+            <a href="#settings" class="sidebar-item" data-section="settings">
+                <i>⚙️</i>
+                <span>系统设置</span>
+            </a>
+        </nav>
+        
+        <div class="p-4 space-y-2 border-t border-white/20 flex-shrink-0">
+            <a href="#" class="sidebar-item text-sm" onclick="adminManager.logout()">
+                <i>🚪</i>
+                <span>退出登录</span>
+            </a>
+            <a href="../" class="sidebar-item text-sm">
+                <i>🏠</i>
+                <span>返回前台</span>
+            </a>
+        </div>
+    </div>
+
+    <!-- 主内容区 -->
+    <div class="main-content">
+            <!-- 顶部导航 -->
+            <header class="bg-white shadow-sm px-6 py-4">
+                <div class="flex items-center justify-between">
+                    <h2 class="text-2xl font-semibold text-gray-900" id="pageTitle">创作新作品</h2>
+                    <div class="flex items-center space-x-4">
+                        <span class="text-sm text-gray-500" id="lastSaved">未保存</span>
+                        <button class="btn btn-secondary" onclick="autoSave()">手动保存</button>
+                    </div>
+                </div>
+            </header>
+
+            <!-- 写作页面 -->
+            <div id="write-section" class="content-section active p-6">
+                <form id="novelForm">
+                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                        <!-- 左侧：基本信息 -->
+                        <div class="lg:col-span-2 space-y-6">
+                            <div class="card">
+                                <h3 class="text-lg font-semibold mb-4">基本信息</h3>
+                                
+                                <div class="form-group">
+                                    <label class="form-label">小说标题 *</label>
+                                    <input type="text" id="novelTitle" class="form-input" placeholder="请输入小说标题" required>
+                                </div>
+
+                                <div class="form-group">
+                                    <label class="form-label">简介描述 *</label>
+                                    <textarea id="novelSummary" class="form-textarea" placeholder="请输入小说简介，将显示在小说卡片上" rows="3" required></textarea>
+                                </div>
+
+                                <div class="form-group">
+                                    <label class="form-label">标签选择</label>
+                                    <div class="tag-selector" id="tagSelector">
+                                        <!-- 标签将通过JavaScript动态生成 -->
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- 富文本编辑器 -->
+                            <div class="card">
+                                <h3 class="text-lg font-semibold mb-4">正文内容</h3>
+                                <div id="quillEditor" class="quill-editor"></div>
+                            </div>
+                        </div>
+
+                        <!-- 右侧：封面和操作 -->
+                        <div class="space-y-6">
+                            <!-- 封面设置 -->
+                            <div class="card">
+                                <h3 class="text-lg font-semibold mb-4">封面设置</h3>
+                                
+                                <div class="form-group">
+                                    <div class="flex space-x-4 mb-4">
+                                        <label class="flex items-center">
+                                            <input type="radio" name="coverType" value="text" checked class="mr-2">
+                                            <span>文字封面</span>
+                                        </label>
+                                        <label class="flex items-center">
+                                            <input type="radio" name="coverType" value="image" class="mr-2">
+                                            <span>图片封面</span>
+                                        </label>
+                                    </div>
+                                </div>
+
+                                <div class="cover-preview" id="coverPreview">
+                                    <span>封面预览</span>
+                                </div>
+
+                                <!-- 文字封面设置 -->
+                                <div id="textCoverSettings" class="mt-4">
+                                    <div class="form-group">
+                                        <label class="form-label">背景颜色</label>
+                                        <input type="color" id="bgColor" value="#FFE4E1" class="w-full h-10 border rounded">
+                                    </div>
+                                    <div class="form-group">
+                                        <label class="form-label">文字颜色</label>
+                                        <input type="color" id="textColor" value="#8B4513" class="w-full h-10 border rounded">
+                                    </div>
+                                </div>
+
+                                <!-- 图片封面设置 -->
+                                <div id="imageCoverSettings" class="mt-4" style="display: none;">
+                                    <input type="file" id="coverImage" accept="image/*" class="form-input">
+                                    <p class="text-sm text-gray-500 mt-2">建议尺寸：200x280px，支持JPG、PNG格式</p>
+                                </div>
+                            </div>
+
+                            <!-- 发布操作 -->
+                            <div class="card">
+                                <h3 class="text-lg font-semibold mb-4">发布操作</h3>
+                                
+                                <div class="space-y-3">
+                                    <button type="button" class="btn btn-secondary w-full" onclick="saveDraft()">
+                                        💾 保存草稿
+                                    </button>
+                                    <button type="button" class="btn btn-primary w-full" onclick="previewNovel()">
+                                        👁️ 预览效果
+                                    </button>
+                                    <button type="button" class="btn btn-success w-full" onclick="publishNovel()">
+                                        🚀 立即发布
+                                    </button>
+                                </div>
+
+                                <div class="mt-4 p-3 bg-blue-50 rounded-lg">
+                                    <p class="text-sm text-blue-700">
+                                        💡 <strong>提示：</strong>内容每30秒自动保存到草稿箱
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+
+            <!-- 草稿箱页面 -->
+            <div id="drafts-section" class="content-section p-6">
+                <div class="card">
+                    <div class="flex items-center justify-between mb-6">
+                        <h3 class="text-lg font-semibold">我的草稿</h3>
+                        <button class="btn btn-primary" onclick="newDraft()">新建草稿</button>
+                    </div>
+                    
+                    <div id="draftsList">
+                        <div class="text-center py-12 text-gray-500">
+                            <div class="text-4xl mb-4">📝</div>
+                            <p>暂无草稿</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 作品管理页面 -->
+            <div id="manage-section" class="content-section p-6">
+                <div class="card">
+                    <h3 class="text-lg font-semibold mb-6">作品管理</h3>
+                    <div id="novelsList">
+                        <!-- 作品列表将通过JavaScript加载 -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- 用户管理页面 -->
+            <div id="users-section" class="content-section p-6">
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
+                    <div class="card text-center">
+                        <div class="text-3xl font-bold text-blue-600" id="totalUsers">0</div>
+                        <p class="text-gray-600 mt-2">总用户数</p>
+                    </div>
+                    <div class="card text-center">
+                        <div class="text-3xl font-bold text-green-600" id="onlineUsers">0</div>
+                        <p class="text-gray-600 mt-2">在线用户</p>
+                    </div>
+                    <div class="card text-center">
+                        <div class="text-3xl font-bold text-purple-600" id="newUsers">0</div>
+                        <p class="text-gray-600 mt-2">今日新增</p>
+                    </div>
+                    <div class="card text-center">
+                        <div class="text-3xl font-bold text-orange-600" id="activeSessions">0</div>
+                        <p class="text-gray-600 mt-2">活跃会话</p>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="flex items-center justify-between mb-6">
+                        <h3 class="text-lg font-semibold">用户列表</h3>
+                        <div class="flex items-center space-x-4">
+                            <input type="text" id="userSearchInput" placeholder="搜索用户名或邮箱..." 
+                                   class="form-input w-64" style="margin-bottom: 0;">
+                            <button class="btn btn-primary" onclick="refreshUsers()">🔄 刷新</button>
+                        </div>
+                    </div>
+                    
+                    <div id="usersContent">
+                        <div class="text-center py-12 text-gray-500">
+                            <div class="text-4xl mb-4">👥</div>
+                            <p>正在加载用户数据...</p>
+                        </div>
+                    </div>
+
+                    <div id="userPagination" class="flex justify-center items-center mt-6 space-x-4" style="display: none;">
+                        <button id="prevUserPage" class="btn btn-secondary" onclick="changeUserPage(-1)">上一页</button>
+                        <span id="userPageInfo" class="text-gray-600">第 1 页，共 1 页</span>
+                        <button id="nextUserPage" class="btn btn-secondary" onclick="changeUserPage(1)">下一页</button>
+                    </div>
+                </div>
+
+                <div id="onlineUsersSection" class="card mt-6" style="display: none;">
+                    <h3 class="text-lg font-semibold mb-4">在线用户 <span id="onlineCount">(0)</span></h3>
+                    <div id="onlineUserList" class="flex flex-wrap gap-3">
+                        <!-- 在线用户列表 -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- 数据统计页面 -->
+            <div id="stats-section" class="content-section p-6">
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
+                    <div class="card text-center">
+                        <div class="text-3xl font-bold text-blue-600" id="totalNovels">0</div>
+                        <p class="text-gray-600 mt-2">总作品数</p>
+                    </div>
+                    <div class="card text-center">
+                        <div class="text-3xl font-bold text-green-600" id="totalViews">0</div>
+                        <p class="text-gray-600 mt-2">总阅读量</p>
+                    </div>
+                    <div class="card text-center">
+                        <div class="text-3xl font-bold text-purple-600" id="draftCount">0</div>
+                        <p class="text-gray-600 mt-2">草稿数量</p>
+                    </div>
+                    <div class="card text-center">
+                        <div class="text-3xl font-bold text-orange-600" id="publishedCount">0</div>
+                        <p class="text-gray-600 mt-2">已发布</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 系统设置页面 -->
+            <div id="settings-section" class="content-section p-6">
+                <div class="card">
+                    <h3 class="text-lg font-semibold mb-6">系统设置</h3>
+                    <p class="text-gray-600">系统设置功能开发中...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 用户详情模态框 -->
+    <div id="userDetailModal" class="fixed inset-0 bg-black/50 hidden z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+            <div class="sticky top-0 bg-white border-b px-6 py-4 flex items-center justify-between">
+                <h3 class="text-lg font-semibold">用户详细信息</h3>
+                <button onclick="closeUserDetailModal()" class="text-gray-500 hover:text-gray-700 text-2xl">&times;</button>
+            </div>
+            <div id="userModalBody" class="p-6">
+                <!-- 用户详情内容将通过JavaScript动态填充 -->
+            </div>
+        </div>
+    </div>
+
+    <!-- 用户编辑模态框 -->
+    <div id="userEditModal" class="fixed inset-0 bg-black/50 hidden z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <div class="sticky top-0 bg-white border-b px-6 py-4 flex items-center justify-between">
+                <h3 class="text-lg font-semibold">编辑用户信息</h3>
+                <button onclick="closeUserEditModal()" class="text-gray-500 hover:text-gray-700 text-2xl">&times;</button>
+            </div>
+            <div class="p-6">
+                <form id="userEditForm">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                        <div class="form-group">
+                            <label class="form-label">用户名</label>
+                            <input type="text" id="editUsername" name="username" class="form-input" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">邮箱</label>
+                            <input type="email" id="editEmail" name="email" class="form-input" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">用户角色</label>
+                            <select id="editRole" name="role" class="form-input">
+                                <option value="user">普通用户</option>
+                                <option value="admin">管理员</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">账户状态</label>
+                            <select id="editStatus" name="isEnabled" class="form-input">
+                                <option value="true">启用</option>
+                                <option value="false">禁用</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group mb-6">
+                        <label class="form-label">个人简介</label>
+                        <textarea id="editBio" name="bio" class="form-textarea" rows="3"></textarea>
+                    </div>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                        <div class="form-group">
+                            <label class="form-label">所在地区</label>
+                            <input type="text" id="editLocation" name="location" class="form-input">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">个人网站</label>
+                            <input type="url" id="editWebsite" name="website" class="form-input">
+                        </div>
+                    </div>
+                    
+                    <div class="flex justify-end space-x-4">
+                        <button type="button" class="btn btn-secondary" onclick="closeUserEditModal()">取消</button>
+                        <button type="submit" class="btn btn-primary">保存</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- 预览模态框 -->
+    <div id="previewModal" class="fixed inset-0 bg-black/50 hidden z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+            <div class="sticky top-0 bg-white border-b px-6 py-4 flex items-center justify-between">
+                <h3 class="text-lg font-semibold">预览效果</h3>
+                <button onclick="closePreview()" class="text-gray-500 hover:text-gray-700 text-2xl">&times;</button>
+            </div>
+            <div id="previewContent" class="p-6">
+                <!-- 预览内容将在这里显示 -->
+            </div>
+        </div>
+    </div>
+
+    <script src="js/admin.js"></script>
+</body>
+</html>

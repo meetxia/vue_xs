@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>简单瀑布流测试</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            background-color: #f5f5f5;
+            font-family: Arial, sans-serif;
+        }
+        
+        .waterfall-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            position: relative;
+            min-height: 200px;
+            width: 100%;
+            box-sizing: border-box;
+        }
+        
+        .novel-card {
+            background: white;
+            border-radius: 16px;
+            overflow: hidden;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            border: 1px solid #e5e7eb;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            position: absolute;
+            width: 100%;
+            height: auto;
+            cursor: pointer;
+            margin-bottom: 16px;
+        }
+        
+        .novel-card:hover {
+            transform: translateY(-6px) scale(1.01);
+            box-shadow: 0 12px 24px rgba(0, 0, 0, 0.15);
+            border-color: #fe2c55;
+            z-index: 10;
+        }
+        
+        .novel-cover {
+            width: 100%;
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            padding: 20px;
+        }
+        
+        .novel-cover.square {
+            aspect-ratio: 1 / 1;
+        }
+        
+        .novel-cover.medium {
+            aspect-ratio: 4 / 5;
+        }
+        
+        .novel-cover.tall {
+            aspect-ratio: 3 / 4;
+        }
+        
+        .novel-cover h2 {
+            font-size: 18px;
+            font-weight: bold;
+            line-height: 1.4;
+            word-break: break-all;
+            margin: 0;
+        }
+        
+        .card-content {
+            padding: 16px;
+        }
+        
+        .card-content h3 {
+            font-size: 16px;
+            font-weight: 600;
+            color: #1f2937;
+            margin-bottom: 8px;
+            line-height: 1.4;
+        }
+        
+        .card-content p {
+            font-size: 14px;
+            color: #6b7280;
+            line-height: 1.5;
+            margin-bottom: 12px;
+        }
+        
+        .controls {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: white;
+            padding: 16px;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+        
+        .controls button {
+            display: block;
+            width: 100%;
+            margin-bottom: 8px;
+            padding: 8px 16px;
+            background: #fe2c55;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        
+        .controls button:hover {
+            background: #e02347;
+        }
+        
+        .info {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: white;
+            padding: 12px;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+    <div class="controls">
+        <button onclick="addCards()">添加卡片</button>
+        <button onclick="refreshLayout()">重新布局</button>
+        <button onclick="clearCards()">清空卡片</button>
+    </div>
+    
+    <div class="info">
+        <div>卡片数量: <span id="cardCount">0</span></div>
+        <div>列数: <span id="columnCount">0</span></div>
+        <div>容器高度: <span id="containerHeight">0</span>px</div>
+    </div>
+    
+    <div class="waterfall-container" id="waterfallContainer">
+        <!-- 卡片将通过JS动态生成 -->
+    </div>
+
+    <script>
+        // 简化的瀑布流类
+        class SimpleWaterfall {
+            constructor(container, options = {}) {
+                this.container = container;
+                this.options = {
+                    gap: 16,
+                    minColumnWidth: 280,
+                    maxColumns: 4,
+                    padding: 20,
+                    ...options
+                };
+                
+                this.columns = 2;
+                this.columnWidth = 0;
+                this.columnHeights = [];
+                this.items = [];
+                
+                this.init();
+            }
+            
+            init() {
+                this.container.style.position = 'relative';
+                this.bindEvents();
+            }
+            
+            bindEvents() {
+                window.addEventListener('resize', () => {
+                    clearTimeout(this.resizeTimer);
+                    this.resizeTimer = setTimeout(() => this.layout(), 150);
+                });
+            }
+            
+            calculateLayout() {
+                const containerWidth = this.container.offsetWidth - (this.options.padding * 2);
+                
+                const maxPossibleColumns = Math.floor(
+                    (containerWidth + this.options.gap) / (this.options.minColumnWidth + this.options.gap)
+                );
+                
+                this.columns = Math.min(maxPossibleColumns, this.options.maxColumns);
+                this.columns = Math.max(this.columns, 1);
+                
+                this.columnWidth = (containerWidth - (this.columns - 1) * this.options.gap) / this.columns;
+                this.columnHeights = new Array(this.columns).fill(0);
+            }
+            
+            getShortestColumnIndex() {
+                let minHeight = Math.min(...this.columnHeights);
+                return this.columnHeights.indexOf(minHeight);
+            }
+            
+            layoutItem(item) {
+                if (!item) return;
+                
+                item.style.width = `${this.columnWidth}px`;
+                item.style.position = 'absolute';
+                item.style.transition = 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)';
+                
+                const columnIndex = this.getShortestColumnIndex();
+                const left = columnIndex * (this.columnWidth + this.options.gap);
+                const top = this.columnHeights[columnIndex];
+                
+                item.style.left = `${left}px`;
+                item.style.top = `${top}px`;
+                
+                requestAnimationFrame(() => {
+                    const itemHeight = item.offsetHeight;
+                    this.columnHeights[columnIndex] += itemHeight + this.options.gap;
+                    this.updateContainerHeight();
+                });
+            }
+            
+            updateContainerHeight() {
+                const maxHeight = Math.max(...this.columnHeights);
+                this.container.style.height = `${maxHeight}px`;
+            }
+            
+            layout() {
+                this.calculateLayout();
+                this.items = Array.from(this.container.querySelectorAll('.novel-card'));
+                
+                if (this.items.length === 0) return;
+                
+                // 重置位置
+                this.items.forEach(item => {
+                    item.style.position = 'static';
+                    item.style.width = `${this.columnWidth}px`;
+                });
+                
+                // 等待重排后布局
+                requestAnimationFrame(() => {
+                    this.items.forEach(item => {
+                        this.layoutItem(item);
+                    });
+                });
+            }
+            
+            refresh() {
+                this.columnHeights = new Array(this.columns).fill(0);
+                this.layout();
+            }
+        }
+
+        // 测试数据
+        const testCards = [
+            { title: "都市霸总的小娇妻", content: "她是普通的大学生，他是冷酷的商界霸总。", bg: "#FFE4E1", color: "#8B4513" },
+            { title: "校园里的小美好", content: "青春校园里的纯真爱情，学霸男主和可爱女主的甜蜜日常。", bg: "#E6F3FF", color: "#4169E1" },
+            { title: "重生之商业女王", content: "重生回到十年前，她决定用前世的记忆改写人生。从小透明到商业女王，这是一个关于逆袭和复仇的故事。", bg: "#F0E68C", color: "#8B0000" },
+            { title: "古代王爷的现代妃", content: "一场意外让现代女孩穿越到古代，成为了冷面王爷的侧妃。", bg: "#DDA0DD", color: "#4B0082" },
+            { title: "星际指挥官的地球恋人", content: "未来世界，星际战争一触即发。地球女孩意外救了受伤的星际指挥官。", bg: "#00CED1", color: "#191970" }
+        ];
+
+        let waterfall = null;
+        let cardCounter = 0;
+
+        // 初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            const container = document.getElementById('waterfallContainer');
+            waterfall = new SimpleWaterfall(container);
+            
+            // 生成初始卡片
+            addCards(5);
+            
+            // 启动监控
+            setInterval(updateInfo, 1000);
+        });
+
+        function createCard(data) {
+            const heights = ['square', 'medium', 'tall'];
+            const randomHeight = heights[Math.floor(Math.random() * heights.length)];
+            
+            const card = document.createElement('div');
+            card.className = 'novel-card';
+            card.innerHTML = `
+                <div class="novel-cover ${randomHeight}" style="background-color: ${data.bg}; color: ${data.color};">
+                    <h2>${data.title}</h2>
+                </div>
+                <div class="card-content">
+                    <h3>${data.title}</h3>
+                    <p>${data.content}</p>
+                </div>
+            `;
+            return card;
+        }
+
+        function addCards(count = 3) {
+            const container = document.getElementById('waterfallContainer');
+            
+            for (let i = 0; i < count; i++) {
+                const randomData = testCards[Math.floor(Math.random() * testCards.length)];
+                const cardData = { ...randomData, title: `${randomData.title} ${++cardCounter}` };
+                const card = createCard(cardData);
+                container.appendChild(card);
+            }
+            
+            waterfall.layout();
+        }
+
+        function refreshLayout() {
+            if (waterfall) {
+                waterfall.refresh();
+            }
+        }
+
+        function clearCards() {
+            const container = document.getElementById('waterfallContainer');
+            container.innerHTML = '';
+            cardCounter = 0;
+            if (waterfall) {
+                waterfall.layout();
+            }
+        }
+
+        function updateInfo() {
+            const container = document.getElementById('waterfallContainer');
+            const cards = container.querySelectorAll('.novel-card');
+            
+            document.getElementById('cardCount').textContent = cards.length;
+            document.getElementById('columnCount').textContent = waterfall ? waterfall.columns : 0;
+            document.getElementById('containerHeight').textContent = container.style.height.replace('px', '') || 0;
+        }
+    </script>
+</body>
+</html>
