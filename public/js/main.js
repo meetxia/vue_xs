@@ -1,699 +1,319 @@
+/**
+ * 重构后的主 main.js 文件
+ * 整合各个功能模块，提供统一的应用程序入口
+ */
+
 // 全局变量
 let novelsData = [];
 let filteredNovels = [];
-let currentTheme = 'light';
-let userManager = null;
 
-// 用户管理类
-class UserManager {
+// 模块实例
+let userManager = null;
+let themeManager = null;
+let searchManager = null;
+let waterfallInstance = null;
+let cardRenderer = null;
+let offlineManager = null;
+
+// 应用程序主类
+class MainApplication {
     constructor() {
-        this.user = null;
-        this.token = localStorage.getItem('token');
-        this.activityTracker = null;
+        this.isInitialized = false;
+        this.modules = {};
         this.init();
     }
 
+    /**
+     * 初始化应用程序
+     */
     async init() {
-        if (this.token) {
-            await this.validateToken();
-        }
-        this.updateUI();
-        this.initActivityTracking();
-    }
-
-    async validateToken() {
-        try {
-            const response = await fetch('/api/auth/profile', {
-                headers: {
-                    'Authorization': `Bearer ${this.token}`
-                }
-            });
-
-            if (response.ok) {
-                const result = await response.json();
-                this.user = result.data;
-                return true;
-            } else {
-                localStorage.removeItem('token');
-                this.token = null;
-                return false;
-            }
-        } catch (error) {
-            console.error('验证Token失败:', error);
-            localStorage.removeItem('token');
-            this.token = null;
-            return false;
-        }
-    }
-
-    updateUI() {
-        const headerHTML = this.isLoggedIn() ?
-            this.getLoggedInHeaderHTML() :
-            this.getGuestHeaderHTML();
-
-        // 更新导航栏
-        const existingNav = document.querySelector('.main-nav');
-        if (existingNav) {
-            existingNav.innerHTML = headerHTML;
-            // 重新绑定搜索事件
-            const searchInput = document.getElementById('searchInput');
-            if (searchInput) {
-                searchInput.addEventListener('input', debounce(handleSearch, 300));
-            }
-
-            // 重新绑定主题切换事件
-            this.rebindThemeToggle();
-        }
-    }
-
-    rebindThemeToggle() {
-        // 更新主题图标
-        updateThemeToggleIcons();
-    }
-
-    getLoggedInHeaderHTML() {
-        const avatarSrc = this.user.avatar === 'default.png' ? 
-            `data:image/svg+xml;base64,${btoa(`<svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="16" cy="16" r="16" fill="#667eea"/><text x="16" y="20" font-family="Arial" font-size="12" fill="white" text-anchor="middle">${this.user.username.charAt(0).toUpperCase()}</text></svg>`)}` :
-            `/assets/uploads/${this.user.avatar}`;
-            
-        return `
-            <div class="nav-left">
-                <div class="logo">📚 小说乐园</div>
-            </div>
-            <div class="nav-center">
-                <div class="search-box">
-                    <input type="text" id="searchInput" placeholder="搜索小说..." class="search-input">
-                    <button class="search-btn">🔍</button>
-                </div>
-            </div>
-            <div class="nav-right">
-                <div class="user-menu">
-                    <div class="user-avatar" onclick="toggleUserDropdown()">
-                        <img src="${avatarSrc}" alt="头像">
-                        <span class="username">${this.user.username}</span>
-                        <span class="dropdown-arrow">▼</span>
-                    </div>
-                    <div class="user-dropdown" id="userDropdown">
-                        <a href="#" onclick="showUserProfile()">📝 个人资料</a>
-                        <a href="#" onclick="showFavorites()">❤️ 我的收藏</a>
-                        <a href="#" onclick="showReadHistory()">📖 阅读历史</a>
-                        <div class="dropdown-divider"></div>
-                        <a href="#" onclick="logout()">🚪 退出登录</a>
-                    </div>
-                </div>
-                <button class="theme-toggle" id="themeToggleMobile">🌙</button>
-            </div>
-        `;
-    }
-
-    getGuestHeaderHTML() {
-        return `
-            <div class="nav-left">
-                <div class="logo">📚 小说乐园</div>
-            </div>
-            <div class="nav-center">
-                <div class="search-box">
-                    <input type="text" id="searchInput" placeholder="搜索小说..." class="search-input">
-                    <button class="search-btn">🔍</button>
-                </div>
-            </div>
-            <div class="nav-right">
-                <a href="login.html" class="login-btn">登录</a>
-                <button class="theme-toggle" id="themeToggleGuest">🌙</button>
-            </div>
-        `;
-    }
-
-    async logout() {
-        try {
-            if (this.token) {
-                await fetch('/api/auth/logout', {
-                    method: 'POST',
-                    headers: {
-                        'Authorization': `Bearer ${this.token}`
-                    }
-                });
-            }
-        } catch (error) {
-            console.error('退出登录请求失败:', error);
-        } finally {
-            // 清理活动追踪
-            this.cleanupActivityTracking();
-            
-            this.user = null;
-            this.token = null;
-            localStorage.removeItem('token');
-            this.updateUI();
-            showToast('已退出登录', 'success');
-        }
-    }
-
-    isLoggedIn() {
-        return !!this.token && !!this.user;
-    }
-
-    // 初始化活动追踪
-    initActivityTracking() {
-        if (!this.isLoggedIn()) return;
-
-        // 创建活动追踪器实例
-        this.activityTracker = new ActivityTracker(this.token);
+        console.log('开始初始化应用程序...');
         
-        // 立即标记用户为在线
-        this.activityTracker.updateActivity();
-    }
-
-    // 清理活动追踪
-    cleanupActivityTracking() {
-        if (this.activityTracker) {
-            this.activityTracker.destroy();
-            this.activityTracker = null;
+        try {
+            // 初始化各个模块
+            await this.initializeModules();
+            
+            // 绑定全局事件
+            this.bindGlobalEvents();
+            
+            // 加载数据
+            await this.loadInitialData();
+            
+            // 初始化UI组件
+            this.initializeUI();
+            
+            this.isInitialized = true;
+            console.log('应用程序初始化完成');
+        } catch (error) {
+            console.error('应用程序初始化失败:', error);
+            this.handleInitializationError(error);
         }
     }
-}
 
-// 用户交互函数
-function toggleUserDropdown() {
-    const dropdown = document.getElementById('userDropdown');
-    dropdown.classList.toggle('show');
-}
-
-function showUserProfile() {
-    showToast('用户资料功能开发中...', 'info');
-    toggleUserDropdown();
-}
-
-function showFavorites() {
-    showToast('收藏功能开发中...', 'info');
-    toggleUserDropdown();
-}
-
-function showReadHistory() {
-    showToast('阅读历史功能开发中...', 'info');
-    toggleUserDropdown();
-}
-
-async function logout() {
-    if (userManager) {
-        await userManager.logout();
+    /**
+     * 初始化各个模块
+     */
+    async initializeModules() {
+        // 初始化主题管理器
+        themeManager = new ThemeManager();
+        this.modules.theme = themeManager;
+        
+        // 初始化用户管理器
+        userManager = new UserManager();
+        this.modules.user = userManager;
+        
+        // 初始化搜索管理器
+        searchManager = new SearchManager();
+        this.modules.search = searchManager;
+        
+        // 初始化卡片渲染器
+        cardRenderer = new NovelCardRenderer({
+            cardClickHandler: this.handleNovelClick.bind(this)
+        });
+        this.modules.cardRenderer = cardRenderer;
+        
+        console.log('所有模块初始化完成');
     }
-    toggleUserDropdown();
-}
 
-// 点击外部关闭下拉菜单
-document.addEventListener('click', function(event) {
-    const dropdown = document.getElementById('userDropdown');
-    const userAvatar = document.querySelector('.user-avatar');
-    
-    if (dropdown && userAvatar && !userAvatar.contains(event.target)) {
-        dropdown.classList.remove('show');
+    /**
+     * 绑定全局事件
+     */
+    bindGlobalEvents() {
+        // 监听搜索结果更新
+        document.addEventListener('searchResultsUpdated', (e) => {
+            filteredNovels = e.detail.results;
+            this.renderNovels();
+        });
+        
+        // 监听主题变化
+        document.addEventListener('themeChanged', (e) => {
+            console.log('主题已切换为:', e.detail.theme);
+        });
+        
+        // 监听窗口大小变化
+        let resizeTimeout;
+        window.addEventListener('resize', () => {
+            clearTimeout(resizeTimeout);
+            resizeTimeout = setTimeout(() => {
+                this.handleWindowResize();
+            }, 250);
+        });
     }
-});
 
-/**
- * 高性能瀑布流布局管理器
- * 实现完美贴合、自然流动、视觉平衡的瀑布流布局
- */
-class WaterfallLayout {
-    constructor(container, options = {}) {
-        this.container = container;
-        this.options = {
+    /**
+     * 加载初始数据
+     */
+    async loadInitialData() {
+        await this.loadNovelsData();
+    }
+
+    /**
+     * 初始化UI组件
+     */
+    initializeUI() {
+        // 初始化瀑布流布局
+        setTimeout(() => {
+            this.initMasonryLayout();
+            
+            // 确保移动端按钮正确初始化
+            this.initializeMobileComponents();
+            
+            // 初始化离线阅读管理器
+            setTimeout(() => {
+                this.initOfflineManager();
+            }, 100);
+        }, 300);
+    }
+
+    /**
+     * 处理窗口大小变化
+     */
+    handleWindowResize() {
+        // 重新渲染卡片以适应移动端/桌面端切换
+        this.renderNovels();
+    }
+
+    /**
+     * 处理小说卡片点击
+     */
+    handleNovelClick(novel, hasAccess, requiresLogin) {
+        if (!hasAccess) {
+            if (requiresLogin) {
+                if (confirm('此内容需要登录后查看，是否前往登录？')) {
+                    window.location.href = 'login.html';
+                }
+                return;
+            } else {
+                const levelText = novel.accessLevel === 'premium' ? '高级会员' : 'VIP会员';
+                if (confirm(`此内容需要${levelText}权限，是否开通会员？`)) {
+                    showMembershipCenter();
+                }
+                return;
+            }
+        }
+        
+        // 有权限访问，增加阅读量
+        novel.views += 1;
+        
+        // 跳转到阅读页面
+        window.location.href = `read.html?id=${novel.id}`;
+    }
+
+    /**
+     * 处理初始化错误
+     */
+    handleInitializationError(error) {
+        console.error('应用程序启动失败:', error);
+        if (window.Utils && window.Utils.showToast) {
+            Utils.showToast('应用程序启动失败，请刷新页面重试', 'error');
+        }
+    }
+
+    /**
+     * 加载小说数据
+     */
+    async loadNovelsData() {
+        if (!Utils.checkNetworkStatus()) {
+            showLoading(false);
+            return;
+        }
+
+        try {
+            showLoading(true);
+
+            const loadData = async () => {
+                const headers = {
+                    'Content-Type': 'application/json'
+                };
+                
+                // 如果用户已登录，添加认证头
+                if (userManager && userManager.token) {
+                    headers['Authorization'] = `Bearer ${userManager.token}`;
+                }
+                
+                const response = await fetch('/api/novels', { headers });
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                return await response.json();
+            };
+
+            const data = await Utils.retryOperation(loadData);
+
+            if (!data || !data.novels || !Array.isArray(data.novels)) {
+                throw new Error('数据格式错误');
+            }
+
+            novelsData = data.novels;
+            filteredNovels = [...novelsData];
+            
+            // 设置搜索管理器的数据
+            if (searchManager) {
+                searchManager.setNovelsData(novelsData);
+            }
+            
+            this.renderNovels();
+            showLoading(false);
+
+            if (novelsData.length === 0) {
+                showError('暂无小说数据，请稍后再试');
+            } else {
+                Utils.showToast(`成功加载 ${novelsData.length} 部小说`);
+            }
+
+        } catch (error) {
+            console.error('加载数据失败:', error);
+            showLoading(false);
+
+            let errorMessage = '数据加载失败';
+            if (error.message.includes('HTTP 404')) {
+                errorMessage = '数据文件未找到，请联系管理员';
+            } else if (error.message.includes('HTTP 500')) {
+                errorMessage = '服务器错误，请稍后重试';
+            } else if (error.message.includes('数据格式错误')) {
+                errorMessage = '数据格式错误，请联系管理员';
+            } else if (!navigator.onLine) {
+                errorMessage = '网络连接已断开，请检查网络设置';
+            }
+
+            showError(errorMessage);
+        }
+    }
+
+    /**
+     * 渲染小说
+     */
+    renderNovels() {
+        const container = document.querySelector('.waterfall-container');
+        if (!container || !cardRenderer) return;
+
+        // 使用卡片渲染器渲染小说
+        cardRenderer.renderNovels(filteredNovels, container, userManager);
+
+        // 渲染完成后重新布局瀑布流
+        requestAnimationFrame(() => {
+            setTimeout(() => {
+                if (waterfallInstance) {
+                    waterfallInstance.refresh();
+                } else {
+                    this.initMasonryLayout();
+                }
+                // 额外延迟确保卡片高度计算正确
+                setTimeout(() => {
+                    if (waterfallInstance) {
+                        waterfallInstance.refresh();
+                    }
+                }, 300);
+            }, 100);
+        });
+    }
+
+    /**
+     * 初始化瀑布流布局
+     */
+    initMasonryLayout() {
+        const container = document.querySelector('.waterfall-container');
+        if (!container) return;
+
+        // 销毁旧实例
+        if (waterfallInstance) {
+            waterfallInstance.destroy();
+        }
+
+        // 创建新实例，根据屏幕尺寸调整参数
+        const screenWidth = window.innerWidth;
+        let config = {
             gap: 16,
             minColumnWidth: 280,
             maxColumns: 4,
             padding: 20,
             animationDuration: 300,
-            debounceDelay: 150,
-            ...options
+            debounceDelay: 150
         };
 
-        this.columns = 2;
-        this.columnWidth = 0;
-        this.columnHeights = [];
-        this.items = [];
-        this.isLayouting = false;
-        this.resizeObserver = null;
-        this.imageLoadPromises = new Map();
-
-        this.init();
-    }
-
-    init() {
-        this.setupContainer();
-        this.setupResizeObserver();
-        this.bindEvents();
-        this.setupVirtualScrolling();
-    }
-
-    setupContainer() {
-        if (!this.container) return;
-
-        this.container.style.position = 'relative';
-        this.container.style.width = '100%';
-        this.container.style.minHeight = '200px';
-    }
-
-    setupResizeObserver() {
-        if (typeof ResizeObserver !== 'undefined') {
-            this.resizeObserver = new ResizeObserver(
-                this.debounce(() => this.handleResize(), this.options.debounceDelay)
-            );
-            this.resizeObserver.observe(this.container);
-        }
-    }
-
-    bindEvents() {
-        // 窗口大小改变时重新布局
-        window.addEventListener('resize',
-            this.debounce(() => this.handleResize(), this.options.debounceDelay)
-        );
-
-        // 监听图片加载完成
-        this.container.addEventListener('load', (e) => {
-            if (e.target.tagName === 'IMG') {
-                this.handleImageLoad(e.target);
-            }
-        }, true);
-    }
-
-    /**
-     * 计算最优列数和列宽
-     */
-    calculateLayout() {
-        const containerWidth = this.container.offsetWidth - (this.options.padding * 2);
-
-        // 根据容器宽度和最小列宽计算最大可能列数
-        const maxPossibleColumns = Math.floor(
-            (containerWidth + this.options.gap) / (this.options.minColumnWidth + this.options.gap)
-        );
-
-        // 强制使用最大列数设置，如果容器足够宽
-        if (containerWidth >= this.options.maxColumns * this.options.minColumnWidth) {
-            this.columns = this.options.maxColumns;
+        // 响应式配置
+        if (screenWidth >= 1400) {
+            config = { ...config, gap: 24, minColumnWidth: 240, maxColumns: 4, padding: 24 };
+        } else if (screenWidth >= 1200) {
+            config = { ...config, gap: 20, minColumnWidth: 220, maxColumns: 4, padding: 20 };
+        } else if (screenWidth >= 1024) {
+            config = { ...config, gap: 18, minColumnWidth: 240, maxColumns: 3, padding: 18 };
+        } else if (screenWidth >= 768) {
+            config = { ...config, gap: 16, minColumnWidth: 220, maxColumns: 3, padding: 16 };
+        } else if (screenWidth >= 640) {
+            config = { ...config, gap: 14, minColumnWidth: 180, maxColumns: 2, padding: 14 };
         } else {
-            // 否则使用计算出的最大可能列数，但不超过maxColumns
-            this.columns = Math.min(maxPossibleColumns, this.options.maxColumns);
-        }
-        
-        this.columns = Math.max(this.columns, 1); // 至少1列
-
-        // 计算实际列宽
-        this.columnWidth = (containerWidth - (this.columns - 1) * this.options.gap) / this.columns;
-
-        // 初始化列高度数组
-        this.columnHeights = new Array(this.columns).fill(0);
-    }
-
-    /**
-     * 获取最短列的索引
-     */
-    getShortestColumnIndex() {
-        let minHeight = Math.min(...this.columnHeights);
-        return this.columnHeights.indexOf(minHeight);
-    }
-
-    /**
-     * 智能选择列 - 考虑视觉平衡
-     */
-    getOptimalColumnIndex() {
-        if (this.columns === 1) return 0;
-
-        const minHeight = Math.min(...this.columnHeights);
-        const maxHeight = Math.max(...this.columnHeights);
-
-        // 如果高度差异很小，选择最短列
-        if (maxHeight - minHeight < 100) {
-            return this.getShortestColumnIndex();
+            config = { ...config, gap: 12, minColumnWidth: 150, maxColumns: 2, padding: 12 };
         }
 
-        // 否则优先选择最短列，但考虑相邻列的平衡
-        const shortestIndex = this.getShortestColumnIndex();
-        const candidates = [shortestIndex];
-
-        // 查找高度相近的列
-        this.columnHeights.forEach((height, index) => {
-            if (Math.abs(height - minHeight) < 50 && index !== shortestIndex) {
-                candidates.push(index);
-            }
-        });
-
-        // 从候选列中选择最能保持平衡的列
-        if (candidates.length > 1) {
-            return candidates[Math.floor(Math.random() * candidates.length)];
-        }
-
-        return shortestIndex;
+        waterfallInstance = new WaterfallLayout(container, config);
+        waterfallInstance.layout();
     }
 
     /**
-     * 布局单个卡片
+     * 初始化移动端组件
      */
-    layoutItem(item, index) {
-        if (!item) return;
-
-        // 确保卡片是绝对定位
-        item.style.position = 'absolute';
-        item.style.width = `${this.columnWidth}px`;
-        
-        // 获取最优列
-        const columnIndex = this.getOptimalColumnIndex();
-
-        // 计算位置，考虑容器padding
-        const left = this.options.padding + columnIndex * (this.columnWidth + this.options.gap);
-        const top = this.columnHeights[columnIndex];
-
-        // 设置位置
-        item.style.left = `${left}px`;
-        item.style.top = `${top}px`;
-        item.style.transition = `all ${this.options.animationDuration}ms cubic-bezier(0.4, 0, 0.2, 1)`;
-
-        // 强制重排以获取准确高度
-        item.offsetHeight;
-        
-        // 更新列高度
-        const itemHeight = item.offsetHeight;
-        this.columnHeights[columnIndex] += itemHeight + this.options.gap;
-    }
-
-    /**
-     * 更新容器高度
-     */
-    updateContainerHeight() {
-        const maxHeight = Math.max(...this.columnHeights);
-        this.container.style.height = `${maxHeight}px`;
-    }
-
-    /**
-     * 执行完整布局
-     */
-    async layout() {
-        if (this.isLayouting) return;
-        this.isLayouting = true;
-
-        try {
-            // 获取所有卡片
-            this.items = Array.from(this.container.querySelectorAll('.novel-card'));
-
-            if (this.items.length === 0) {
-                this.isLayouting = false;
-                return;
-            }
-
-            // 计算布局参数
-            this.calculateLayout();
-
-            // 先设置所有卡片为静态定位以获取自然高度
-            this.items.forEach(item => {
-                item.style.position = 'static';
-                item.style.width = `${this.columnWidth}px`;
-                item.style.left = 'auto';
-                item.style.top = 'auto';
-            });
-
-            // 等待一帧确保样式应用
-            await this.nextFrame();
-
-            // 重新初始化列高度
-            this.columnHeights = new Array(this.columns).fill(0);
-
-            // 布局所有卡片
-            this.items.forEach((item, index) => {
-                this.layoutItem(item, index);
-            });
-
-            // 更新容器高度
-            this.updateContainerHeight();
-
-        } catch (error) {
-            console.error('瀑布流布局失败:', error);
-        } finally {
-            this.isLayouting = false;
-        }
-    }
-
-    /**
-     * 等待图片加载完成
-     */
-    async waitForImages() {
-        const images = this.container.querySelectorAll('img');
-        const promises = Array.from(images).map(img => {
-            if (img.complete) return Promise.resolve();
-
-            return new Promise((resolve, reject) => {
-                const timeout = setTimeout(() => {
-                    reject(new Error('图片加载超时'));
-                }, 5000);
-
-                img.onload = () => {
-                    clearTimeout(timeout);
-                    resolve();
-                };
-
-                img.onerror = () => {
-                    clearTimeout(timeout);
-                    resolve(); // 即使加载失败也继续布局
-                };
-            });
-        });
-
-        try {
-            await Promise.allSettled(promises);
-        } catch (error) {
-            console.warn('部分图片加载失败:', error);
-        }
-    }
-
-    /**
-     * 处理图片加载完成
-     */
-    handleImageLoad() {
-        // 图片加载完成后重新布局
-        this.debounce(() => this.layout(), 100)();
-    }
-
-    /**
-     * 处理窗口大小改变
-     */
-    handleResize() {
-        this.layout();
-    }
-
-    /**
-     * 添加新卡片
-     */
-    addItems(newItems) {
-        if (!Array.isArray(newItems)) {
-            newItems = [newItems];
-        }
-
-        newItems.forEach(item => {
-            this.container.appendChild(item);
-        });
-
-        this.layout();
-    }
-
-    /**
-     * 清空并重新布局
-     */
-    refresh() {
-        this.columnHeights = new Array(this.columns).fill(0);
-        this.layout();
-    }
-
-    /**
-     * 销毁实例
-     */
-    destroy() {
-        if (this.resizeObserver) {
-            this.resizeObserver.disconnect();
-        }
-
-        window.removeEventListener('resize', this.handleResize);
-        this.container.removeEventListener('load', this.handleImageLoad);
-    }
-
-    /**
-     * 性能优化：虚拟滚动检测
-     */
-    setupVirtualScrolling() {
-        let ticking = false;
-
-        const handleScroll = () => {
-            if (!ticking) {
-                requestAnimationFrame(() => {
-                    this.updateVisibleItems();
-                    ticking = false;
-                });
-                ticking = true;
-            }
-        };
-
-        window.addEventListener('scroll', handleScroll, { passive: true });
-    }
-
-    /**
-     * 更新可见卡片
-     */
-    updateVisibleItems() {
-        if (!this.items.length) return;
-
-        const scrollTop = window.pageYOffset;
-        const windowHeight = window.innerHeight;
-        const viewportTop = scrollTop - windowHeight; // 预加载区域
-        const viewportBottom = scrollTop + windowHeight * 2; // 预加载区域
-
-        this.items.forEach(item => {
-            const rect = item.getBoundingClientRect();
-            const itemTop = rect.top + scrollTop;
-            const itemBottom = itemTop + rect.height;
-
-            const isVisible = itemBottom >= viewportTop && itemTop <= viewportBottom;
-
-            if (isVisible && !item.classList.contains('visible')) {
-                item.classList.add('visible');
-                this.animateItemIn(item);
-            } else if (!isVisible && item.classList.contains('visible')) {
-                item.classList.remove('visible');
-            }
-        });
-    }
-
-    /**
-     * 卡片进入动画
-     */
-    animateItemIn(item) {
-        item.style.opacity = '0';
-        item.style.transform = 'translateY(20px) scale(0.95)';
-
-        requestAnimationFrame(() => {
-            item.style.transition = 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)';
-            item.style.opacity = '1';
-            item.style.transform = 'translateY(0) scale(1)';
-        });
-    }
-
-    /**
-     * 性能优化：节流函数
-     */
-    throttle(func, limit) {
-        let inThrottle;
-        return function(...args) {
-            if (!inThrottle) {
-                func.apply(this, args);
-                inThrottle = true;
-                setTimeout(() => inThrottle = false, limit);
-            }
-        };
-    }
-
-    /**
-     * 工具方法：防抖
-     */
-    debounce(func, wait) {
-        let timeout;
-        return function executedFunction(...args) {
-            const later = () => {
-                clearTimeout(timeout);
-                func.apply(this, args);
-            };
-            clearTimeout(timeout);
-            timeout = setTimeout(later, wait);
-        };
-    }
-
-    /**
-     * 工具方法：等待下一帧
-     */
-    nextFrame() {
-        return new Promise(resolve => requestAnimationFrame(resolve));
-    }
-
-    /**
-     * 性能监控
-     */
-    measurePerformance(name, fn) {
-        const start = performance.now();
-        const result = fn();
-        const end = performance.now();
-        console.log(`${name} 耗时: ${(end - start).toFixed(2)}ms`);
-        return result;
-    }
-}
-
-// 全局瀑布流实例
-let waterfallInstance = null;
-
-// 将WaterfallLayout类暴露到全局作用域
-window.WaterfallLayout = WaterfallLayout;
-
-// 初始化瀑布流布局
-function initMasonryLayout() {
-    const container = document.querySelector('.waterfall-container');
-    if (!container) return;
-
-    // 销毁旧实例
-    if (waterfallInstance) {
-        waterfallInstance.destroy();
-    }
-
-    // 创建新实例，根据屏幕尺寸调整参数
-    const screenWidth = window.innerWidth;
-    let config = {
-        gap: 16,
-        minColumnWidth: 280,
-        maxColumns: 4,
-        padding: 20,
-        animationDuration: 300,
-        debounceDelay: 150
-    };
-
-    // 响应式配置
-    if (screenWidth >= 1400) {
-        // 超大屏幕：4列
-        config = { ...config, gap: 24, minColumnWidth: 240, maxColumns: 4, padding: 24 };
-    } else if (screenWidth >= 1200) {
-        // 大屏幕（桌面）：4列
-        config = { ...config, gap: 20, minColumnWidth: 220, maxColumns: 4, padding: 20 };
-    } else if (screenWidth >= 1024) {
-        // 中等屏幕（平板横屏）：3列
-        config = { ...config, gap: 18, minColumnWidth: 240, maxColumns: 3, padding: 18 };
-    } else if (screenWidth >= 768) {
-        // 中屏幕（平板竖屏）：3列
-        config = { ...config, gap: 16, minColumnWidth: 220, maxColumns: 3, padding: 16 };
-    } else if (screenWidth >= 640) {
-        // 小屏幕（大手机）：2列
-        config = { ...config, gap: 14, minColumnWidth: 180, maxColumns: 2, padding: 14 };
-    } else {
-        // 移动端（小手机）：2列
-        config = { ...config, gap: 12, minColumnWidth: 150, maxColumns: 2, padding: 12 };
-    }
-
-    waterfallInstance = new WaterfallLayout(container, config);
-
-    // 执行布局
-    waterfallInstance.layout();
-}
-
-// 页面加载完成后初始化
-document.addEventListener('DOMContentLoaded', function() {
-    console.log('页面加载完成，开始初始化...');
-    
-    // 初始化主题
-    initTheme();
-    
-    // 初始化用户管理
-    userManager = new UserManager();
-
-    // 加载数据和初始化事件监听
-    loadNovelsData();
-    initEventListeners();
-
-    // 初始化瀑布流布局
-    setTimeout(() => {
-        initMasonryLayout();
-        
-        // 确保移动端按钮在所有内容加载后正确初始化
+    initializeMobileComponents() {
         const mobileSearchBtn = document.getElementById('mobileSearchBtn');
         const mobileSearchBar = document.getElementById('mobileSearchBar');
         const themeToggle = document.getElementById('themeToggle');
@@ -705,772 +325,247 @@ document.addEventListener('DOMContentLoaded', function() {
             console.log('移动端搜索栏初始状态已设置为隐藏');
         }
 
-        if (mobileSearchBtn) {
-            mobileSearchBtn.setAttribute('data-search-bound', 'false');
-            bindMobileSearchEvents();
-        }
+        // 为移动设备优化点击事件
+        this.optimizeForMobileDevices();
+        
+        console.log('移动端组件初始化完成');
+    }
 
-        if (themeToggle) {
-            themeToggle.setAttribute('data-theme-bound', 'false');
-            bindThemeToggleEvents();
+    /**
+     * 为移动设备优化点击事件
+     */
+    optimizeForMobileDevices() {
+        const isMobileDevice = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+        
+        if (isMobileDevice) {
+            console.log('检测到移动设备，优化触摸事件');
+            
+            // 优化主题切换按钮的点击区域
+            const themeToggle = document.getElementById('themeToggle');
+            if (themeToggle) {
+                themeToggle.style.padding = '12px';
+            }
+            
+            // 优化移动端搜索按钮的点击区域
+            const mobileSearchBtn = document.getElementById('mobileSearchBtn');
+            if (mobileSearchBtn) {
+                mobileSearchBtn.style.padding = '12px';
+            }
+        }
+    }
+
+    /**
+     * 初始化离线阅读管理器
+     */
+    initOfflineManager() {
+        console.log('开始初始化离线阅读管理器...');
+
+        if (typeof OfflineReaderManager !== 'undefined') {
+            try {
+                offlineManager = new OfflineReaderManager();
+
+                // 注册Toast通知函数
+                if (typeof Utils.showToast === 'function') {
+                    offlineManager.registerToastFunction(Utils.showToast);
+                    console.log('Toast通知函数注册成功');
+                }
+
+                console.log('离线阅读管理器初始化成功');
+
+                // 延迟更新按钮状态
+                setTimeout(() => {
+                    updateAllOfflineButtonStates();
+                }, 500);
+
+            } catch (error) {
+                console.error('离线阅读管理器初始化失败:', error);
+            }
+        } else {
+            console.error('OfflineReaderManager类未加载，请检查offline-reader.js是否正确引入');
+
+            // 重试机制
+            setTimeout(() => {
+                console.log('重试初始化离线管理器...');
+                this.initOfflineManager();
+            }, 2000);
+        }
+    }
+
+    /**
+     * 获取模块实例
+     */
+    getModule(name) {
+        return this.modules[name] || null;
+    }
+
+    /**
+     * 销毁应用程序
+     */
+    destroy() {
+        // 销毁所有模块
+        Object.values(this.modules).forEach(module => {
+            if (module && typeof module.destroy === 'function') {
+                module.destroy();
+            }
+        });
+        
+        // 销毁瀑布流实例
+        if (waterfallInstance) {
+            waterfallInstance.destroy();
         }
         
-        console.log('所有组件初始化完成');
+        console.log('应用程序已销毁');
+    }
+}
 
-        console.log('移动端搜索功能已初始化');
-    }, 300);
+// 创建全局应用实例
+let mainApp = null;
+
+/**
+ * 页面加载完成后初始化
+ */
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('页面加载完成，开始初始化应用程序...');
+    
+    // 创建主应用实例
+    mainApp = new MainApplication();
 });
 
-// 加载小说数据
-async function loadNovelsData() {
-    if (!checkNetworkStatus()) {
-        showLoading(false);
-        return;
-    }
+// =============== 兼容性函数 - 保持与现有代码的兼容性 ===============
 
-    try {
-        showLoading(true);
-
-        const loadData = async () => {
-            const response = await fetch('/api/novels');
-            if (!response.ok) {
-                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-            }
-            return await response.json();
-        };
-
-        const data = await retryOperation(loadData);
-
-        if (!data || !data.novels || !Array.isArray(data.novels)) {
-            throw new Error('数据格式错误');
-        }
-
-        novelsData = data.novels;
-        filteredNovels = [...novelsData];
-        renderNovels();
-        showLoading(false);
-
-        if (novelsData.length === 0) {
-            showError('暂无小说数据，请稍后再试');
-        } else {
-            showToast(`成功加载 ${novelsData.length} 部小说`);
-        }
-
-    } catch (error) {
-        console.error('加载数据失败:', error);
-        showLoading(false);
-
-        let errorMessage = '数据加载失败';
-        if (error.message.includes('HTTP 404')) {
-            errorMessage = '数据文件未找到，请联系管理员';
-        } else if (error.message.includes('HTTP 500')) {
-            errorMessage = '服务器错误，请稍后重试';
-        } else if (error.message.includes('数据格式错误')) {
-            errorMessage = '数据格式错误，请联系管理员';
-        } else if (!navigator.onLine) {
-            errorMessage = '网络连接已断开，请检查网络设置';
-        }
-
-        showError(errorMessage);
+/**
+ * 加载小说数据（兼容性函数）
+ */
+function loadNovels() {
+    if (mainApp) {
+        return mainApp.loadNovelsData();
     }
 }
 
-// 渲染小说
+/**
+ * 渲染小说（兼容性函数）
+ */
 function renderNovels() {
-    const container = document.querySelector('.waterfall-container');
-    if (!container) return;
-
-    // 清空容器
-    container.innerHTML = '';
-    
-    // 渲染过滤后的小说
-    filteredNovels.forEach(novel => {
-        container.appendChild(createNovelCard(novel));
-    });
-
-    // 渲染完成后重新布局瀑布流 - 延长等待时间以确保计算正确
-    requestAnimationFrame(() => {
-        setTimeout(() => {
-            if (waterfallInstance) {
-                waterfallInstance.refresh();
-            } else {
-                initMasonryLayout();
-            }
-            // 额外再延迟一次布局刷新，确保卡片高度计算正确
-            setTimeout(() => {
-                if (waterfallInstance) {
-                    waterfallInstance.refresh();
-                }
-            }, 300);
-        }, 100);
-    });
-}
-
-// 创建小说卡片
-function createNovelCard(novel) {
-    const card = document.createElement('div');
-    card.className = 'novel-card bg-white rounded-xl shadow-sm hover:shadow-md transition-all duration-300 cursor-pointer transform hover:-translate-y-1';
-    card.onclick = () => openNovel(novel.id);
-
-    // 生成封面
-    const coverHtml = generateCover(novel);
-
-    // 检测是否为移动端
-    const isMobile = window.innerWidth <= 768;
-
-    // 格式化时间
-    const timeAgo = getTimeAgo(novel.publishTime);
-
-    if (isMobile) {
-        // 移动端简化版卡片 - 只显示核心信息
-        card.innerHTML = `
-            ${coverHtml}
-            <div class="card-content">
-                <h3>${novel.title}</h3>
-                <div class="card-tags mb-2">
-                    <span class="inline-block px-2 py-1 text-xs bg-gray-100 text-gray-600 rounded-full mr-1">${novel.tags[0] || ''}</span>
-                </div>
-                <div class="card-footer">
-                    <div class="card-stats">
-                        <span class="flex items-center">
-                            <span class="mr-2">📅</span>
-                            <span>${timeAgo}</span>
-                        </span>
-                        <span class="flex items-center">
-                            <span class="mr-1">❤️</span>
-                            <span>${formatViews(novel.likes || 0)}</span>
-                        </span>
-                    </div>
-                    <div class="card-actions">
-                        <button class="like-btn text-gray-400 hover:text-red-500 transition-colors duration-200"
-                                data-novel-id="${novel.id}"
-                                onclick="handleLike(event, ${novel.id})">
-                            <span class="like-icon">🤍</span>
-                        </button>
-                    </div>
-                </div>
-            </div>
-        `;
-    } else {
-        // 桌面端完整版卡片
-        const tagsHtml = novel.tags.map(tag =>
-            `<span class="inline-block px-2 py-1 text-xs bg-gray-100 text-gray-600 rounded-full mr-1 mb-1">${tag}</span>`
-        ).join('');
-
-        card.innerHTML = `
-            ${coverHtml}
-            <div class="card-content">
-                <h3>${novel.title}</h3>
-                <div class="card-tags mb-3">
-                    ${tagsHtml}
-                </div>
-                <div class="card-extra-info flex items-center justify-between text-xs text-gray-500 mb-2">
-                    <span class="flex items-center">
-                        <span class="mr-3">👁 ${formatViews(novel.views)}</span>
-                        <span>📅 ${timeAgo}</span>
-                    </span>
-                </div>
-                <div class="flex items-center justify-between border-t pt-2 mt-2">
-                    <div class="flex items-center space-x-3">
-                        <button class="like-btn flex items-center space-x-1 text-xs text-gray-500 hover:text-red-500 transition-colors duration-200"
-                                data-novel-id="${novel.id}"
-                                onclick="handleLike(event, ${novel.id})">
-                            <span class="like-icon">🤍</span>
-                            <span class="like-count">${formatViews(novel.likes || 0)}</span>
-                        </button>
-                        <button class="favorite-btn flex items-center space-x-1 text-xs text-gray-500 hover:text-yellow-500 transition-colors duration-200"
-                                data-novel-id="${novel.id}"
-                                onclick="handleFavorite(event, ${novel.id})">
-                            <span class="favorite-icon">☆</span>
-                            <span class="favorite-count">${formatViews(novel.favorites || 0)}</span>
-                        </button>
-                    </div>
-                    <button class="text-xs text-xhs-red hover:text-red-600 font-medium"
-                            onclick="openNovel(${novel.id})">
-                        阅读全文 →
-                    </button>
-                </div>
-            </div>
-        `;
-    }
-
-    return card;
-}
-
-// 生成封面 - 支持懒加载
-function generateCover(novel) {
-    if (novel.coverType === 'text') {
-        // 处理coverData可能是字符串或对象的情况
-        let coverData = novel.coverData;
-        if (typeof coverData === 'string') {
-            try {
-                coverData = JSON.parse(coverData);
-            } catch (e) {
-                coverData = { backgroundColor: '#FFE4E1', textColor: '#8B4513' };
-            }
-        }
-
-        const backgroundColor = coverData?.backgroundColor || '#FFE4E1';
-        const textColor = coverData?.textColor || '#8B4513';
-
-        // 随机选择高度比例
-        const heightClasses = ['square', 'medium', 'tall'];
-        const randomHeight = heightClasses[Math.floor(Math.random() * heightClasses.length)];
-
-        return `
-            <div class="novel-cover text-cover ${randomHeight}"
-                 style="background-color: ${backgroundColor}; color: ${textColor};">
-                <h2>${novel.title}</h2>
-            </div>
-        `;
-    } else if (novel.coverType === 'image' && novel.coverData) {
-        // 随机选择高度比例
-        const heightClasses = ['square', 'medium', 'tall'];
-        const randomHeight = heightClasses[Math.floor(Math.random() * heightClasses.length)];
-
-        return `
-            <div class="novel-cover ${randomHeight}">
-                <img src="${novel.coverData}"
-                     alt="${novel.title}"
-                     class="w-full h-full object-cover lazy-image"
-                     loading="lazy"
-                     onload="handleImageLoaded(this)"
-                     onerror="handleImageError(this)">
-            </div>
-        `;
-    } else {
-        return `
-            <div class="novel-cover bg-gray-200 flex items-center justify-center square">
-                <span class="text-gray-500">暂无封面</span>
-            </div>
-        `;
+    if (mainApp) {
+        mainApp.renderNovels();
     }
 }
 
-// 处理图片加载完成
-function handleImageLoaded(img) {
-    // 添加加载完成的类
-    img.classList.add('loaded');
-
-    // 触发瀑布流重新布局
-    if (waterfallInstance) {
-        // 使用防抖避免频繁重布局
-        clearTimeout(window.imageLoadTimeout);
-        window.imageLoadTimeout = setTimeout(() => {
-            waterfallInstance.layout();
-        }, 100);
+/**
+ * 初始化瀑布流布局（兼容性函数）
+ */
+function initMasonryLayout() {
+    if (mainApp) {
+        mainApp.initMasonryLayout();
     }
 }
 
-// 处理图片加载失败
-function handleImageError(img) {
-    // 替换为默认封面
-    const parent = img.parentElement;
-    if (parent) {
-        parent.innerHTML = `
-            <div class="w-full h-full bg-gray-200 flex items-center justify-center">
-                <span class="text-gray-500 text-sm">图片加载失败</span>
-            </div>
-        `;
-    }
-
-    // 触发重新布局
-    if (waterfallInstance) {
-        setTimeout(() => {
-            waterfallInstance.layout();
-        }, 50);
-    }
-}
-
-// 格式化阅读量
-function formatViews(views) {
-    if (views >= 10000) {
-        return Math.floor(views / 1000) / 10 + 'w';
-    } else if (views >= 1000) {
-        return Math.floor(views / 100) / 10 + 'k';
-    }
-    return views.toString();
-}
-
-// 计算时间差
-function getTimeAgo(publishTime) {
-    const now = new Date();
-    const publish = new Date(publishTime);
-    const diffTime = Math.abs(now - publish);
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-    
-    if (diffDays === 1) return '1天前';
-    if (diffDays < 7) return `${diffDays}天前`;
-    if (diffDays < 30) return `${Math.floor(diffDays / 7)}周前`;
-    if (diffDays < 365) return `${Math.floor(diffDays / 30)}个月前`;
-    return `${Math.floor(diffDays / 365)}年前`;
-}
-
-// 初始化事件监听器
-function initEventListeners() {
-    // 标签筛选
-    document.querySelectorAll('.tag').forEach(tag => {
-        tag.addEventListener('click', function() {
-            handleTagFilter(this);
-        });
-    });
-
-    // 搜索功能
-    bindSearchEvents();
-
-    // 主题切换
-    bindThemeToggleEvents();
-
-    // 汉堡菜单切换
-    bindHamburgerMenuEvents();
-
-    // 移动端搜索切换
-    bindMobileSearchEvents();
-    
-    // 为移动设备优化点击事件
-    optimizeForMobileDevices();
-    
-    // 初始化页面后立即检查并更新主题图标
-    updateThemeToggleIcons();
-    
-    console.log('所有事件监听器初始化完成');
-}
-
-// 为移动设备优化点击事件
-function optimizeForMobileDevices() {
-    // 检测是否为移动设备
-    const isMobileDevice = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-    
-    if (isMobileDevice) {
-        console.log('检测到移动设备，优化触摸事件');
-        
-        // 优化主题切换按钮的点击区域
-        const themeToggle = document.getElementById('themeToggle');
-        if (themeToggle) {
-            themeToggle.style.padding = '12px'; // 增大点击区域
-        }
-        
-        // 优化移动端搜索按钮的点击区域
-        const mobileSearchBtn = document.getElementById('mobileSearchBtn');
-        if (mobileSearchBtn) {
-            mobileSearchBtn.style.padding = '12px'; // 增大点击区域
-        }
-    }
-}
-
-// 绑定搜索事件
-function bindSearchEvents() {
-    const searchInput = document.getElementById('searchInput');
-    if (searchInput) {
-        searchInput.addEventListener('input', debounce(handleSearch, 300));
-    }
-}
-
-// 绑定主题切换事件
-function bindThemeToggleEvents() {
-    // 绑定所有主题切换按钮的事件
-    function bindThemeToggle() {
-        // 绑定桌面端主题切换按钮
-        const themeToggle = document.getElementById('themeToggle');
-        if (themeToggle && !themeToggle.hasAttribute('data-theme-bound')) {
-            themeToggle.addEventListener('click', function(e) {
-                e.preventDefault();
-                e.stopPropagation();
-                toggleTheme();
-                console.log('桌面端主题切换成功');
-            });
-            themeToggle.setAttribute('data-theme-bound', 'true');
-            console.log('桌面端主题切换按钮事件已绑定');
-        }
-
-        // 绑定移动端登录用户主题切换按钮
-        const themeToggleMobile = document.getElementById('themeToggleMobile');
-        if (themeToggleMobile && !themeToggleMobile.hasAttribute('data-theme-bound')) {
-            themeToggleMobile.addEventListener('click', function(e) {
-                e.preventDefault();
-                e.stopPropagation();
-                toggleTheme();
-                console.log('移动端登录用户主题切换成功');
-            });
-            themeToggleMobile.setAttribute('data-theme-bound', 'true');
-            console.log('移动端登录用户主题切换按钮事件已绑定');
-        }
-
-        // 绑定移动端游客主题切换按钮
-        const themeToggleGuest = document.getElementById('themeToggleGuest');
-        if (themeToggleGuest && !themeToggleGuest.hasAttribute('data-theme-bound')) {
-            themeToggleGuest.addEventListener('click', function(e) {
-                e.preventDefault();
-                e.stopPropagation();
-                toggleTheme();
-                console.log('移动端游客主题切换成功');
-            });
-            themeToggleGuest.setAttribute('data-theme-bound', 'true');
-            console.log('移动端游客主题切换按钮事件已绑定');
-        }
-    }
-
-    // 立即尝试绑定
-    bindThemeToggle();
-
-    // 使用MutationObserver监听DOM变化，重新绑定事件
-    const observer = new MutationObserver(function(mutations) {
-        mutations.forEach(function(mutation) {
-            if (mutation.type === 'childList') {
-                bindThemeToggle();
-            }
-        });
-    });
-
-    observer.observe(document.body, {
-        childList: true,
-        subtree: true
-    });
-
-    // 确保页面加载完成后再次尝试绑定，防止DOM未完全加载
-    setTimeout(bindThemeToggle, 500);
-}
-
-// 绑定汉堡菜单事件
-function bindHamburgerMenuEvents() {
-    // 使用事件委托
-    document.addEventListener('click', function(e) {
-        if (e.target && (e.target.id === 'hamburgerBtn' || e.target.closest('#hamburgerBtn'))) {
-            e.preventDefault();
-            e.stopPropagation();
-            toggleHamburgerMenu();
-            return;
-        }
-
-        // 点击其他地方关闭菜单
-        const hamburgerMenu = document.getElementById('hamburgerMenu');
-        const hamburgerBtn = document.getElementById('hamburgerBtn');
-        if (hamburgerMenu && hamburgerBtn) {
-            if (!hamburgerBtn.contains(e.target) && !hamburgerMenu.contains(e.target)) {
-                closeHamburgerMenu();
-            }
-        }
-    });
-}
-
-// 绑定移动端搜索事件
-function bindMobileSearchEvents() {
-    // 使用事件委托的方式绑定移动端搜索按钮事件
-    document.addEventListener('click', function(e) {
-        if (e.target && (e.target.id === 'mobileSearchBtn' || e.target.closest('#mobileSearchBtn'))) {
-            e.preventDefault();
-            e.stopPropagation();
-            console.log('移动端搜索按钮被点击（事件委托）');
-            toggleMobileSearch();
-            return;
-        }
-    });
-
-    // 直接绑定移动端搜索按钮事件（备用方案）
-    function bindMobileSearchBtn() {
-        const mobileSearchBtn = document.getElementById('mobileSearchBtn');
-        if (mobileSearchBtn && !mobileSearchBtn.hasAttribute('data-search-bound')) {
-            // 添加点击事件监听器
-            mobileSearchBtn.addEventListener('click', function(e) {
-                e.preventDefault();
-                e.stopPropagation();
-                console.log('移动端搜索按钮被点击（直接绑定）');
-                toggleMobileSearch();
-            });
-
-            // 添加触摸事件支持
-            mobileSearchBtn.addEventListener('touchstart', function(e) {
-                e.preventDefault();
-                console.log('移动端搜索按钮触摸开始');
-            });
-
-            mobileSearchBtn.addEventListener('touchend', function(e) {
-                e.preventDefault();
-                e.stopPropagation();
-                console.log('移动端搜索按钮触摸结束');
-                toggleMobileSearch();
-            });
-
-            mobileSearchBtn.setAttribute('data-search-bound', 'true');
-            console.log('移动端搜索按钮事件已绑定（直接绑定）');
-        } else if (!mobileSearchBtn) {
-            console.warn('找不到移动端搜索按钮元素');
-        }
-    }
-
-    // 直接绑定移动端搜索输入事件
-    function bindMobileSearchInput() {
-        const mobileSearchInput = document.getElementById('mobileSearchInput');
-        if (mobileSearchInput && !mobileSearchInput.hasAttribute('data-input-bound')) {
-            // 绑定搜索输入事件
-            mobileSearchInput.addEventListener('input', debounce(handleSearch, 300));
-
-            // 绑定回车键搜索
-            mobileSearchInput.addEventListener('keypress', function(e) {
-                if (e.key === 'Enter') {
-                    e.preventDefault();
-                    handleSearch(e);
-                }
-            });
-
-            mobileSearchInput.setAttribute('data-input-bound', 'true');
-            console.log('移动端搜索输入事件已绑定');
-        } else if (!mobileSearchInput) {
-            console.warn('找不到移动端搜索输入框元素');
-        }
-    }
-
-    // 立即尝试绑定
-    bindMobileSearchBtn();
-    bindMobileSearchInput();
-
-    // 调试信息：检查元素是否存在
-    setTimeout(() => {
-        const mobileSearchBtn = document.getElementById('mobileSearchBtn');
-        const mobileSearchBar = document.getElementById('mobileSearchBar');
-        const mobileSearchInput = document.getElementById('mobileSearchInput');
-
-        console.log('移动端搜索元素检查:');
-        console.log('- 当前屏幕宽度:', window.innerWidth);
-        console.log('- 是否为移动端:', window.innerWidth <= 768);
-        console.log('- 搜索按钮:', mobileSearchBtn ? '存在' : '不存在');
-        console.log('- 搜索栏:', mobileSearchBar ? '存在' : '不存在');
-        console.log('- 搜索输入框:', mobileSearchInput ? '存在' : '不存在');
-
-        if (mobileSearchBtn) {
-            const btnStyle = window.getComputedStyle(mobileSearchBtn);
-            console.log('- 搜索按钮显示状态:', btnStyle.display);
-            console.log('- 搜索按钮可见性:', btnStyle.visibility);
-        }
-
-        if (mobileSearchBar) {
-            console.log('- 搜索栏当前类:', mobileSearchBar.className);
-            const barStyle = window.getComputedStyle(mobileSearchBar);
-            console.log('- 搜索栏显示状态:', barStyle.display);
-        }
-    }, 1000);
-
-    // 使用MutationObserver监听DOM变化
-    const observer = new MutationObserver(function(mutations) {
-        mutations.forEach(function(mutation) {
-            if (mutation.type === 'childList') {
-                bindMobileSearchBtn();
-                bindMobileSearchInput();
-            }
-        });
-    });
-
-    observer.observe(document.body, {
-        childList: true,
-        subtree: true
-    });
-
-    // 窗口大小变化时重新渲染卡片和布局
-    let resizeTimeout;
-    window.addEventListener('resize', () => {
-        clearTimeout(resizeTimeout);
-        resizeTimeout = setTimeout(() => {
-            // 重新渲染卡片以适应移动端/桌面端切换
-            renderNovels();
-        }, 250);
-    });
-
-    // 初始化标签滚动触摸支持
-    initTagScrollTouch();
-}
-
-// 初始化标签滚动的触摸支持
-function initTagScrollTouch() {
-    const tagScrollContainer = document.querySelector('.tag-scroll-container');
-    if (!tagScrollContainer) return;
-
-    let isScrolling = false;
-    let startX = 0;
-    let scrollLeft = 0;
-
-    // 鼠标/触摸开始
-    tagScrollContainer.addEventListener('mousedown', startScroll);
-    tagScrollContainer.addEventListener('touchstart', startScroll, { passive: true });
-
-    // 鼠标/触摸移动
-    tagScrollContainer.addEventListener('mousemove', duringScroll);
-    tagScrollContainer.addEventListener('touchmove', duringScroll, { passive: true });
-
-    // 鼠标/触摸结束
-    tagScrollContainer.addEventListener('mouseup', endScroll);
-    tagScrollContainer.addEventListener('touchend', endScroll);
-    tagScrollContainer.addEventListener('mouseleave', endScroll);
-
-    function startScroll(e) {
-        isScrolling = true;
-        tagScrollContainer.style.cursor = 'grabbing';
-        startX = (e.type === 'mousedown' ? e.pageX : e.touches[0].pageX) - tagScrollContainer.offsetLeft;
-        scrollLeft = tagScrollContainer.scrollLeft;
-    }
-
-    function duringScroll(e) {
-        if (!isScrolling) return;
-        e.preventDefault();
-        const x = (e.type === 'mousemove' ? e.pageX : e.touches[0].pageX) - tagScrollContainer.offsetLeft;
-        const walk = (x - startX) * 2; // 滚动速度
-        tagScrollContainer.scrollLeft = scrollLeft - walk;
-    }
-
-    function endScroll() {
-        isScrolling = false;
-        tagScrollContainer.style.cursor = 'grab';
-    }
-}
-
-// 处理标签筛选
-function handleTagFilter(tagElement) {
-    // 重置所有标签样式
-    document.querySelectorAll('.tag').forEach(t => {
-        t.className = 'tag px-4 py-2 rounded-full bg-gray-100 text-gray-700 hover:bg-beige cursor-pointer whitespace-nowrap';
-    });
-
-    // 激活当前标签
-    tagElement.className = 'tag px-4 py-2 rounded-full bg-xhs-red text-white cursor-pointer whitespace-nowrap';
-
-    const selectedTag = tagElement.dataset.tag;
-
-    if (selectedTag === 'all') {
-        filteredNovels = [...novelsData];
-    } else {
-        filteredNovels = novelsData.filter(novel =>
-            novel.tags.some(tag => tag.includes(selectedTag))
-        );
-    }
-
-    renderNovels();
-
-    // 显示筛选结果反馈
-    const tagText = selectedTag === 'all' ? '全部' : selectedTag;
-    if (filteredNovels.length === 0) {
-        showToast(`没有找到"${tagText}"相关的小说`, 'error');
-    } else if (selectedTag !== 'all') {
-        showToast(`找到 ${filteredNovels.length} 部"${tagText}"小说`);
-    }
-}
-
-// 处理搜索
-function handleSearch(event) {
-    const searchTerm = event.target.value.toLowerCase().trim();
-
-    if (!searchTerm) {
-        filteredNovels = [...novelsData];
-        // 重置标签选择
-        document.querySelectorAll('.tag').forEach(t => {
-            t.className = 'tag px-4 py-2 rounded-full bg-gray-100 text-gray-700 hover:bg-beige cursor-pointer whitespace-nowrap';
-        });
-        document.querySelector('.tag[data-tag="all"]').className = 'tag px-4 py-2 rounded-full bg-xhs-red text-white cursor-pointer whitespace-nowrap';
-    } else {
-        filteredNovels = novelsData.filter(novel =>
-            novel.title.toLowerCase().includes(searchTerm) ||
-            novel.summary.toLowerCase().includes(searchTerm) ||
-            novel.tags.some(tag => tag.toLowerCase().includes(searchTerm))
-        );
-
-        // 搜索时重置标签选择
-        document.querySelectorAll('.tag').forEach(t => {
-            t.className = 'tag px-4 py-2 rounded-full bg-gray-100 text-gray-700 hover:bg-beige cursor-pointer whitespace-nowrap';
-        });
-    }
-
-    renderNovels();
-
-    // 显示搜索结果反馈
-    if (searchTerm && filteredNovels.length === 0) {
-        showToast(`没有找到包含"${searchTerm}"的小说`, 'error');
-    } else if (searchTerm && filteredNovels.length > 0) {
-        showToast(`找到 ${filteredNovels.length} 部相关小说`);
-    }
-}
-
-// 防抖函数
-function debounce(func, wait) {
-    let timeout;
-    return function executedFunction(...args) {
-        const later = () => {
-            clearTimeout(timeout);
-            func(...args);
-        };
-        clearTimeout(timeout);
-        timeout = setTimeout(later, wait);
-    };
-}
-
-// 主题切换
+/**
+ * 切换主题（兼容性函数）
+ */
 function toggleTheme() {
-    const body = document.body;
-
-    if (currentTheme === 'light') {
-        body.classList.add('dark-theme');
-        currentTheme = 'dark';
-        localStorage.setItem('theme', 'dark');
-    } else {
-        body.classList.remove('dark-theme');
-        currentTheme = 'light';
-        localStorage.setItem('theme', 'light');
+    if (themeManager) {
+        themeManager.toggleTheme();
     }
-
-    // 更新所有主题切换按钮的图标
-    updateThemeToggleIcons();
-    
-    // 输出日志，方便调试
-    console.log('主题切换为:', currentTheme);
 }
 
-// 更新主题切换按钮图标
+/**
+ * 更新主题切换图标（兼容性函数）
+ */
 function updateThemeToggleIcons() {
-    const icon = currentTheme === 'dark' ? '☀️' : '🌙';
-
-    // 更新桌面端主题切换按钮
-    const themeToggle = document.getElementById('themeToggle');
-    if (themeToggle) {
-        themeToggle.textContent = icon;
-        console.log('更新桌面端主题图标');
+    if (themeManager) {
+        themeManager.updateThemeToggleIcons();
     }
-
-    // 更新移动端登录用户主题切换按钮
-    const themeToggleMobile = document.getElementById('themeToggleMobile');
-    if (themeToggleMobile) {
-        themeToggleMobile.textContent = icon;
-        console.log('更新移动端登录用户主题图标');
-    }
-
-    // 更新移动端游客主题切换按钮
-    const themeToggleGuest = document.getElementById('themeToggleGuest');
-    if (themeToggleGuest) {
-        themeToggleGuest.textContent = icon;
-        console.log('更新移动端游客主题图标');
-    }
-
-    // 通用选择器作为备用
-    const allThemeToggles = document.querySelectorAll('.theme-toggle');
-    allThemeToggles.forEach(toggle => {
-        if (toggle && !toggle.id) { // 只更新没有特定ID的按钮
-            toggle.textContent = icon;
-            console.log('更新通用主题切换按钮图标');
-        }
-    });
 }
 
-// 初始化主题
-function initTheme() {
-    const savedTheme = localStorage.getItem('theme');
-    if (savedTheme === 'dark') {
-        document.body.classList.add('dark-theme');
-        currentTheme = 'dark';
-    } else {
-        currentTheme = 'light';
+/**
+ * 处理搜索（兼容性函数）
+ */
+function handleSearch(event) {
+    if (searchManager) {
+        searchManager.handleSearch(event);
     }
-
-    // 确保主题图标正确显示
-    updateThemeToggleIcons();
 }
 
-// 切换汉堡菜单
+/**
+ * 防抖函数（兼容性函数）
+ */
+function debounce(func, wait) {
+    return Utils.debounce(func, wait);
+}
+
+/**
+ * 显示Toast（兼容性函数）
+ */
+function showToast(message, type = 'success') {
+    Utils.showToast(message, type);
+}
+
+/**
+ * 格式化阅读量（兼容性函数）
+ */
+function formatViews(views) {
+    return Utils.formatViews(views);
+}
+
+/**
+ * 计算时间差（兼容性函数）
+ */
+function getTimeAgo(publishTime) {
+    return Utils.getTimeAgo(publishTime);
+}
+
+// =============== 用户交互函数 ===============
+
+/**
+ * 切换用户下拉菜单
+ */
+function toggleUserDropdown() {
+    const dropdown = document.getElementById('userDropdown');
+    if (dropdown) {
+        dropdown.classList.toggle('show');
+    }
+}
+
+/**
+ * 显示用户资料
+ */
+function showUserProfile() {
+    window.location.href = 'user-profile.html';
+    toggleUserDropdown();
+}
+
+/**
+ * 显示收藏
+ */
+function showFavorites() {
+    Utils.showToast('收藏功能开发中...', 'info');
+    toggleUserDropdown();
+}
+
+/**
+ * 显示阅读历史
+ */
+function showReadHistory() {
+    Utils.showToast('阅读历史功能开发中...', 'info');
+    toggleUserDropdown();
+}
+
+/**
+ * 退出登录
+ */
+async function logout() {
+    if (userManager) {
+        await userManager.logout();
+    }
+    toggleUserDropdown();
+}
+
+// =============== 汉堡菜单相关函数 ===============
+
+/**
+ * 切换汉堡菜单
+ */
 function toggleHamburgerMenu() {
     const hamburgerMenu = document.getElementById('hamburgerMenu');
     const hamburgerIcon = document.getElementById('hamburgerIcon');
@@ -1486,7 +581,9 @@ function toggleHamburgerMenu() {
     }
 }
 
-// 打开汉堡菜单
+/**
+ * 打开汉堡菜单
+ */
 function openHamburgerMenu() {
     const hamburgerMenu = document.getElementById('hamburgerMenu');
     const hamburgerIcon = document.getElementById('hamburgerIcon');
@@ -1494,12 +591,13 @@ function openHamburgerMenu() {
     if (hamburgerMenu && hamburgerIcon) {
         hamburgerMenu.classList.add('show');
         hamburgerIcon.classList.add('open');
-        // 防止页面滚动
         document.body.style.overflow = 'hidden';
     }
 }
 
-// 关闭汉堡菜单
+/**
+ * 关闭汉堡菜单
+ */
 function closeHamburgerMenu() {
     const hamburgerMenu = document.getElementById('hamburgerMenu');
     const hamburgerIcon = document.getElementById('hamburgerIcon');
@@ -1507,74 +605,22 @@ function closeHamburgerMenu() {
     if (hamburgerMenu && hamburgerIcon) {
         hamburgerMenu.classList.remove('show');
         hamburgerIcon.classList.remove('open');
-        // 恢复页面滚动
         document.body.style.overflow = '';
     }
 }
 
-// 切换移动端搜索
-function toggleMobileSearch() {
-    const mobileSearchBar = document.getElementById('mobileSearchBar');
-    const mobileSearchInput = document.getElementById('mobileSearchInput');
+// =============== 小说交互函数 ===============
 
-    if (mobileSearchBar) {
-        // 检查当前状态 - 默认是隐藏的
-        const isCurrentlyHidden = mobileSearchBar.classList.contains('hidden');
-
-        console.log('toggleMobileSearch 被调用，当前状态:', isCurrentlyHidden ? '隐藏' : '显示');
-
-        if (isCurrentlyHidden) {
-            // 显示搜索栏 - 使用滑动动画
-            mobileSearchBar.classList.remove('hidden');
-            mobileSearchBar.style.maxHeight = '0px';
-            mobileSearchBar.style.overflow = 'hidden';
-            mobileSearchBar.style.transition = 'max-height 0.3s ease-in-out';
-
-            // 强制重绘
-            mobileSearchBar.offsetHeight;
-
-            // 设置最大高度以显示内容
-            mobileSearchBar.style.maxHeight = '80px';
-
-            console.log('移动端搜索栏已显示');
-            // 自动聚焦到搜索框
-            if (mobileSearchInput) {
-                setTimeout(() => {
-                    mobileSearchInput.focus();
-                    console.log('移动端搜索框已聚焦');
-                }, 300);
-            }
-        } else {
-            // 隐藏搜索栏 - 使用滑动动画
-            mobileSearchBar.style.maxHeight = '0px';
-
-            setTimeout(() => {
-                mobileSearchBar.classList.add('hidden');
-                mobileSearchBar.style.maxHeight = '';
-                mobileSearchBar.style.overflow = '';
-                mobileSearchBar.style.transition = '';
-
-                // 清空输入框
-                if (mobileSearchInput) {
-                    mobileSearchInput.value = '';
-                }
-            }, 300);
-            console.log('移动端搜索栏已隐藏');
-        }
-    } else {
-        console.error('找不到移动端搜索栏元素');
-    }
-}
-
-// 处理点赞
+/**
+ * 处理点赞
+ */
 async function handleLike(event, novelId) {
-    event.stopPropagation(); // 阻止事件冒泡
+    event.stopPropagation();
 
     const btn = event.target.closest('.like-btn');
     const icon = btn.querySelector('.like-icon');
     const count = btn.querySelector('.like-count');
 
-    // 获取当前点赞状态
     const isLiked = btn.classList.contains('liked');
     const method = isLiked ? 'DELETE' : 'POST';
     const url = `/api/novels/${novelId}/like`;
@@ -1597,8 +643,8 @@ async function handleLike(event, novelId) {
         const result = await response.json();
 
         if (result.success) {
-            count.textContent = formatViews(result.data.likes);
-            showToast(result.message, 'success');
+            if (count) count.textContent = Utils.formatViews(result.data.likes);
+            Utils.showToast(result.message, 'success');
 
             // 更新本地数据
             const novel = novelsData.find(n => n.id === novelId);
@@ -1614,7 +660,7 @@ async function handleLike(event, novelId) {
                 btn.classList.remove('liked');
                 icon.textContent = '🤍';
             }
-            showToast(result.message, 'error');
+            Utils.showToast(result.message, 'error');
         }
     } catch (error) {
         console.error('点赞操作失败:', error);
@@ -1626,19 +672,20 @@ async function handleLike(event, novelId) {
             btn.classList.remove('liked');
             icon.textContent = '🤍';
         }
-        showToast('点赞操作失败，请稍后重试', 'error');
+        Utils.showToast('点赞操作失败，请稍后重试', 'error');
     }
 }
 
-// 处理收藏
+/**
+ * 处理收藏
+ */
 async function handleFavorite(event, novelId) {
-    event.stopPropagation(); // 阻止事件冒泡
+    event.stopPropagation();
 
     const btn = event.target.closest('.favorite-btn');
     const icon = btn.querySelector('.favorite-icon');
     const count = btn.querySelector('.favorite-count');
 
-    // 获取当前收藏状态
     const isFavorited = btn.classList.contains('favorited');
     const method = isFavorited ? 'DELETE' : 'POST';
     const url = `/api/novels/${novelId}/favorite`;
@@ -1661,8 +708,8 @@ async function handleFavorite(event, novelId) {
         const result = await response.json();
 
         if (result.success) {
-            count.textContent = formatViews(result.data.favorites);
-            showToast(result.message, 'success');
+            if (count) count.textContent = Utils.formatViews(result.data.favorites);
+            Utils.showToast(result.message, 'success');
 
             // 更新本地数据
             const novel = novelsData.find(n => n.id === novelId);
@@ -1678,7 +725,7 @@ async function handleFavorite(event, novelId) {
                 btn.classList.remove('favorited');
                 icon.textContent = '☆';
             }
-            showToast(result.message, 'error');
+            Utils.showToast(result.message, 'error');
         }
     } catch (error) {
         console.error('收藏操作失败:', error);
@@ -1690,33 +737,368 @@ async function handleFavorite(event, novelId) {
             btn.classList.remove('favorited');
             icon.textContent = '☆';
         }
-        showToast('收藏操作失败，请稍后重试', 'error');
+        Utils.showToast('收藏操作失败，请稍后重试', 'error');
     }
 }
 
-// 打开小说阅读
-function openNovel(novelId) {
-    // 增加阅读量
+/**
+ * 处理分享
+ */
+function handleShare(event, novelId) {
+    event.stopPropagation();
+    
     const novel = novelsData.find(n => n.id === novelId);
-    if (novel) {
-        novel.views += 1;
+    if (!novel) return;
+    
+    const shareUrl = `${window.location.origin}/read.html?id=${novelId}`;
+    const shareText = `推荐一部好小说：${novel.title}`;
+    
+    if (navigator.share) {
+        navigator.share({
+            title: novel.title,
+            text: shareText,
+            url: shareUrl
+        }).catch(err => console.log('分享失败:', err));
+    } else {
+        // 复制链接到剪贴板
+        Utils.copyToClipboard(shareUrl).then(success => {
+            if (success) {
+                Utils.showToast('链接已复制到剪贴板', 'success');
+            } else {
+                Utils.showToast('分享失败', 'error');
+            }
+        });
     }
-
-    // 跳转到阅读页面
-    window.location.href = `read.html?id=${novelId}`;
 }
 
-// 显示/隐藏加载动画
+// =============== 离线下载相关函数 ===============
+
+/**
+ * 处理离线下载
+ */
+async function handleOfflineDownload(event, novelId) {
+    event.stopPropagation();
+
+    console.log(`开始处理离线下载，小说ID: ${novelId}`);
+
+    // 确保离线管理器已初始化
+    if (!offlineManager) {
+        console.log('离线管理器未初始化，尝试重新初始化...');
+        if (mainApp) {
+            mainApp.initOfflineManager();
+        }
+
+        await Utils.sleep(500);
+
+        if (!offlineManager) {
+            console.error('离线管理器初始化失败');
+            Utils.showToast('离线功能不可用，请刷新页面重试', 'error');
+            return;
+        }
+    }
+
+    const btn = event.target.closest('.offline-btn');
+    const icon = btn.querySelector('.offline-icon');
+
+    if (!btn || !icon) {
+        console.error('找不到离线按钮或图标元素');
+        return;
+    }
+
+    try {
+        // 检查是否已经离线保存
+        const isOfflineAvailable = await offlineManager.isNovelAvailableOffline(novelId);
+
+        if (isOfflineAvailable) {
+            // 已经离线保存，询问是否删除
+            if (confirm('该小说已离线保存，是否删除离线版本？')) {
+                try {
+                    await offlineManager.deleteNovel(novelId);
+                    icon.textContent = '📥';
+                    btn.classList.remove('offline-downloaded');
+                    btn.title = '离线下载';
+                    Utils.showToast('离线版本已删除', 'success');
+                } catch (error) {
+                    console.error('删除离线版本失败:', error);
+                    Utils.showToast('删除失败，请稍后重试', 'error');
+                }
+            }
+            return;
+        }
+
+        // 开始下载
+        console.log('开始下载小说到离线存储...');
+
+        // 更新按钮状态为下载中
+        icon.textContent = '⏳';
+        btn.disabled = true;
+        btn.title = '下载中...';
+
+        const result = await offlineManager.downloadNovel(novelId);
+
+        if (result && result.success) {
+            icon.textContent = '✅';
+            btn.classList.add('offline-downloaded');
+            btn.title = '已离线保存，点击删除';
+            Utils.showToast(result.message || '小说已保存到离线阅读库', 'success');
+        } else {
+            icon.textContent = '📥';
+            btn.title = '离线下载';
+            const errorMsg = result ? result.message : '下载失败，请稍后重试';
+            Utils.showToast(errorMsg, 'warning');
+        }
+    } catch (error) {
+        console.error('离线下载过程中发生错误:', error);
+        icon.textContent = '📥';
+        btn.title = '离线下载';
+        Utils.showToast(`下载失败: ${error.message}`, 'error');
+    } finally {
+        btn.disabled = false;
+    }
+}
+
+/**
+ * 更新所有离线按钮状态
+ */
+async function updateAllOfflineButtonStates() {
+    if (!offlineManager) return;
+
+    const offlineButtons = document.querySelectorAll('.offline-btn');
+
+    for (const btn of offlineButtons) {
+        const novelId = parseInt(btn.dataset.novelId);
+        const icon = btn.querySelector('.offline-icon');
+
+        try {
+            const isAvailable = await offlineManager.isNovelAvailableOffline(novelId);
+            if (isAvailable) {
+                icon.textContent = '✅';
+                btn.classList.add('offline-downloaded');
+                btn.title = '已离线保存，点击删除';
+            } else {
+                icon.textContent = '📥';
+                btn.classList.remove('offline-downloaded');
+                btn.title = '离线下载';
+            }
+        } catch (error) {
+            console.error('检查离线状态失败:', error);
+        }
+    }
+}
+
+// =============== 会员中心相关函数 ===============
+
+/**
+ * 显示会员中心
+ */
+function showMembershipCenter() {
+    if (!userManager || !userManager.isLoggedIn()) {
+        window.location.href = 'login.html';
+        return;
+    }
+    
+    showMembershipModal();
+}
+
+/**
+ * 显示会员中心模态框
+ */
+function showMembershipModal() {
+    const modal = document.createElement('div');
+    modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50';
+    modal.innerHTML = `
+        <div class="bg-white rounded-lg max-w-md w-full mx-4 p-6">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-lg font-semibold">会员中心</h3>
+                <button onclick="closeMembershipModal()" class="text-gray-400 hover:text-gray-600">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                    </svg>
+                </button>
+            </div>
+            <div id="membershipContent" class="text-center">
+                <div class="animate-spin w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full mx-auto"></div>
+                <p class="mt-2 text-gray-600">加载中...</p>
+            </div>
+        </div>
+    `;
+    
+    document.body.appendChild(modal);
+    modal.id = 'membershipModal';
+    
+    // 加载会员信息
+    loadMembershipModalContent();
+}
+
+/**
+ * 关闭会员中心模态框
+ */
+function closeMembershipModal() {
+    const modal = document.getElementById('membershipModal');
+    if (modal) {
+        modal.remove();
+    }
+}
+
+/**
+ * 加载会员信息内容
+ */
+async function loadMembershipModalContent() {
+    try {
+        const membership = userManager.getMembershipStatus();
+        const plansResponse = await fetch('/api/membership/plans');
+        const plansResult = await plansResponse.json();
+        
+        const content = document.getElementById('membershipContent');
+        if (!content) return;
+        
+        let statusHtml = '';
+        if (membership.type === 'free') {
+            statusHtml = `
+                <div class="mb-6">
+                    <div class="text-gray-600 mb-2">当前状态：普通用户</div>
+                    <p class="text-sm text-gray-500">开通会员享受更多精彩内容</p>
+                </div>
+            `;
+        } else {
+            const endDate = membership.endDate ? new Date(membership.endDate).toLocaleDateString() : '永久';
+            statusHtml = `
+                <div class="mb-6">
+                    <div class="flex items-center justify-center mb-2">
+                        <span class="text-lg font-medium">${userManager.getMembershipDisplayName()}</span>
+                        ${userManager.getMembershipBadge()}
+                    </div>
+                    <p class="text-sm text-gray-500">到期时间：${endDate}</p>
+                </div>
+            `;
+        }
+        
+        let plansHtml = '';
+        if (plansResult.success) {
+            plansHtml = Object.entries(plansResult.data).map(([type, plan]) => `
+                <div class="border rounded-lg p-4 mb-3">
+                    <h4 class="font-medium mb-2">${plan.name}</h4>
+                    <p class="text-sm text-gray-600 mb-3">${plan.description}</p>
+                    <div class="flex justify-between items-center">
+                        <span class="text-lg font-bold text-blue-600">¥${plan.prices[0].price}/月</span>
+                        <button onclick="upgradeMembership('${type}')" 
+                                class="px-4 py-2 bg-blue-500 text-white text-sm rounded hover:bg-blue-600 transition-colors">
+                            ${membership.type === type ? '续费' : '开通'}
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+        }
+        
+        content.innerHTML = `
+            ${statusHtml}
+            <div class="space-y-3">
+                <h4 class="font-medium text-left">会员套餐</h4>
+                ${plansHtml}
+            </div>
+        `;
+    } catch (error) {
+        console.error('加载会员信息失败:', error);
+        const content = document.getElementById('membershipContent');
+        if (content) {
+            content.innerHTML = '<p class="text-red-500">加载失败，请稍后重试</p>';
+        }
+    }
+}
+
+/**
+ * 升级会员
+ */
+async function upgradeMembership(membershipType) {
+    try {
+        const response = await fetch('/api/membership/upgrade', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${userManager.token}`
+            },
+            body: JSON.stringify({
+                membershipType: membershipType,
+                duration: 1, // 默认1个月
+                paymentMethod: 'demo' // 演示模式
+            })
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            alert(result.message);
+            await userManager.loadMembershipInfo();
+            userManager.updateUI();
+            closeMembershipModal();
+            // 刷新小说列表以更新权限状态
+            await loadNovels();
+        } else {
+            alert(result.message || '开通失败');
+        }
+    } catch (error) {
+        console.error('开通会员失败:', error);
+        alert('开通失败，请稍后重试');
+    }
+}
+
+// =============== 图片处理函数 ===============
+
+/**
+ * 处理图片加载完成
+ */
+function handleImageLoaded(img) {
+    img.classList.add('loaded');
+    
+    // 触发瀑布流重新布局
+    if (window.waterfallInstance) {
+        clearTimeout(window.imageLoadTimeout);
+        window.imageLoadTimeout = setTimeout(() => {
+            window.waterfallInstance.layout();
+        }, 100);
+    }
+}
+
+/**
+ * 处理图片加载失败
+ */
+function handleImageError(img) {
+    const parent = img.parentElement;
+    if (parent) {
+        parent.innerHTML = `
+            <div class="w-full h-full bg-gray-200 flex items-center justify-center">
+                <span class="text-gray-500 text-sm">图片加载失败</span>
+            </div>
+        `;
+    }
+
+    // 触发重新布局
+    if (window.waterfallInstance) {
+        setTimeout(() => {
+            window.waterfallInstance.layout();
+        }, 50);
+    }
+}
+
+// =============== 工具函数 ===============
+
+/**
+ * 显示/隐藏加载动画
+ */
 function showLoading(show) {
     const loading = document.getElementById('loading');
-    if (show) {
-        loading.classList.remove('hidden');
-    } else {
-        loading.classList.add('hidden');
+    if (loading) {
+        if (show) {
+            loading.classList.remove('hidden');
+        } else {
+            loading.classList.add('hidden');
+        }
     }
 }
 
-// 显示错误信息
+/**
+ * 显示错误信息
+ */
 function showError(message) {
     const container = document.querySelector('.waterfall-container');
     if (!container) return;
@@ -1734,53 +1116,40 @@ function showError(message) {
     `;
 }
 
-// 显示成功提示
-function showToast(message, type = 'success') {
-    // 创建toast元素
-    const toast = document.createElement('div');
-    toast.className = `fixed top-4 right-4 z-50 px-6 py-3 rounded-lg shadow-lg transform translate-x-full transition-transform duration-300 ${
-        type === 'success' ? 'bg-green-500 text-white' :
-        type === 'error' ? 'bg-red-500 text-white' :
-        'bg-blue-500 text-white'
-    }`;
-    toast.textContent = message;
-
-    document.body.appendChild(toast);
-
-    // 显示toast
-    setTimeout(() => {
-        toast.classList.remove('translate-x-full');
-    }, 100);
-
-    // 自动隐藏
-    setTimeout(() => {
-        toast.classList.add('translate-x-full');
-        setTimeout(() => {
-            document.body.removeChild(toast);
-        }, 300);
-    }, 3000);
+/**
+ * 初始化主题
+ */
+function initTheme() {
+    // 主题管理器会自动处理初始化
+    console.log('主题初始化由ThemeManager处理');
 }
 
-// 网络状态检测
-function checkNetworkStatus() {
-    if (!navigator.onLine) {
-        showError('网络连接已断开，请检查网络设置后重试');
-        return false;
-    }
-    return true;
-}
+// =============== 用户下拉菜单事件绑定 ===============
 
-// 重试机制
-async function retryOperation(operation, maxRetries = 3, delay = 1000) {
-    for (let i = 0; i < maxRetries; i++) {
-        try {
-            return await operation();
-        } catch (error) {
-            if (i === maxRetries - 1) throw error;
-            await new Promise(resolve => setTimeout(resolve, delay * (i + 1)));
+// 绑定头像菜单点击事件
+document.addEventListener('DOMContentLoaded', function() {
+    // 为头像下拉菜单添加事件监听
+    document.addEventListener('click', function(event) {
+        const toggleBtn = document.getElementById('avatarDropdownToggle');
+        const dropdown = document.getElementById('userDropdown');
+        
+        // 如果点击的是头像切换按钮或其内部元素，则切换显示下拉菜单
+        if (toggleBtn && (toggleBtn === event.target || toggleBtn.contains(event.target))) {
+            if (dropdown) {
+                dropdown.classList.toggle('show');
+            }
+            event.stopPropagation();
+            return;
         }
-    }
-}
+        
+        // 如果点击的是其他区域，则关闭下拉菜单
+        if (dropdown && (!event.target.closest('#userDropdown'))) {
+            dropdown.classList.remove('show');
+        }
+    });
+});
+
+// =============== 样式注入 ===============
 
 // 添加样式类
 const style = document.createElement('style');
@@ -1830,6 +1199,37 @@ style.textContent = `
         border-color: #404040 !important;
     }
 
+    /* 用户下拉菜单样式 */
+    .user-dropdown.show {
+        display: block !important;
+    }
+
+    .user-dropdown {
+        display: none;
+    }
+
+    .user-menu:hover .user-avatar {
+        background-color: #f9fafb;
+    }
+
+    .user-avatar .dropdown-arrow {
+        transition: transform 0.2s ease;
+    }
+
+    .user-dropdown.show .dropdown-arrow {
+        transform: rotate(180deg);
+    }
+
+    /* 移动端汉堡菜单显示状态 */
+    #hamburgerMenu.show {
+        transform: translateY(0);
+        opacity: 1;
+    }
+
+    #hamburgerIcon.open {
+        transform: rotate(45deg);
+    }
+
     /* 点赞和收藏按钮样式 */
     .like-btn.liked {
         color: #ef4444 !important;
@@ -1870,155 +1270,45 @@ style.textContent = `
 `;
 document.head.appendChild(style);
 
-// 用户活动追踪类
-class ActivityTracker {
-    constructor(token) {
-        this.token = token;
-        this.updateInterval = null;
-        this.lastActivity = Date.now();
-        this.isPageVisible = true;
-        
-        this.init();
-    }
-    
-    init() {
-        // 监听用户活动事件
-        this.bindActivityEvents();
-        
-        // 监听页面可见性变化
-        this.bindVisibilityEvents();
-        
-        // 开始定期更新活动状态
-        this.startActivityUpdates();
-        
-        // 页面关闭时清理
-        this.bindUnloadEvents();
-    }
-    
-    bindActivityEvents() {
-        // 监听各种用户活动
-        const events = [
-            'mousedown', 'mousemove', 'keypress', 'scroll', 
-            'touchstart', 'click', 'focus', 'blur'
-        ];
-        
-        events.forEach(event => {
-            document.addEventListener(event, () => {
-                this.recordActivity();
-            }, { passive: true });
-        });
-    }
-    
-    bindVisibilityEvents() {
-        // 监听页面可见性变化
-        document.addEventListener('visibilitychange', () => {
-            this.isPageVisible = !document.hidden;
-            
-            if (this.isPageVisible) {
-                // 页面变为可见时，立即更新活动状态
-                this.recordActivity();
-                this.updateActivity();
-            }
-        });
-        
-        // 监听窗口焦点变化
-        window.addEventListener('focus', () => {
-            this.isPageVisible = true;
-            this.recordActivity();
-            this.updateActivity();
-        });
-        
-        window.addEventListener('blur', () => {
-            this.isPageVisible = false;
-        });
-    }
-    
-    bindUnloadEvents() {
-        // 页面关闭前发送离线状态
-        window.addEventListener('beforeunload', () => {
-            this.sendOfflineStatus();
-        });
-        
-        // 页面隐藏时发送离线状态
-        document.addEventListener('visibilitychange', () => {
-            if (document.hidden) {
-                this.sendOfflineStatus();
-            }
-        });
-    }
-    
-    recordActivity() {
-        this.lastActivity = Date.now();
-    }
-    
-    startActivityUpdates() {
-        // 每30秒更新一次活动状态
-        this.updateInterval = setInterval(() => {
-            if (this.shouldUpdateActivity()) {
-                this.updateActivity();
-            }
-        }, 30000);
-        
-        // 立即发送一次在线状态
-        this.updateActivity();
-    }
-    
-    shouldUpdateActivity() {
-        // 只有在页面可见且最近有活动时才更新
-        const timeSinceLastActivity = Date.now() - this.lastActivity;
-        return this.isPageVisible && timeSinceLastActivity < 60000; // 1分钟内有活动
-    }
-    
-    async updateActivity() {
-        if (!this.token) return;
-        
-        try {
-            // 更新用户活动状态
-            const response = await fetch('/api/auth/profile', {
-                headers: {
-                    'Authorization': `Bearer ${this.token}`
-                }
-            });
-            
-            if (response.ok) {
-                // 请求成功，用户状态已更新
-                console.log('活动状态已更新');
-            }
-        } catch (error) {
-            console.error('更新活动状态失败:', error);
-        }
-    }
-    
-    sendOfflineStatus() {
-        if (!this.token) return;
-        
-        // 使用sendBeacon发送离线状态，即使页面关闭也能发送
-        const data = JSON.stringify({ status: 'offline' });
-        
-        if (navigator.sendBeacon) {
-            navigator.sendBeacon('/api/auth/logout', data);
-        } else {
-            // 备用方法：同步请求
-            try {
-                const xhr = new XMLHttpRequest();
-                xhr.open('POST', '/api/auth/logout', false);
-                xhr.setRequestHeader('Authorization', `Bearer ${this.token}`);
-                xhr.setRequestHeader('Content-Type', 'application/json');
-                xhr.send(data);
-            } catch (error) {
-                console.error('发送离线状态失败:', error);
-            }
-        }
-    }
-    
-    destroy() {
-        // 清理定时器
-        if (this.updateInterval) {
-            clearInterval(this.updateInterval);
-            this.updateInterval = null;
-        }
-        
-        // 发送离线状态
-        this.sendOfflineStatus();
-    }
-}
+// =============== 全局变量导出 ===============
+
+// 将重要的模块实例暴露到全局作用域，以便其他脚本使用
+window.mainApp = mainApp;
+window.userManager = userManager;
+window.themeManager = themeManager;
+window.searchManager = searchManager;
+window.waterfallInstance = waterfallInstance;
+window.cardRenderer = cardRenderer;
+window.offlineManager = offlineManager;
+
+// 暴露兼容性函数
+window.loadNovels = loadNovels;
+window.renderNovels = renderNovels;
+window.initMasonryLayout = initMasonryLayout;
+window.toggleTheme = toggleTheme;
+window.updateThemeToggleIcons = updateThemeToggleIcons;
+window.handleSearch = handleSearch;
+window.debounce = debounce;
+window.showToast = showToast;
+window.formatViews = formatViews;
+window.getTimeAgo = getTimeAgo;
+window.handleLike = handleLike;
+window.handleFavorite = handleFavorite;
+window.handleShare = handleShare;
+window.handleOfflineDownload = handleOfflineDownload;
+window.updateAllOfflineButtonStates = updateAllOfflineButtonStates;
+window.handleImageLoaded = handleImageLoaded;
+window.handleImageError = handleImageError;
+window.showMembershipCenter = showMembershipCenter;
+window.closeMembershipModal = closeMembershipModal;
+window.upgradeMembership = upgradeMembership;
+window.showLoading = showLoading;
+window.showError = showError;
+window.logout = logout;
+window.showFavorites = showFavorites;
+window.showReadHistory = showReadHistory;
+window.toggleHamburgerMenu = toggleHamburgerMenu;
+window.openHamburgerMenu = openHamburgerMenu;
+window.closeHamburgerMenu = closeHamburgerMenu;
+
+console.log('main.js 模块化重构完成');

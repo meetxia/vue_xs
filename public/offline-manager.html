@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>离线管理 - MOMO的小说站</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="css/style.css">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'xhs-red': '#FE2C55',
+                        'beige': '#F5E6D3',
+                        'beige-light': '#FAF5F0',
+                        'beige-dark': '#D4B5A0'
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-beige-light min-h-screen">
+    <!-- 顶部导航栏 -->
+    <nav class="sticky top-0 bg-white shadow-sm z-50 border-b border-gray-100">
+        <div class="container mx-auto px-4 py-3 flex items-center justify-between">
+            <!-- 返回按钮和标题 -->
+            <div class="flex items-center space-x-3">
+                <button onclick="history.back()" class="p-2 rounded-full hover:bg-gray-100 transition-colors">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+                    </svg>
+                </button>
+                <h1 class="text-xl font-bold text-gray-800">离线管理</h1>
+            </div>
+
+            <!-- 右侧功能区 -->
+            <div class="flex items-center space-x-3">
+                <button id="refreshBtn" class="p-2 rounded-full hover:bg-gray-100 transition-colors" title="刷新">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                    </svg>
+                </button>
+                <button id="settingsBtn" class="p-2 rounded-full hover:bg-gray-100 transition-colors" title="设置">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                    </svg>
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- 主要内容区域 -->
+    <div class="container mx-auto px-4 py-6 max-w-4xl">
+        <!-- 存储使用情况卡片 -->
+        <div class="bg-white rounded-xl shadow-sm p-6 mb-6">
+            <h2 class="text-lg font-semibold mb-4 flex items-center">
+                <span class="mr-2">💾</span>
+                存储使用情况
+            </h2>
+            
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                <div class="text-center">
+                    <div class="text-2xl font-bold text-xhs-red" id="usedStorage">0 MB</div>
+                    <div class="text-sm text-gray-500">已使用</div>
+                </div>
+                <div class="text-center">
+                    <div class="text-2xl font-bold text-gray-600" id="totalStorage">50 MB</div>
+                    <div class="text-sm text-gray-500">总容量</div>
+                </div>
+                <div class="text-center">
+                    <div class="text-2xl font-bold text-blue-600" id="novelCount">0</div>
+                    <div class="text-sm text-gray-500">已下载小说</div>
+                </div>
+            </div>
+            
+            <!-- 进度条 -->
+            <div class="w-full bg-gray-200 rounded-full h-2 mb-4">
+                <div class="bg-xhs-red h-2 rounded-full transition-all duration-300" id="storageProgress" style="width: 0%"></div>
+            </div>
+            
+            <div class="flex justify-between items-center">
+                <span class="text-sm text-gray-500" id="storagePercentage">0% 已使用</span>
+                <button id="clearAllBtn" class="text-sm text-red-500 hover:text-red-700 transition-colors">
+                    清空所有离线数据
+                </button>
+            </div>
+        </div>
+
+        <!-- 网络状态指示器 -->
+        <div class="bg-white rounded-xl shadow-sm p-4 mb-6" id="networkStatus">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center space-x-3">
+                    <div class="w-3 h-3 rounded-full" id="networkIndicator"></div>
+                    <span class="font-medium" id="networkText">检测网络状态中...</span>
+                </div>
+                <div class="text-sm text-gray-500" id="lastSyncTime">
+                    最后同步：从未
+                </div>
+            </div>
+        </div>
+
+        <!-- 操作按钮区域 -->
+        <div class="bg-white rounded-xl shadow-sm p-6 mb-6">
+            <h2 class="text-lg font-semibold mb-4 flex items-center">
+                <span class="mr-2">⚡</span>
+                快速操作
+            </h2>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <button id="batchDownloadBtn" class="flex items-center justify-center space-x-2 bg-blue-500 text-white px-4 py-3 rounded-lg hover:bg-blue-600 transition-colors">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                    </svg>
+                    <span>批量下载收藏</span>
+                </button>
+                
+                <button id="syncProgressBtn" class="flex items-center justify-center space-x-2 bg-green-500 text-white px-4 py-3 rounded-lg hover:bg-green-600 transition-colors">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                    </svg>
+                    <span>同步阅读进度</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- 已下载小说列表 -->
+        <div class="bg-white rounded-xl shadow-sm p-6">
+            <div class="flex items-center justify-between mb-4">
+                <h2 class="text-lg font-semibold flex items-center">
+                    <span class="mr-2">📚</span>
+                    已下载小说
+                </h2>
+                <div class="flex items-center space-x-2">
+                    <select id="sortSelect" class="text-sm border border-gray-300 rounded px-2 py-1">
+                        <option value="time">按下载时间</option>
+                        <option value="title">按标题排序</option>
+                        <option value="size">按大小排序</option>
+                    </select>
+                </div>
+            </div>
+            
+            <!-- 加载状态 -->
+            <div id="loadingNovels" class="text-center py-8">
+                <div class="animate-spin w-8 h-8 border-2 border-xhs-red border-t-transparent rounded-full mx-auto mb-4"></div>
+                <p class="text-gray-500">正在加载离线小说...</p>
+            </div>
+            
+            <!-- 空状态 -->
+            <div id="emptyState" class="text-center py-12 hidden">
+                <div class="text-6xl mb-4">📱</div>
+                <h3 class="text-lg font-medium text-gray-600 mb-2">还没有离线小说</h3>
+                <p class="text-gray-500 mb-4">下载小说到本地，随时随地畅享阅读</p>
+                <button onclick="window.location.href='index.html'" class="bg-xhs-red text-white px-6 py-2 rounded-lg hover:bg-red-600 transition-colors">
+                    去发现小说
+                </button>
+            </div>
+            
+            <!-- 小说列表 -->
+            <div id="novelsList" class="space-y-4 hidden">
+                <!-- 小说项目将通过JavaScript动态生成 -->
+            </div>
+        </div>
+    </div>
+
+    <!-- 设置弹窗 -->
+    <div id="settingsModal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden">
+        <div class="flex items-center justify-center min-h-screen p-4">
+            <div class="bg-white rounded-xl max-w-md w-full p-6">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-lg font-semibold">离线设置</h3>
+                    <button id="closeSettingsBtn" class="text-gray-400 hover:text-gray-600">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                        </svg>
+                    </button>
+                </div>
+                
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">
+                            存储限制 (MB)
+                        </label>
+                        <input type="range" id="storageLimitSlider" min="10" max="500" value="50" 
+                               class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer">
+                        <div class="flex justify-between text-xs text-gray-500 mt-1">
+                            <span>10MB</span>
+                            <span id="currentLimit">50MB</span>
+                            <span>500MB</span>
+                        </div>
+                    </div>
+                    
+                    <div class="flex items-center justify-between">
+                        <span class="text-sm font-medium text-gray-700">自动清理过期缓存</span>
+                        <label class="relative inline-flex items-center cursor-pointer">
+                            <input type="checkbox" id="autoCleanToggle" class="sr-only peer" checked>
+                            <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                        </label>
+                    </div>
+                    
+                    <div class="flex items-center justify-between">
+                        <span class="text-sm font-medium text-gray-700">仅WiFi下载</span>
+                        <label class="relative inline-flex items-center cursor-pointer">
+                            <input type="checkbox" id="wifiOnlyToggle" class="sr-only peer">
+                            <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                        </label>
+                    </div>
+                </div>
+                
+                <div class="flex justify-end space-x-3 mt-6">
+                    <button id="cancelSettingsBtn" class="px-4 py-2 text-gray-600 hover:text-gray-800 transition-colors">
+                        取消
+                    </button>
+                    <button id="saveSettingsBtn" class="px-4 py-2 bg-xhs-red text-white rounded-lg hover:bg-red-600 transition-colors">
+                        保存
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast 通知 -->
+    <div id="toast" class="fixed top-4 right-4 z-50 hidden">
+        <div class="bg-white border border-gray-200 rounded-lg shadow-lg p-4 max-w-sm">
+            <div class="flex items-center">
+                <div class="flex-shrink-0">
+                    <div id="toastIcon" class="w-5 h-5"></div>
+                </div>
+                <div class="ml-3">
+                    <p id="toastMessage" class="text-sm font-medium text-gray-900"></p>
+                </div>
+                <div class="ml-auto pl-3">
+                    <button id="toastClose" class="text-gray-400 hover:text-gray-600">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/offline-reader.js"></script>
+    <script src="js/offline-manager.js"></script>
+</body>
+</html>

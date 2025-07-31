@@ -26,7 +26,15 @@
         "loginCount": 0,
         "readingTime": 0
       },
-      "activityLog": []
+      "activityLog": [],
+      "membership": {
+        "type": "vip",
+        "status": "active",
+        "startDate": "2024-01-01T00:00:00.000Z",
+        "endDate": "2099-12-31T23:59:59.999Z",
+        "autoRenew": false,
+        "paymentHistory": []
+      }
     },
     {
       "id": 2,
@@ -76,7 +84,25 @@
           "timestamp": "2024-01-15T16:45:00.000Z",
           "details": "收藏小说《测试小说3》"
         }
-      ]
+      ],
+      "membership": {
+        "type": "premium",
+        "status": "active",
+        "startDate": "2024-01-02T00:00:00.000Z",
+        "endDate": "2024-07-02T23:59:59.999Z",
+        "autoRenew": true,
+        "paymentHistory": [
+          {
+            "id": 1,
+            "amount": 39.9,
+            "type": "premium",
+            "duration": 6,
+            "paymentTime": "2024-01-02T00:00:00.000Z",
+            "paymentMethod": "alipay",
+            "status": "completed"
+          }
+        ]
+      }
     },
     {
       "id": 3,
@@ -122,7 +148,64 @@
           "timestamp": "2024-01-10T11:30:00.000Z",
           "details": "点赞小说《测试小说1》"
         }
-      ]
+      ],
+      "membership": {
+        "type": "free",
+        "status": "active",
+        "startDate": "2024-01-03T00:00:00.000Z",
+        "endDate": null,
+        "autoRenew": false,
+        "paymentHistory": []
+      }
+    },
+    {
+      "id": 4,
+      "username": "momo01",
+      "email": "1357499128@qq.com",
+      "password": "$2b$10$xKWyVMg5ayn7kG5emtrQ5uNnSZyx26AyNIeJ0pqPEbTuhho8YWj.q",
+      "avatar": "default.png",
+      "registerTime": "2025-07-30T21:40:07.960Z",
+      "lastLogin": "2025-07-31T15:28:00.615Z",
+      "lastActivity": "2025-08-01T04:54:39.818Z",
+      "isOnline": false,
+      "favorites": [],
+      "likes": [],
+      "profile": {
+        "bio": "这个人很懒，什么都没写",
+        "location": "",
+        "website": ""
+      },
+      "membership": {
+        "type": "premium",
+        "status": "active",
+        "startDate": "2025-07-31T07:12:46.990Z",
+        "autoRenew": false,
+        "endDate": "2026-07-26T07:12:00.000Z"
+      },
+      "stats": {
+        "totalLikes": 0,
+        "totalFavorites": 0,
+        "totalViews": 0,
+        "loginCount": 1,
+        "readingTime": 0
+      },
+      "activityLog": [
+        {
+          "action": "membership_expiry_changed",
+          "timestamp": "2025-07-31T07:12:47.000Z",
+          "details": "管理员将会员到期时间从 \"永久\" 更改为 \"2026/7/26\"",
+          "operator": "admin"
+        },
+        {
+          "action": "membership_changed",
+          "timestamp": "2025-07-31T07:12:46.999Z",
+          "details": "管理员将会员类型从 \"free\" 更改为 \"premium\"",
+          "operator": "admin"
+        }
+      ],
+      "isEnabled": true,
+      "bio": "",
+      "interests": ""
     }
   ],
   "sessions": []

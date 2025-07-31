@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>管理员登录测试</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        .success {
+            background-color: #d4edda;
+            border-color: #c3e6cb;
+            color: #155724;
+        }
+        .error {
+            background-color: #f8d7da;
+            border-color: #f5c6cb;
+            color: #721c24;
+        }
+        .info {
+            background-color: #d1ecf1;
+            border-color: #bee5eb;
+            color: #0c5460;
+        }
+        button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        input {
+            padding: 8px;
+            margin: 5px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        pre {
+            background-color: #f8f9fa;
+            padding: 10px;
+            border-radius: 4px;
+            overflow-x: auto;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>管理员登录功能测试</h1>
+        
+        <div class="test-section info">
+            <h3>测试说明</h3>
+            <p>这个页面用于测试管理员登录功能是否正常工作。</p>
+            <p><strong>默认管理员账户：</strong></p>
+            <ul>
+                <li>用户名：admin</li>
+                <li>密码：123456</li>
+            </ul>
+        </div>
+
+        <div class="test-section">
+            <h3>1. 测试管理员登录API</h3>
+            <div>
+                <input type="text" id="username" placeholder="用户名" value="admin">
+                <input type="password" id="password" placeholder="密码" value="123456">
+                <button onclick="testLogin()">测试登录</button>
+            </div>
+            <div id="loginResult"></div>
+        </div>
+
+        <div class="test-section">
+            <h3>2. 测试Token验证</h3>
+            <button onclick="testTokenValidation()">验证当前Token</button>
+            <div id="tokenResult"></div>
+        </div>
+
+        <div class="test-section">
+            <h3>3. 测试用户管理API</h3>
+            <button onclick="testUserListAPI()">获取用户列表</button>
+            <div id="userListResult"></div>
+        </div>
+
+        <div class="test-section">
+            <h3>4. 当前登录状态</h3>
+            <button onclick="checkLoginStatus()">检查登录状态</button>
+            <div id="statusResult"></div>
+        </div>
+
+        <div class="test-section">
+            <h3>5. 清除登录数据</h3>
+            <button onclick="clearLoginData()">清除所有登录数据</button>
+            <div id="clearResult"></div>
+        </div>
+    </div>
+
+    <script>
+        // 测试管理员登录
+        async function testLogin() {
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            const resultDiv = document.getElementById('loginResult');
+            
+            try {
+                const response = await fetch('/api/admin/login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ username, password })
+                });
+                
+                const result = await response.json();
+                
+                if (response.ok && result.success) {
+                    // 保存token到localStorage
+                    localStorage.setItem('adminToken', result.data.token);
+                    localStorage.setItem('adminLoginTime', Date.now().toString());
+                    localStorage.setItem('adminUsername', result.data.username);
+                    
+                    resultDiv.innerHTML = `
+                        <div class="success">
+                            <h4>登录成功！</h4>
+                            <p>Token: ${result.data.token.substring(0, 50)}...</p>
+                            <p>用户名: ${result.data.username}</p>
+                            <p>过期时间: ${result.data.expiresIn}</p>
+                        </div>
+                    `;
+                } else {
+                    resultDiv.innerHTML = `
+                        <div class="error">
+                            <h4>登录失败</h4>
+                            <p>状态码: ${response.status}</p>
+                            <p>错误信息: ${result.message}</p>
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `
+                    <div class="error">
+                        <h4>请求失败</h4>
+                        <p>错误: ${error.message}</p>
+                    </div>
+                `;
+            }
+        }
+
+        // 测试Token验证
+        async function testTokenValidation() {
+            const resultDiv = document.getElementById('tokenResult');
+            const token = localStorage.getItem('adminToken');
+            
+            if (!token) {
+                resultDiv.innerHTML = `
+                    <div class="error">
+                        <p>没有找到Token，请先登录</p>
+                    </div>
+                `;
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/admin/users?limit=1', {
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                const result = await response.json();
+                
+                if (response.ok && result.success) {
+                    resultDiv.innerHTML = `
+                        <div class="success">
+                            <h4>Token验证成功！</h4>
+                            <p>可以正常访问管理员API</p>
+                        </div>
+                    `;
+                } else {
+                    resultDiv.innerHTML = `
+                        <div class="error">
+                            <h4>Token验证失败</h4>
+                            <p>状态码: ${response.status}</p>
+                            <p>错误信息: ${result.message}</p>
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `
+                    <div class="error">
+                        <h4>请求失败</h4>
+                        <p>错误: ${error.message}</p>
+                    </div>
+                `;
+            }
+        }
+
+        // 测试用户列表API
+        async function testUserListAPI() {
+            const resultDiv = document.getElementById('userListResult');
+            const token = localStorage.getItem('adminToken');
+            
+            if (!token) {
+                resultDiv.innerHTML = `
+                    <div class="error">
+                        <p>没有找到Token，请先登录</p>
+                    </div>
+                `;
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/admin/users?limit=5', {
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                const result = await response.json();
+                
+                if (response.ok && result.success) {
+                    resultDiv.innerHTML = `
+                        <div class="success">
+                            <h4>用户列表API测试成功！</h4>
+                            <p>总用户数: ${result.data.stats.totalUsers}</p>
+                            <p>在线用户数: ${result.data.stats.onlineUsers}</p>
+                            <p>返回用户数: ${result.data.users.length}</p>
+                            <pre>${JSON.stringify(result.data.users.slice(0, 2), null, 2)}</pre>
+                        </div>
+                    `;
+                } else {
+                    resultDiv.innerHTML = `
+                        <div class="error">
+                            <h4>用户列表API测试失败</h4>
+                            <p>状态码: ${response.status}</p>
+                            <p>错误信息: ${result.message}</p>
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `
+                    <div class="error">
+                        <h4>请求失败</h4>
+                        <p>错误: ${error.message}</p>
+                    </div>
+                `;
+            }
+        }
+
+        // 检查登录状态
+        function checkLoginStatus() {
+            const resultDiv = document.getElementById('statusResult');
+            const token = localStorage.getItem('adminToken');
+            const loginTime = localStorage.getItem('adminLoginTime');
+            const username = localStorage.getItem('adminUsername');
+            
+            if (!token || !loginTime) {
+                resultDiv.innerHTML = `
+                    <div class="error">
+                        <h4>未登录状态</h4>
+                        <p>没有找到登录信息</p>
+                    </div>
+                `;
+                return;
+            }
+
+            const now = Date.now();
+            const loginTimestamp = parseInt(loginTime);
+            const oneDay = 24 * 60 * 60 * 1000;
+            const timeLeft = oneDay - (now - loginTimestamp);
+            
+            if (timeLeft > 0) {
+                const hoursLeft = Math.floor(timeLeft / (60 * 60 * 1000));
+                const minutesLeft = Math.floor((timeLeft % (60 * 60 * 1000)) / (60 * 1000));
+                
+                resultDiv.innerHTML = `
+                    <div class="success">
+                        <h4>已登录状态</h4>
+                        <p>用户名: ${username}</p>
+                        <p>Token: ${token.substring(0, 50)}...</p>
+                        <p>剩余时间: ${hoursLeft}小时${minutesLeft}分钟</p>
+                        <p>登录时间: ${new Date(loginTimestamp).toLocaleString()}</p>
+                    </div>
+                `;
+            } else {
+                resultDiv.innerHTML = `
+                    <div class="error">
+                        <h4>登录已过期</h4>
+                        <p>Token已过期，请重新登录</p>
+                    </div>
+                `;
+            }
+        }
+
+        // 清除登录数据
+        function clearLoginData() {
+            localStorage.removeItem('adminToken');
+            localStorage.removeItem('adminLoginTime');
+            localStorage.removeItem('adminUsername');
+            
+            document.getElementById('clearResult').innerHTML = `
+                <div class="success">
+                    <p>所有登录数据已清除</p>
+                </div>
+            `;
+        }
+
+        // 页面加载时检查登录状态
+        window.onload = function() {
+            checkLoginStatus();
+        };
+    </script>
+</body>
+</html>

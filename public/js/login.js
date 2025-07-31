@@ -40,7 +40,7 @@ class UserManager {
 
     async login(username, password, isAdmin = false) {
         try {
-            const endpoint = isAdmin ? '/api/auth/admin-login' : '/api/auth/login';
+            const endpoint = isAdmin ? '/api/admin/login' : '/api/auth/login';
             const response = await fetch(endpoint, {
                 method: 'POST',
                 headers: {

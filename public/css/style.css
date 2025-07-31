@@ -57,7 +57,7 @@ nav * {
   pointer-events: auto;
 }
 
-/* 用户菜单样式 */
+/* 用户菜单样式 - 默认桌面端显示 */
 .user-menu {
   position: relative;
   display: inline-block;
@@ -73,6 +73,17 @@ nav * {
   transition: all 0.2s ease;
   background: rgba(255, 255, 255, 0.8);
   border: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+/* 确保桌面端用户菜单正常显示 */
+@media (min-width: 769px) {
+  .user-menu {
+    display: inline-block !important;
+  }
+
+  .user-info-mobile {
+    display: none !important;
+  }
 }
 
 .user-avatar:hover {
@@ -641,7 +652,7 @@ nav * {
 }
 
 /* 点赞收藏按钮样式优化 */
-.like-btn, .favorite-btn {
+.like-btn, .favorite-btn, .offline-btn {
   display: flex;
   align-items: center;
   gap: 4px;
@@ -663,12 +674,26 @@ nav * {
   color: #ffc107;
 }
 
+.offline-btn:hover {
+  background: rgba(59, 130, 246, 0.1);
+  color: #3b82f6;
+}
+
 .like-btn.liked {
   color: #ff6b6b;
 }
 
 .favorite-btn.favorited {
   color: #ffc107;
+}
+
+.offline-btn.offline-downloaded {
+  color: #10b981;
+}
+
+.offline-btn.offline-downloaded:hover {
+  background: rgba(16, 185, 129, 0.1);
+  color: #059669;
 }
 
 /* 加载动画 */
@@ -710,6 +735,11 @@ nav * {
 
 .dark-theme nav .text-xhs-red {
   color: #FF6B9D !important; /* 确保导航栏中的标题在深色主题下可见 */
+}
+
+/* 添加深色模式下卡片标题颜色修复 */
+.dark-theme .novel-card .card-content h3 {
+  color: #E0E0E0 !important; /* 亮色文字在深色背景下更易读 */
 }
 
 .dark-theme .novel-card {
@@ -765,35 +795,51 @@ nav * {
   border-color: #374151;
 }
 
-/* 移动端卡片内容简化 */
+/* 移动端导航栏和卡片内容优化 */
 @media (max-width: 768px) {
-  /* 导航栏响应式 */
+  /* 移动端导航栏优化 - 隐藏桌面端用户头像和VIP标识 */
   .nav-right {
     gap: 8px;
   }
 
-  .user-avatar {
-    padding: 6px 10px;
+  /* 隐藏桌面端的用户头像区域 */
+  .user-menu {
+    display: none !important;
   }
 
-  .user-avatar img {
-    width: 28px;
-    height: 28px;
+  /* 移动端用户信息样式 */
+  .user-info-mobile {
+    background: rgba(254, 44, 85, 0.05);
+    border-radius: 8px;
+    margin: 0 4px 8px 4px;
   }
 
-  .username {
-    max-width: 80px;
-    font-size: 14px;
+  .user-info-mobile:hover {
+    background: rgba(254, 44, 85, 0.1);
   }
 
-  .user-dropdown {
-    right: -8px;
-    min-width: 160px;
-  }
-
+  /* 登录按钮样式调整 */
   .login-btn {
     padding: 6px 16px;
     font-size: 13px;
+  }
+
+  /* 移动端汉堡菜单优化 */
+  #hamburgerMenu {
+    max-height: 80vh;
+    overflow-y: auto;
+  }
+
+  /* 移动端菜单项间距优化 */
+  #mobileMenuContent {
+    padding: 16px;
+  }
+
+  #mobileMenuContent a {
+    padding: 12px 16px;
+    margin-bottom: 4px;
+    border-radius: 8px;
+    font-size: 15px;
   }
 
   /* 移动端卡片内容简化 */
@@ -861,6 +907,48 @@ nav * {
 
 /* 小屏幕手机优化 */
 @media (max-width: 480px) {
+  /* 导航栏进一步优化 */
+  nav {
+    height: 56px; /* 减少导航栏高度 */
+  }
+
+  nav .container {
+    padding: 0 12px; /* 减少左右边距 */
+  }
+
+  .text-xhs-red {
+    font-size: 18px; /* 稍微减小Logo字体 */
+  }
+
+  /* 导航栏右侧按钮优化 */
+  #navRightSection {
+    gap: 4px; /* 减少按钮间距 */
+  }
+
+  #navRightSection button {
+    padding: 6px; /* 减少按钮内边距 */
+  }
+
+  #navRightSection button svg {
+    width: 20px;
+    height: 20px;
+  }
+
+  /* 移动端用户信息进一步优化 */
+  .user-info-mobile {
+    margin: 0 2px 6px 2px;
+    padding: 10px 12px;
+  }
+
+  .user-info-mobile .font-medium {
+    font-size: 14px;
+  }
+
+  .user-info-mobile .text-sm {
+    font-size: 12px;
+  }
+
+  /* 小说卡片优化 */
   .novel-card .card-content {
     padding: 10px;
   }
@@ -894,12 +982,18 @@ nav * {
 
   /* 汉堡菜单项优化 */
   #hamburgerMenu .container {
-    padding: 0 16px;
+    padding: 0 12px;
   }
 
   #hamburgerMenu a {
-    padding: 12px 16px;
+    padding: 10px 12px;
     font-size: 14px;
+    margin-bottom: 2px;
+  }
+
+  /* 标签栏位置调整 */
+  .tags-bar {
+    top: 56px; /* 对应减少的导航栏高度 */
   }
 }
 
@@ -1025,13 +1119,13 @@ input:focus-visible {
   }
 
   /* 按钮触摸反馈 */
-  .like-btn, .favorite-btn {
+  .like-btn, .favorite-btn, .offline-btn {
     -webkit-tap-highlight-color: transparent;
     min-width: 32px;
     min-height: 32px;
   }
 
-  .like-btn:active, .favorite-btn:active {
+  .like-btn:active, .favorite-btn:active, .offline-btn:active {
     transform: scale(0.9);
   }
 }

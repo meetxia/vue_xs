@@ -107,12 +107,12 @@ class AdminLogin {
 
         try {
             // 模拟登录请求（实际项目中应该调用后端API）
-            const loginResult = await this.performLogin(username, password);
+            this.loginResponse = await this.performLogin(username, password);
             
-            if (loginResult.success) {
+            if (this.loginResponse.success) {
                 this.handleLoginSuccess(username);
             } else {
-                this.handleLoginError(loginResult.message);
+                this.handleLoginError(this.loginResponse.message);
             }
         } catch (error) {
             console.error('登录过程中发生错误:', error);
@@ -153,30 +153,40 @@ class AdminLogin {
 
     // 执行登录（模拟）
     async performLogin(username, password) {
-        // 模拟网络延迟
-        await new Promise(resolve => setTimeout(resolve, 1000));
-
-        // 简单的用户名密码验证（实际项目中应该调用后端API）
-        const validCredentials = [
-            { username: 'admin', password: '123456' },
-            { username: 'administrator', password: 'admin123' },
-            { username: 'root', password: 'root123' }
-        ];
-
-        const isValid = validCredentials.some(cred => 
-            cred.username === username && cred.password === password
-        );
-
-        if (isValid) {
-            return {
-                success: true,
-                token: this.generateToken(),
-                user: { username, role: 'admin' }
-            };
-        } else {
+        try {
+            // 调用后端API进行登录验证
+            const apiUrl = window.location.origin + '/api/admin/login';
+            console.log('正在请求API:', apiUrl);
+            
+            const response = await fetch(apiUrl, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ username, password })
+            });
+            
+            console.log('API响应状态:', response.status);
+            const result = await response.json();
+            console.log('API响应内容:', result);
+            
+            if (response.ok) {
+                return {
+                    success: true,
+                    token: result.data.token,
+                    user: { username, role: 'admin' }
+                };
+            } else {
+                return {
+                    success: false,
+                    message: result.message || '登录失败，请检查用户名和密码'
+                };
+            }
+        } catch (error) {
+            console.error('登录请求失败:', error);
             return {
                 success: false,
-                message: '用户名或密码错误'
+                message: 'API接口不存在或网络错误，请稍后重试'
             };
         }
     }
@@ -188,11 +198,11 @@ class AdminLogin {
 
     // 处理登录成功
     handleLoginSuccess(username) {
-        const token = this.generateToken();
         const loginTime = Date.now().toString();
+        const loginResponse = this.loginResponse;
 
         // 保存登录信息
-        localStorage.setItem('adminToken', token);
+        localStorage.setItem('adminToken', loginResponse.token);
         localStorage.setItem('adminLoginTime', loginTime);
         localStorage.setItem('adminUsername', username);
 
@@ -208,7 +218,7 @@ class AdminLogin {
 
         // 延迟跳转，让用户看到成功消息
         setTimeout(() => {
-            console.log('管理员登录成功:', { username, token, loginTime });
+            console.log('管理员登录成功:', { username, token: loginResponse.token, loginTime });
             window.location.href = 'admin.html';
         }, 2000);
     }

@@ -3,9 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MOMO的小说站</title>
+    <title>MOMO炒饭店</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/back-to-top.css">
     <script>
         tailwind.config = {
             theme: {
@@ -26,7 +27,7 @@
     <nav class="sticky top-0 bg-white shadow-sm z-50 border-b border-gray-100">
         <div class="container mx-auto px-4 py-3 flex items-center justify-between">
             <!-- Logo -->
-            <div class="text-xhs-red font-bold text-xl">MOMO的小说站</div>
+            <div class="text-xhs-red font-bold text-xl">MOMO炒饭店</div>
 
             <!-- 桌面端搜索框 -->
             <div class="hidden md:flex flex-1 mx-4 max-w-md">
@@ -39,15 +40,18 @@
             </div>
 
             <!-- 右侧功能区 -->
-            <div class="flex items-center space-x-3">
-                <!-- 桌面端用户登录入口 -->
-                <a href="login.html"
-                   class="hidden lg:flex items-center px-3 py-2 text-sm text-gray-600 hover:text-xhs-red transition-colors">
-                    <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
-                    </svg>
-                    登录
-                </a>
+            <div id="navRightSection" class="flex items-center space-x-3">
+                <!-- 用户状态区域，将通过JavaScript动态更新 -->
+                <div id="userStatusArea">
+                    <!-- 默认显示登录按钮，JS加载后会更新 -->
+                    <a href="login.html"
+                       class="hidden lg:flex items-center px-3 py-2 text-sm text-gray-600 hover:text-xhs-red transition-colors">
+                        <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
+                        </svg>
+                        登录
+                    </a>
+                </div>
 
                 <!-- 搜索按钮（移动端） -->
                 <button id="mobileSearchBtn" class="md:hidden p-2 rounded-full hover:bg-gray-100 transition-colors" onclick="toggleMobileSearch();">
@@ -74,7 +78,8 @@
 
         <!-- 汉堡菜单（移动端） -->
         <div id="hamburgerMenu" class="lg:hidden bg-white border-t border-gray-100 transform -translate-y-full opacity-0 transition-all duration-300 ease-in-out overflow-hidden">
-            <div class="container mx-auto px-4 py-4 space-y-2">
+            <div id="mobileMenuContent" class="container mx-auto px-4 py-4 space-y-2">
+                <!-- 移动端菜单内容将通过JavaScript动态更新 -->
                 <a href="login.html"
                    class="flex items-center px-4 py-3 text-gray-700 hover:text-xhs-red hover:bg-gray-50 rounded-lg transition-colors">
                     <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -95,6 +100,20 @@
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path>
                     </svg>
                     阅读历史
+                </a>
+                <a href="offline-manager.html"
+                   class="flex items-center px-4 py-3 text-gray-700 hover:text-xhs-red hover:bg-gray-50 rounded-lg transition-colors">
+                    <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                    </svg>
+                    离线管理
+                </a>
+                <a href="batch-import.html"
+                   class="flex items-center px-4 py-3 text-gray-700 hover:text-xhs-red hover:bg-gray-50 rounded-lg transition-colors">
+                    <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M9 19l3 3m0 0l3-3m-3 3V10"></path>
+                    </svg>
+                    批量导入
                 </a>
             </div>
         </div>
@@ -143,6 +162,15 @@
         <p class="mt-2 text-gray-600">加载中...</p>
     </div>
 
+    <!-- 模块化JavaScript文件 -->
+    <script src="js/main/utils.js"></script>
+    <script src="js/main/theme-manager.js"></script>
+    <script src="js/main/user-manager.js"></script>
+    <script src="js/main/waterfall-layout.js"></script>
+    <script src="js/main/search-manager.js"></script>
+    <script src="js/main/novel-card-renderer.js"></script>
+    <script src="js/offline-reader.js"></script>
     <script src="js/main.js"></script>
+    <script src="js/back-to-top.js"></script>
 </body>
 </html>

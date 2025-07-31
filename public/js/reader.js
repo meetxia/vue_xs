@@ -5,7 +5,17 @@ class NovelReader {
         this.settings = this.loadSettings();
         this.readingProgress = this.loadProgress();
         
+        // 初始化离线管理器（如果存在）
+        this.offlineManager = null;
+        this.isOffline = false;
+        this.initOfflineManager();
+
+        // 初始化分页管理器
+        this.paginationManager = null;
+        this.initPaginationManager();
+
         this.initializeElements();
+        this.initializeFeatureModules();
         this.bindEvents();
         this.applySettings();
         this.loadNovel();
@@ -27,9 +37,26 @@ class NovelReader {
     loadSettings() {
         const defaultSettings = {
             fontSize: 16,
-            theme: 'light'
+            theme: 'light',
+            // 智能排版设置
+            lineHeight: 'auto', // auto, 1.5, 1.8, 2.0, 2.2
+            letterSpacing: 'auto', // auto, normal, 0.5px, 1px, 1.5px
+            paragraphSpacing: 'auto', // auto, normal, large, extra-large
+            textAlign: 'justify', // left, justify
+            // 字体设置
+            fontFamily: 'system', // system, serif, sans-serif, source-han-serif, source-han-sans, noto-serif, noto-sans, fang-song, kai-ti
+            fontWeight: '400', // 300, 400, 500, 600, 700
+            // 页面设置
+            pageWidth: 'auto', // auto, narrow, medium, wide
+            marginSize: 'auto', // auto, small, medium, large
+            // 自定义主题设置
+            customTheme: {
+                backgroundColor: '#FAF5F0',
+                textColor: '#333333',
+                contentBackgroundColor: '#FFFFFF'
+            }
         };
-        
+
         const saved = localStorage.getItem('readerSettings');
         return saved ? { ...defaultSettings, ...JSON.parse(saved) } : defaultSettings;
     }
@@ -51,6 +78,29 @@ class NovelReader {
             fontSizeDown: document.getElementById('fontSizeDown'),
             fontSizeLabel: document.getElementById('fontSizeLabel'),
             themeButtons: document.querySelectorAll('.theme-btn'),
+            // 智能排版控件
+            lineHeightSelect: document.getElementById('lineHeightSelect'),
+            letterSpacingSelect: document.getElementById('letterSpacingSelect'),
+            fontFamilySelect: document.getElementById('fontFamilySelect'),
+            fontWeightSelect: document.getElementById('fontWeightSelect'),
+            fontSizeSlider: document.getElementById('fontSizeSlider'),
+            fontSizeValue: document.getElementById('fontSizeValue'),
+            fontPreview: document.getElementById('fontPreview'),
+            alignButtons: document.querySelectorAll('.align-btn'),
+            // 自定义主题控件
+            customThemeBtn: document.getElementById('customThemeBtn'),
+            customThemePanel: document.getElementById('customThemePanel'),
+            closeCustomTheme: document.getElementById('closeCustomTheme'),
+            bgColorPicker: document.getElementById('bgColorPicker'),
+            bgColorInput: document.getElementById('bgColorInput'),
+            textColorPicker: document.getElementById('textColorPicker'),
+            textColorInput: document.getElementById('textColorInput'),
+            contentBgColorPicker: document.getElementById('contentBgColorPicker'),
+            contentBgColorInput: document.getElementById('contentBgColorInput'),
+            presetColorBtns: document.querySelectorAll('.preset-color-btn'),
+            applyCustomTheme: document.getElementById('applyCustomTheme'),
+            resetCustomTheme: document.getElementById('resetCustomTheme'),
+            // 内容元素
             novelTitle: document.getElementById('novelTitle'),
             novelTitleMain: document.getElementById('novelTitleMain'),
             novelViews: document.getElementById('novelViews'),
@@ -59,8 +109,61 @@ class NovelReader {
             novelSummary: document.getElementById('novelSummary'),
             novelInfo: document.getElementById('novelInfo'),
             novelContent: document.getElementById('novelContent'),
-            progressBar: document.getElementById('progressBar')
+            progressBar: document.getElementById('progressBar'),
+            // TTS控件
+            voiceSelect: document.getElementById('voiceSelect'),
+            speechRateSlider: document.getElementById('speechRateSlider'),
+            speechRateValue: document.getElementById('speechRateValue'),
+            speechPitchSlider: document.getElementById('speechPitchSlider'),
+            speechPitchValue: document.getElementById('speechPitchValue'),
+            speechVolumeSlider: document.getElementById('speechVolumeSlider'),
+            speechVolumeValue: document.getElementById('speechVolumeValue'),
+            ttsTestBtn: document.getElementById('ttsTestBtn'),
+            ttsResetBtn: document.getElementById('ttsResetBtn'),
+            analyticsBtn: document.getElementById('analyticsBtn'),
+            ttsBtn: document.getElementById('ttsBtn'),
+            searchBtn: document.getElementById('searchBtn'),
+            notesBtn: document.getElementById('notesBtn')
+
         };
+        
+    }
+
+    // 初始化功能模块
+    initializeFeatureModules() {
+        // 初始化阅读统计模块
+        if (typeof ReadingAnalytics !== 'undefined') {
+            this.readingAnalytics = new ReadingAnalytics(this.novelId);
+        }
+
+        // 初始化TTS语音朗读模块
+        if (typeof TTSReader !== 'undefined') {
+            this.ttsReader = new TTSReader();
+            this.ttsReader.onReadingStart = () => {
+                this.elements.ttsBtn.innerHTML = '⏸️';
+                this.elements.ttsBtn.title = '暂停朗读';
+            };
+            this.ttsReader.onReadingEnd = () => {
+                this.elements.ttsBtn.innerHTML = '🔊';
+                this.elements.ttsBtn.title = '语音朗读';
+            };
+            this.ttsReader.onReadingPause = () => {
+                this.elements.ttsBtn.innerHTML = '▶️';
+                this.elements.ttsBtn.title = '继续朗读';
+            };
+            this.ttsReader.onReadingResume = () => {
+                this.elements.ttsBtn.innerHTML = '⏸️';
+                this.elements.ttsBtn.title = '暂停朗读';
+            };
+        }
+
+        // 初始化阅读笔记模块
+        if (typeof ReadingNotes !== 'undefined') {
+            this.readingNotes = new ReadingNotes(this.novelId);
+        }
+
+        // 初始化全文搜索模块 - 延迟初始化，等待内容加载
+        this.fullTextSearch = null;
     }
 
     // 绑定事件
@@ -78,6 +181,94 @@ class NovelReader {
         this.elements.themeButtons.forEach(btn => {
             btn.addEventListener('click', () => this.changeTheme(btn.dataset.theme));
         });
+
+        // 智能排版设置事件
+        this.elements.lineHeightSelect.addEventListener('change', (e) => {
+            this.settings.lineHeight = e.target.value;
+            this.applySmartTypography();
+            this.saveSettings();
+            this.showToast('行距已更新');
+        });
+
+        this.elements.letterSpacingSelect.addEventListener('change', (e) => {
+            this.settings.letterSpacing = e.target.value;
+            this.applySmartTypography();
+            this.saveSettings();
+            this.showToast('字距已更新');
+        });
+
+        this.elements.fontFamilySelect.addEventListener('change', (e) => {
+            this.settings.fontFamily = e.target.value;
+            this.updateFontPreview();
+            this.applySmartTypography();
+            this.saveSettings();
+            this.showToast('字体已更新');
+        });
+
+        this.elements.fontWeightSelect.addEventListener('change', (e) => {
+            this.settings.fontWeight = e.target.value;
+            this.updateFontPreview();
+            this.applySmartTypography();
+            this.saveSettings();
+            this.showToast('字体粗细已更新');
+        });
+
+        this.elements.fontSizeSlider.addEventListener('input', (e) => {
+            const newSize = parseFloat(e.target.value);
+            this.settings.fontSize = newSize;
+            this.elements.fontSizeValue.textContent = `${newSize}px`;
+            this.elements.fontSizeLabel.textContent = `${newSize}px`;
+            this.elements.novelContent.style.fontSize = `${newSize}px`;
+            this.updateFontPreview();
+            this.applySmartTypography();
+            this.saveSettings();
+        });
+
+        this.elements.alignButtons.forEach(btn => {
+            btn.addEventListener('click', () => {
+                this.elements.alignButtons.forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                this.settings.textAlign = btn.dataset.align;
+                this.applySmartTypography();
+                this.saveSettings();
+                this.showToast(`已切换到${btn.textContent}`);
+            });
+        });
+
+        // 自定义主题面板事件
+        this.elements.customThemeBtn.addEventListener('click', () => this.openCustomThemePanel());
+        this.elements.closeCustomTheme.addEventListener('click', () => this.closeCustomThemePanel());
+
+        // 颜色选择器同步
+        this.elements.bgColorPicker.addEventListener('input', (e) => {
+            this.elements.bgColorInput.value = e.target.value;
+        });
+        this.elements.bgColorInput.addEventListener('input', (e) => {
+            this.elements.bgColorPicker.value = e.target.value;
+        });
+
+        this.elements.textColorPicker.addEventListener('input', (e) => {
+            this.elements.textColorInput.value = e.target.value;
+        });
+        this.elements.textColorInput.addEventListener('input', (e) => {
+            this.elements.textColorPicker.value = e.target.value;
+        });
+
+        this.elements.contentBgColorPicker.addEventListener('input', (e) => {
+            this.elements.contentBgColorInput.value = e.target.value;
+        });
+        this.elements.contentBgColorInput.addEventListener('input', (e) => {
+            this.elements.contentBgColorPicker.value = e.target.value;
+        });
+
+        // 预设颜色方案
+        this.elements.presetColorBtns.forEach(btn => {
+            btn.addEventListener('click', () => this.applyPresetColors(btn.dataset.preset));
+        });
+
+        // 应用和重置按钮
+        this.elements.applyCustomTheme.addEventListener('click', () => this.applyCustomThemeColors());
+        this.elements.resetCustomTheme.addEventListener('click', () => this.resetCustomThemeColors());
 
         // 滚动事件 - 用于进度保存和进度条更新
         let saveTimer;
@@ -105,6 +296,29 @@ class NovelReader {
         window.addEventListener('beforeunload', () => {
             this.saveProgress();
         });
+
+        // 窗口大小变化时重新应用智能排版
+        let resizeTimer;
+        window.addEventListener('resize', () => {
+            clearTimeout(resizeTimer);
+            resizeTimer = setTimeout(() => {
+                this.applySmartTypography();
+            }, 300); // 防抖处理
+        });
+
+        // 功能按钮事件绑定
+        // 阅读笔记按钮
+        this.elements.notesBtn.addEventListener('click', () => this.toggleNotesPanel());
+
+        // 全文搜索按钮  
+        this.elements.searchBtn.addEventListener('click', () => this.toggleSearchPanel());
+
+        // 语音朗读按钮
+        this.elements.ttsBtn.addEventListener('click', () => this.toggleTTSReading());
+
+        // 阅读统计按钮
+        this.elements.analyticsBtn.addEventListener('click', () => this.openAnalyticsPanel());
+
     }
 
     // 处理键盘快捷键
@@ -159,15 +373,98 @@ class NovelReader {
             btn.classList.toggle('active', btn.dataset.theme === this.settings.theme);
         });
 
+        // 初始化设置控件状态
+        this.initializeSettingsControls();
+
+        // 应用智能排版设置
+        this.applySmartTypography();
+
         // 应用设置面板主题
         this.updateSettingsPanelTheme();
+    }
+
+    // 初始化设置控件状态
+    initializeSettingsControls() {
+        // 设置行距选择器
+        this.elements.lineHeightSelect.value = this.settings.lineHeight;
+
+        // 设置字距选择器
+        this.elements.letterSpacingSelect.value = this.settings.letterSpacing;
+
+        // 设置字体选择器
+        this.elements.fontFamilySelect.value = this.settings.fontFamily;
+
+        // 设置字体粗细选择器
+        this.elements.fontWeightSelect.value = this.settings.fontWeight;
+
+        // 设置字体大小滑块
+        this.elements.fontSizeSlider.value = this.settings.fontSize;
+        this.elements.fontSizeValue.textContent = `${this.settings.fontSize}px`;
+
+        // 设置对齐按钮状态
+        this.elements.alignButtons.forEach(btn => {
+            btn.classList.toggle('active', btn.dataset.align === this.settings.textAlign);
+        });
+
+        // 如果当前是自定义主题，应用自定义样式
+        if (this.settings.theme === 'custom') {
+            this.applyCustomThemeStyles();
+        }
+
+        // 更新字体预览
+        this.updateFontPreview();
+    }
+
+    // 更新字体预览
+    updateFontPreview() {
+        if (!this.elements.fontPreview) return;
+
+        // 应用当前字体设置到预览区域
+        const fontFamily = this.getFontFamilyCSS(this.settings.fontFamily);
+        this.elements.fontPreview.style.fontFamily = fontFamily;
+        this.elements.fontPreview.style.fontWeight = this.settings.fontWeight;
+        this.elements.fontPreview.style.fontSize = `${this.settings.fontSize}px`;
+
+        // 应用当前主题的颜色
+        if (this.settings.theme === 'custom') {
+            this.elements.fontPreview.style.color = this.settings.customTheme.textColor;
+            this.elements.fontPreview.style.backgroundColor = this.settings.customTheme.contentBackgroundColor;
+        } else {
+            // 重置为默认样式，让CSS主题生效
+            this.elements.fontPreview.style.color = '';
+            this.elements.fontPreview.style.backgroundColor = '';
+        }
+    }
+
+    // 获取字体CSS字符串
+    getFontFamilyCSS(fontFamily) {
+        switch (fontFamily) {
+            case 'serif':
+                return '"SimSun", "宋体", "Times New Roman", serif';
+            case 'sans-serif':
+                return '"Microsoft YaHei", "微软雅黑", "PingFang SC", "Helvetica Neue", sans-serif';
+            case 'source-han-serif':
+                return '"Source Han Serif SC", "思源宋体", "Noto Serif CJK SC", "SimSun", serif';
+            case 'source-han-sans':
+                return '"Source Han Sans SC", "思源黑体", "Noto Sans CJK SC", "Microsoft YaHei", sans-serif';
+            case 'noto-serif':
+                return '"Noto Serif SC", "Source Han Serif SC", "SimSun", serif';
+            case 'noto-sans':
+                return '"Noto Sans SC", "Source Han Sans SC", "Microsoft YaHei", sans-serif';
+            case 'fang-song':
+                return '"FangSong", "仿宋", "STFangsong", "华文仿宋", serif';
+            case 'kai-ti':
+                return '"KaiTi", "楷体", "STKaiti", "华文楷体", serif';
+            default:
+                return '-apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif';
+        }
     }
 
     // 更新设置面板主题
     updateSettingsPanelTheme() {
         const panel = this.elements.settingsPanel;
         const theme = this.settings.theme;
-        
+
         if (theme === 'dark') {
             panel.style.background = '#2A2A2A';
             panel.style.color = '#E0E0E0';
@@ -180,32 +477,274 @@ class NovelReader {
         }
     }
 
+    // 智能排版系统核心方法
+    applySmartTypography() {
+        const content = this.elements.novelContent;
+        if (!content) return;
+
+        // 获取屏幕信息
+        const screenInfo = this.getScreenInfo();
+
+        // 计算最优排版参数
+        const typographyParams = this.calculateOptimalTypography(screenInfo);
+
+        // 应用排版样式
+        this.applyTypographyStyles(content, typographyParams);
+
+        // 保存计算结果到设置中
+        this.updateTypographySettings(typographyParams);
+    }
+
+    // 获取屏幕信息
+    getScreenInfo() {
+        return {
+            width: window.innerWidth,
+            height: window.innerHeight,
+            devicePixelRatio: window.devicePixelRatio || 1,
+            isMobile: window.innerWidth <= 768,
+            isTablet: window.innerWidth > 768 && window.innerWidth <= 1024,
+            isDesktop: window.innerWidth > 1024,
+            orientation: window.innerWidth > window.innerHeight ? 'landscape' : 'portrait'
+        };
+    }
+
+    // 计算最优排版参数
+    calculateOptimalTypography(screenInfo) {
+        const fontSize = this.settings.fontSize;
+        const baseParams = {
+            fontSize: fontSize,
+            lineHeight: 1.8,
+            letterSpacing: 0,
+            paragraphSpacing: 1.5,
+            maxWidth: 800,
+            padding: 32
+        };
+
+        // 根据字体大小调整行距
+        if (fontSize <= 14) {
+            baseParams.lineHeight = 1.9;
+        } else if (fontSize >= 20) {
+            baseParams.lineHeight = 1.7;
+        }
+
+        // 根据屏幕尺寸调整参数
+        if (screenInfo.isMobile) {
+            baseParams.maxWidth = Math.min(screenInfo.width - 32, 600);
+            baseParams.padding = 20;
+            baseParams.lineHeight += 0.1; // 移动端增加行距
+
+            if (screenInfo.orientation === 'portrait') {
+                baseParams.letterSpacing = 0.3; // 竖屏时增加字距
+            }
+        } else if (screenInfo.isTablet) {
+            baseParams.maxWidth = Math.min(screenInfo.width - 64, 700);
+            baseParams.padding = 28;
+        } else {
+            // 桌面端根据屏幕宽度调整
+            if (screenInfo.width > 1400) {
+                baseParams.maxWidth = 900;
+                baseParams.padding = 40;
+            }
+        }
+
+        // 根据用户设置覆盖自动计算的值
+        if (this.settings.lineHeight !== 'auto') {
+            baseParams.lineHeight = parseFloat(this.settings.lineHeight);
+        }
+
+        if (this.settings.letterSpacing !== 'auto') {
+            if (this.settings.letterSpacing === 'normal') {
+                baseParams.letterSpacing = 0;
+            } else {
+                baseParams.letterSpacing = parseFloat(this.settings.letterSpacing);
+            }
+        }
+
+        return baseParams;
+    }
+
+    // 应用排版样式
+    applyTypographyStyles(content, params) {
+        // 设置容器样式
+        const container = content.closest('.reader-container');
+        if (container) {
+            container.style.maxWidth = `${params.maxWidth}px`;
+        }
+
+        // 设置内容区域样式
+        content.style.lineHeight = params.lineHeight;
+        content.style.letterSpacing = `${params.letterSpacing}px`;
+        content.style.padding = `${params.padding}px`;
+
+        // 设置段落样式
+        const paragraphs = content.querySelectorAll('p');
+        paragraphs.forEach(p => {
+            p.style.marginBottom = `${params.paragraphSpacing}em`;
+
+            // 根据设置应用文本对齐
+            if (this.settings.textAlign === 'justify') {
+                p.style.textAlign = 'justify';
+                p.style.textJustify = 'inter-ideograph'; // 中文优化
+            } else {
+                p.style.textAlign = this.settings.textAlign;
+            }
+        });
+
+        // 设置标题样式
+        const headings = content.querySelectorAll('h1, h2, h3, h4, h5, h6');
+        headings.forEach(heading => {
+            heading.style.lineHeight = Math.max(1.3, params.lineHeight - 0.3);
+            heading.style.letterSpacing = `${Math.max(0, params.letterSpacing - 0.2)}px`;
+        });
+
+        // 应用字体设置
+        this.applyFontSettings(content);
+    }
+
+    // 应用字体设置
+    applyFontSettings(content) {
+        const fontFamily = this.getFontFamilyCSS(this.settings.fontFamily);
+
+        content.style.fontFamily = fontFamily;
+        content.style.fontWeight = this.settings.fontWeight;
+
+        // 为特定字体添加字体加载检测
+        this.ensureFontLoaded(this.settings.fontFamily);
+    }
+
+    // 确保字体加载
+    ensureFontLoaded(fontFamily) {
+        const fontMap = {
+            'source-han-serif': 'Source Han Serif SC',
+            'source-han-sans': 'Source Han Sans SC',
+            'noto-serif': 'Noto Serif SC',
+            'noto-sans': 'Noto Sans SC'
+        };
+
+        const fontName = fontMap[fontFamily];
+        if (fontName && 'fonts' in document) {
+            document.fonts.load(`16px "${fontName}"`).then(() => {
+                console.log(`字体 ${fontName} 加载完成`);
+            }).catch((error) => {
+                console.warn(`字体 ${fontName} 加载失败:`, error);
+                this.showToast(`字体加载失败，使用备用字体`, 'warning');
+            });
+        }
+    }
+
+    // 更新排版设置
+    updateTypographySettings(params) {
+        // 如果是自动模式，更新计算出的值
+        if (this.settings.lineHeight === 'auto') {
+            this.calculatedLineHeight = params.lineHeight;
+        }
+        if (this.settings.letterSpacing === 'auto') {
+            this.calculatedLetterSpacing = params.letterSpacing;
+        }
+    }
+
     // 加载小说内容
     async loadNovel() {
+        if (!this.novelId) {
+            this.showError('缺少小说ID参数');
+            return;
+        }
+
         try {
+            // 显示加载状态
+            this.elements.novelContent.innerHTML = `
+                <div class="text-center py-20">
+                    <div class="animate-spin w-8 h-8 border-2 border-red-500 border-t-transparent rounded-full mx-auto mb-4"></div>
+                    <p class="text-gray-500">正在加载小说内容...</p>
+                </div>
+            `;
+
+            // 如果有离线管理器，检查是否有离线版本
+            if (this.offlineManager) {
+                try {
+                    const offlineNovel = await this.offlineManager.getNovel(this.novelId);
+
+                    if (offlineNovel) {
+                        console.log('找到离线缓存版本，使用离线数据');
+                        this.isOffline = true;
+                        this.displayNovel(offlineNovel);
+                        this.updateOfflineIndicator(true);
+                        return;
+                    }
+                } catch (offlineError) {
+                    console.error('获取离线数据失败:', offlineError);
+                    // 离线功能异常，但不影响在线阅读，继续执行
+                }
+
+                // 没有离线版本，检查网络
+                if (!navigator.onLine) {
+                    console.log('网络已断开，无法加载小说');
+                    this.showError('网络已断开，无法加载小说内容。请先将小说保存到离线库再阅读。');
+                    this.updateOfflineStatus && this.updateOfflineStatus(false, true);
+                    return;
+                }
+            } else if (!navigator.onLine) {
+                // 没有离线管理器且网络断开
+                console.log('网络已断开且离线功能不可用');
+                this.showError('网络已断开，且离线阅读功能不可用。请检查网络连接后重试。');
+                return;
+            }
+            
             // 尝试从API加载
-            const response = await fetch('/api/novels');
+            console.log('正在请求小说ID:', this.novelId);
+            const response = await fetch('/api/novels/' + this.novelId);
+            console.log('API响应状态:', response.status);
+            
             if (response.ok) {
                 const data = await response.json();
-                const novel = data.novels.find(n => n.id.toString() === this.novelId);
-
-                if (novel) {
-                    this.displayNovel(novel);
+                console.log('API响应数据:', data);
+                
+                if (data.success && data.data) {
+                    this.isOffline = false;
+                    this.displayNovel(data.data);
+                    this.updateOfflineIndicator(false);
+                    return;
+                } else {
+                    console.error('API返回失败:', data);
+                    this.showError(data.message || '获取小说内容失败');
+                    return;
+                }
+            } else {
+                console.error('API请求失败，状态码:', response.status);
+                // 如果是404，显示小说不存在
+                if (response.status === 404) {
+                    this.showError('小说不存在');
                     return;
                 }
             }
 
-            // 如果没有找到，显示示例内容
+            // 如果API失败，尝试显示示例内容
+            console.log('API加载失败，显示示例内容');
             this.displaySampleNovel();
 
         } catch (error) {
             console.error('加载小说失败:', error);
-            this.displaySampleNovel();
+            
+            // 网络错误时，尝试切换到离线模式
+            if (this.offlineManager && !navigator.onLine) {
+                const offlineNovel = await this.offlineManager.getNovel(this.novelId);
+                if (offlineNovel) {
+                    this.isOffline = true;
+                    this.displayNovel(offlineNovel);
+                    this.updateOfflineIndicator(true);
+                    return;
+                }
+            }
+            
+            // 最后兜底：显示错误信息
+            this.showError('加载失败: ' + (error.message || '网络连接错误'));
         }
     }
 
     // 显示小说内容
     displayNovel(novel) {
+        console.log('开始显示小说内容:', novel);
+        
         // 更新页面标题
         document.title = `${novel.title} - 小红书风格小说网站`;
         
@@ -228,15 +767,55 @@ class NovelReader {
         // 显示小说信息卡片
         this.elements.novelInfo.style.display = 'block';
         
+        // 检查小说内容
+        let content = novel.content;
+        console.log('小说原始内容:', content);
+        
+        // 如果没有内容或内容为空，生成示例内容
+        if (!content || content.trim() === '') {
+            console.log('小说内容为空，生成示例内容');
+            content = this.generateSampleContent(novel.title);
+        }
+        
         // 格式化并显示内容
-        const content = novel.content || this.generateSampleContent(novel.title);
-        this.elements.novelContent.innerHTML = this.formatContent(content);
+        const formattedContent = this.formatContent(content);
+        console.log('格式化后的内容:', formattedContent);
+        
+        // 使用分页管理器处理内容
+        if (this.paginationManager) {
+            console.log('使用分页管理器处理内容');
+            this.paginationManager.processContent(formattedContent);
+        } else {
+            // 如果分页管理器不可用，直接显示内容
+            console.log('分页管理器不可用，直接显示内容');
+            this.elements.novelContent.innerHTML = formattedContent;
+        }
+
+        // 兜底检查：如果内容区域仍然显示加载状态，强制更新
+        setTimeout(() => {
+            const contentElement = this.elements.novelContent;
+            if (contentElement.innerHTML.includes('正在加载小说内容')) {
+                console.log('检测到内容仍在加载状态，强制更新内容');
+                contentElement.innerHTML = formattedContent;
+            }
+        }, 500);
 
         // 恢复阅读位置
         setTimeout(() => this.restoreProgress(), 100);
         
         // 增加阅读量（模拟）
         this.incrementViews(novel.id);
+        
+        // 初始化评论系统
+        console.log('准备初始化评论系统，小说ID:', novel.id);
+        setTimeout(() => {
+            if (typeof initCommentsSystem === 'function') {
+                console.log('调用initCommentsSystem函数');
+                initCommentsSystem(novel.id);
+            } else {
+                console.error('initCommentsSystem函数未定义');
+            }
+        }, 500); // 延迟一下确保DOM完全加载
     }
 
     // 显示示例小说
@@ -259,9 +838,28 @@ class NovelReader {
         // 显示小说信息卡片
         this.elements.novelInfo.style.display = 'block';
         
-        this.elements.novelContent.innerHTML = this.formatContent(sampleContent);
+        const formattedContent = this.formatContent(sampleContent);
+        
+        // 使用分页管理器处理内容
+        if (this.paginationManager) {
+            this.paginationManager.processContent(formattedContent);
+        } else {
+            // 如果分页管理器不可用，直接显示内容
+            this.elements.novelContent.innerHTML = formattedContent;
+        }
 
         setTimeout(() => this.restoreProgress(), 100);
+        
+        // 初始化评论系统
+        console.log('准备初始化评论系统（示例），小说ID:', this.novelId);
+        setTimeout(() => {
+            if (typeof initCommentsSystem === 'function') {
+                console.log('调用initCommentsSystem函数（示例）');
+                initCommentsSystem(this.novelId);
+            } else {
+                console.error('initCommentsSystem函数未定义（示例）');
+            }
+        }, 500); // 延迟一下确保DOM完全加载
     }
 
     // 生成示例内容
@@ -314,7 +912,93 @@ class NovelReader {
 
         夜深了，但她却毫无睡意。她站在窗前，看着城市的灯火，想着明天的相遇，心中五味杂陈。
 
-        这个夜晚，注定无眠。`;
+        这个夜晚，注定无眠。
+
+        第二天清晨，阳光透过百叶窗的缝隙洒在她的脸上。她几乎一夜未眠，但精神却异常亢奋。
+
+        她花了很长时间挑选衣服，最终选择了一件简单的白色衬衫和米色的长裙，那是他曾经说过最适合她的搭配。
+
+        来到咖啡店时，她看到他已经坐在那个熟悉的位置，那个三年前他们常坐的角落。
+
+        时间仿佛静止了。他依然那么英俊，只是眉宇间多了几分成熟的沧桑。
+
+        "你来了。"他站起身，声音里带着温柔。
+
+        "嗯。"她点点头，心跳如鼓。
+
+        他们相对而坐，空气中弥漫着熟悉的咖啡香味，但彼此之间却隔着三年的时光。
+
+        "你过得怎么样？"他问道，眼中满含关切。
+
+        "还好。"她的回答简短，但内心却波涛汹涌。
+
+        "我听说，你升职了，现在是市场部的总监。"
+
+        她惊讶地看着他："你怎么知道？"
+
+        他苦笑一下："我一直在关注你的消息。这三年来，我从未真正离开过。"
+
+        "那你为什么走？"她的声音有些哽咽。
+
+        "因为我以为，那样对我们都好。我以为时间会让我们忘记彼此，各自寻找更合适的人。"
+
+        "结果呢？"
+
+        "结果我发现，有些人，有些情感，是永远无法忘记的。无论走到哪里，你都在我心里。"
+
+        她的眼泪再次滑落："你知道这三年我是怎么过的吗？每当夜深人静的时候，我都会想起你，想起我们在一起的点点滴滴。"
+
+        "对不起。"他伸手轻抚她的脸颊，"如果可以重来，我绝不会离开你。"
+
+        "可是现在说这些还有什么意义呢？"她推开他的手，"时间不会倒流，我们也回不到从前了。"
+
+        "为什么不能？"他认真地看着她，"只要我们还爱着彼此，就还有机会。"
+
+        "爱？"她苦笑，"三年了，你觉得爱还在吗？"
+
+        "在。"他毫不犹豫地回答，"至少对我来说，从未改变。"
+
+        她沉默了很久，内心在激烈地斗争着。理智告诉她应该忘记过去，但感情却让她想要重新开始。
+
+        "我需要时间考虑。"她最终说道。
+
+        "我等你。"他温柔地说，"无论多久，我都等你。"
+
+        离开咖啡店后，她的心情更加复杂了。原本平静的生活因为他的出现而再次波澜起伏。
+
+        接下来的几天，她陷入了深深的纠结中。一方面，她不愿意再次承受分离的痛苦；另一方面，她又无法否认内心对他的思念。
+
+        就在这时，公司突然派她去国外出差一个月。也许，这是上天给她的一个思考的机会。
+
+        在飞机上，她望着窗外的云海，想起了他们第一次旅行时的情景。那时的他们多么快乐，多么相爱。
+
+        一个月后，她回到了这座城市。心中已经有了答案。
+
+        她再次来到那家咖啡店，他还在那个位置等她。
+
+        "我想过了。"她坐下来，直视着他的眼睛。
+
+        "无论结果如何，我都接受。"他平静地说。
+
+        "我们重新开始吧。"她的声音很轻，但很坚定。
+
+        他的眼中瞬间绽放出光芒："真的吗？"
+
+        "真的。但是，这次我们要慢慢来，重新了解彼此，重新建立信任。"
+
+        "好。"他点头，伸出手握住她的手，"这次，我不会再离开了。"
+
+        后来的日子里，他们确实慢慢来。像初恋一样小心翼翼地呵护着这份重新获得的感情。
+
+        他们一起看电影，一起散步，一起做饭，重新学着如何相爱。
+
+        虽然偶尔还会想起过去的痛苦，但更多的是对未来的憧憬。
+
+        因为他们都明白，真正的爱情值得等待，值得重新开始。
+
+        而有些人，注定要在生命中重逢，无论经历多少分离与重聚。
+
+        这就是他们的故事，一个关于爱情、分离与重逢的故事。`;
     }
 
     // 打开设置面板
@@ -335,9 +1019,9 @@ class NovelReader {
 
     // 改变字体大小
     changeFontSize(delta) {
-        const newSize = Math.max(14, Math.min(24, this.settings.fontSize + delta));
+        const newSize = Math.max(12, Math.min(24, this.settings.fontSize + delta));
         if (newSize === this.settings.fontSize) {
-            const message = newSize === 14 ? '字体已经是最小了' : '字体已经是最大了';
+            const message = newSize === 12 ? '字体已经是最小了' : '字体已经是最大了';
             this.showToast(message, 'info');
             return;
         }
@@ -346,6 +1030,9 @@ class NovelReader {
 
         this.elements.novelContent.style.fontSize = `${newSize}px`;
         this.elements.fontSizeLabel.textContent = `${newSize}px`;
+
+        // 重新应用智能排版
+        this.applySmartTypography();
 
         this.saveSettings();
         this.showToast(`字体大小已调整为 ${newSize}px`);
@@ -370,9 +1057,180 @@ class NovelReader {
         const themeNames = {
             'light': '白天模式',
             'sepia': '护眼模式',
-            'dark': '夜间模式'
+            'dark': '夜间模式',
+            'paper': '纸质感',
+            'green': '护眼绿',
+            'blue': '海洋蓝',
+            'custom': '自定义主题'
         };
         this.showToast(`已切换到${themeNames[theme]}`);
+
+        // 如果切换到自定义主题，应用自定义颜色
+        if (theme === 'custom') {
+            this.applyCustomThemeStyles();
+        }
+    }
+
+    // 打开自定义主题面板
+    openCustomThemePanel() {
+        this.closeSettings(); // 先关闭设置面板
+        this.elements.customThemePanel.classList.add('active');
+        this.elements.settingsOverlay.classList.remove('opacity-0', 'invisible');
+        this.elements.settingsOverlay.classList.add('opacity-100', 'visible');
+        document.body.style.overflow = 'hidden';
+
+        // 初始化颜色选择器的值
+        this.initializeCustomThemeControls();
+    }
+
+    // 关闭自定义主题面板
+    closeCustomThemePanel() {
+        this.elements.customThemePanel.classList.remove('active');
+        this.elements.settingsOverlay.classList.remove('opacity-100', 'visible');
+        this.elements.settingsOverlay.classList.add('opacity-0', 'invisible');
+        document.body.style.overflow = '';
+    }
+
+    // 初始化自定义主题控件
+    initializeCustomThemeControls() {
+        const custom = this.settings.customTheme;
+
+        this.elements.bgColorPicker.value = custom.backgroundColor;
+        this.elements.bgColorInput.value = custom.backgroundColor;
+        this.elements.textColorPicker.value = custom.textColor;
+        this.elements.textColorInput.value = custom.textColor;
+        this.elements.contentBgColorPicker.value = custom.contentBackgroundColor;
+        this.elements.contentBgColorInput.value = custom.contentBackgroundColor;
+    }
+
+    // 应用预设颜色方案
+    applyPresetColors(preset) {
+        const presets = {
+            warm: {
+                backgroundColor: '#FFF8DC',
+                textColor: '#8B4513',
+                contentBackgroundColor: '#FFFEF7'
+            },
+            cool: {
+                backgroundColor: '#F0F8FF',
+                textColor: '#4682B4',
+                contentBackgroundColor: '#FAFCFF'
+            },
+            vintage: {
+                backgroundColor: '#F5F5DC',
+                textColor: '#696969',
+                contentBackgroundColor: '#FEFEFE'
+            },
+            forest: {
+                backgroundColor: '#F0FFF0',
+                textColor: '#228B22',
+                contentBackgroundColor: '#FAFFFA'
+            },
+            sunset: {
+                backgroundColor: '#FFE4E1',
+                textColor: '#CD5C5C',
+                contentBackgroundColor: '#FFF5F5'
+            },
+            ocean: {
+                backgroundColor: '#E0FFFF',
+                textColor: '#008B8B',
+                contentBackgroundColor: '#F0FFFF'
+            }
+        };
+
+        const colors = presets[preset];
+        if (colors) {
+            this.elements.bgColorPicker.value = colors.backgroundColor;
+            this.elements.bgColorInput.value = colors.backgroundColor;
+            this.elements.textColorPicker.value = colors.textColor;
+            this.elements.textColorInput.value = colors.textColor;
+            this.elements.contentBgColorPicker.value = colors.contentBackgroundColor;
+            this.elements.contentBgColorInput.value = colors.contentBackgroundColor;
+        }
+    }
+
+    // 应用自定义主题颜色
+    applyCustomThemeColors() {
+        // 保存自定义颜色到设置
+        this.settings.customTheme = {
+            backgroundColor: this.elements.bgColorInput.value,
+            textColor: this.elements.textColorInput.value,
+            contentBackgroundColor: this.elements.contentBgColorInput.value
+        };
+
+        // 切换到自定义主题
+        this.settings.theme = 'custom';
+        document.body.className = 'theme-custom';
+
+        // 更新主题按钮状态
+        this.elements.themeButtons.forEach(btn => {
+            btn.classList.remove('active');
+        });
+
+        // 应用自定义样式
+        this.applyCustomThemeStyles();
+
+        // 保存设置
+        this.saveSettings();
+
+        // 关闭面板并显示提示
+        this.closeCustomThemePanel();
+        this.showToast('自定义主题已应用');
+    }
+
+    // 应用自定义主题样式
+    applyCustomThemeStyles() {
+        const custom = this.settings.customTheme;
+        const root = document.documentElement;
+
+        // 设置CSS变量
+        root.style.setProperty('--custom-bg-color', custom.backgroundColor);
+        root.style.setProperty('--custom-text-color', custom.textColor);
+        root.style.setProperty('--custom-content-bg-color', custom.contentBackgroundColor);
+
+        // 应用到页面元素
+        document.body.style.backgroundColor = custom.backgroundColor;
+        document.body.style.color = custom.textColor;
+
+        // 应用到内容区域
+        const novelInfo = this.elements.novelInfo;
+        const novelContent = this.elements.novelContent;
+
+        if (novelInfo) {
+            novelInfo.style.backgroundColor = custom.contentBackgroundColor;
+            novelInfo.style.color = custom.textColor;
+        }
+
+        if (novelContent) {
+            novelContent.style.backgroundColor = custom.contentBackgroundColor;
+            novelContent.style.color = custom.textColor;
+        }
+
+        // 应用到设置面板
+        const settingsPanel = this.elements.settingsPanel;
+        if (settingsPanel) {
+            settingsPanel.style.backgroundColor = custom.contentBackgroundColor;
+            settingsPanel.style.color = custom.textColor;
+        }
+
+        // 应用到头部
+        const header = document.querySelector('header');
+        if (header) {
+            header.style.backgroundColor = custom.backgroundColor + 'E6'; // 90% opacity
+            header.style.color = custom.textColor;
+        }
+    }
+
+    // 重置自定义主题颜色
+    resetCustomThemeColors() {
+        this.elements.bgColorPicker.value = '#FAF5F0';
+        this.elements.bgColorInput.value = '#FAF5F0';
+        this.elements.textColorPicker.value = '#333333';
+        this.elements.textColorInput.value = '#333333';
+        this.elements.contentBgColorPicker.value = '#FFFFFF';
+        this.elements.contentBgColorInput.value = '#FFFFFF';
+
+        this.showToast('已重置为默认颜色');
     }
 
     // 更新进度条
@@ -395,6 +1253,16 @@ class NovelReader {
             percentage: percentage,
             timestamp: Date.now()
         };
+        
+        // 如果有分页，也保存分页信息
+        if (this.paginationManager) {
+            const paginationInfo = this.paginationManager.getPaginationInfo();
+            progress.pagination = {
+                currentPage: paginationInfo.currentPage,
+                totalPages: paginationInfo.totalPages,
+                hasMultiplePages: paginationInfo.hasMultiplePages
+            };
+        }
         
         localStorage.setItem(`novel-${this.novelId}-progress`, JSON.stringify(progress));
     }
@@ -480,12 +1348,32 @@ class NovelReader {
 
     // 显示错误信息
     showError(message) {
+        // 检查是否是离线相关错误
+        const isOfflineError = message.includes('离线') || message.includes('数据库') || message.includes('IndexedDB');
+
+        let additionalInfo = '';
+        if (isOfflineError) {
+            additionalInfo = `
+                <div class="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg text-left max-w-md mx-auto">
+                    <h4 class="font-medium text-blue-800 mb-2">解决方案：</h4>
+                    <ul class="text-sm text-blue-700 space-y-1">
+                        <li>• 刷新页面重试</li>
+                        <li>• 检查浏览器是否允许存储数据</li>
+                        <li>• 清理浏览器缓存后重试</li>
+                        <li>• 尝试使用无痕模式</li>
+                        <li>• 您仍可以正常在线阅读</li>
+                    </ul>
+                </div>
+            `;
+        }
+
         this.elements.novelContent.innerHTML = `
             <div class="text-center py-20">
-                <div class="text-6xl mb-4">😔</div>
-                <h2 class="text-xl font-semibold text-gray-700 mb-2">出错了</h2>
+                <div class="text-6xl mb-4">${isOfflineError ? '💾' : '😔'}</div>
+                <h2 class="text-xl font-semibold text-gray-700 mb-2">${isOfflineError ? '离线功能异常' : '出错了'}</h2>
                 <p class="text-gray-500 mb-6">${message}</p>
-                <div class="space-x-4">
+                ${additionalInfo}
+                <div class="space-x-4 mt-6">
                     <button onclick="location.reload()"
                             class="px-6 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors">
                         重新加载
@@ -523,6 +1411,345 @@ class NovelReader {
                 }
             }, 300);
         }, 3000);
+    }
+
+    // 初始化分页管理器
+    initPaginationManager() {
+        if (typeof PaginationManager !== 'undefined') {
+            this.paginationManager = new PaginationManager(this);
+            console.log('分页管理器初始化成功');
+        } else {
+            console.warn('PaginationManager 未加载，分页功能不可用');
+        }
+    }
+
+    // 初始化离线管理器
+    async initOfflineManager() {
+        if (typeof OfflineReaderManager !== 'undefined') {
+            try {
+                this.offlineManager = new OfflineReaderManager();
+                console.log('离线管理器创建成功');
+
+                // 检查当前小说是否已离线保存（延迟初始化数据库）
+                if (this.novelId) {
+                    try {
+                        const isOfflineAvailable = await this.offlineManager.isNovelAvailableOffline(this.novelId);
+                        this.updateOfflineIndicator(isOfflineAvailable);
+                        console.log('离线状态检查完成');
+                    } catch (error) {
+                        console.error('检查离线状态失败:', error);
+                        // 不影响主要功能，只是无法显示离线状态
+                        this.showOfflineError(error.message);
+                    }
+                }
+            } catch (error) {
+                console.error('离线管理器初始化失败:', error);
+                this.offlineManager = null;
+
+                // 显示用户友好的错误提示
+                this.showOfflineError(error.message);
+            }
+        } else {
+            console.warn('OfflineReaderManager 未加载，离线功能不可用');
+        }
+    }
+
+    // 显示离线功能错误提示
+    showOfflineError(message) {
+        // 隐藏离线相关的UI元素
+        const offlineIndicator = document.getElementById('offlineIndicator');
+        if (offlineIndicator) {
+            offlineIndicator.style.display = 'none';
+        }
+
+        // 只在严重错误时显示通知，避免过度打扰用户
+        if (message.includes('不支持') || message.includes('被阻止') || message.includes('重试')) {
+            // 创建错误提示元素
+            const errorDiv = document.createElement('div');
+            errorDiv.className = 'offline-error-notice';
+            errorDiv.innerHTML = `
+                <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-3 mb-4">
+                    <div class="flex items-start">
+                        <div class="flex-shrink-0">
+                            <svg class="h-4 w-4 text-yellow-400 mt-0.5" viewBox="0 0 20 20" fill="currentColor">
+                                <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
+                            </svg>
+                        </div>
+                        <div class="ml-3 flex-1">
+                            <h3 class="text-sm font-medium text-yellow-800">离线功能暂时不可用</h3>
+                            <div class="mt-1 text-sm text-yellow-700">
+                                <p>您仍可以正常在线阅读</p>
+                            </div>
+                            <div class="mt-2">
+                                <button onclick="this.parentElement.parentElement.parentElement.parentElement.remove()"
+                                        class="text-xs bg-yellow-100 text-yellow-800 px-2 py-1 rounded hover:bg-yellow-200 transition-colors">
+                                    知道了
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            // 插入到页面顶部
+            const container = document.querySelector('.reader-container');
+            if (container) {
+                container.insertBefore(errorDiv, container.firstChild);
+
+                // 5秒后自动隐藏
+                setTimeout(() => {
+                    if (errorDiv.parentNode) {
+                        errorDiv.remove();
+                    }
+                }, 5000);
+            }
+        }
+    }
+
+    // 更新离线状态指示器
+    updateOfflineIndicator(isOffline) {
+        const indicator = document.getElementById('offlineIndicator');
+        if (indicator) {
+            if (isOffline) {
+                indicator.classList.remove('hidden');
+            } else {
+                indicator.classList.add('hidden');
+            }
+        }
+    }
+
+    updateOfflineStatus(isOffline, isOfflineNeeded = false) {
+        // 更新状态指示器
+        if (this.elements.offlineStatus) {
+            if (isOffline) {
+                this.elements.offlineStatus.innerHTML = `
+                    <span class="offline-badge">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 15a4 4 0 004 4h9a5 5 0 10-.1-9.999 5.002 5.002 0 10-9.78 2.096A4.001 4.001 0 003 15z" />
+                        </svg>
+                        离线阅读中
+                    </span>
+                `;
+                this.elements.offlineStatus.classList.remove('hidden');
+            } else if (isOfflineNeeded) {
+                this.elements.offlineStatus.innerHTML = `
+                    <span class="offline-needed-badge">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        需要离线保存
+                    </span>
+                `;
+                this.elements.offlineStatus.classList.remove('hidden');
+            } else {
+                this.elements.offlineStatus.classList.add('hidden');
+            }
+        }
+        
+        // 更新离线下载按钮状态
+        if (this.elements.offlineDownloadBtn) {
+            if (isOffline) {
+                this.elements.offlineDownloadBtn.innerHTML = `
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-1" viewBox="0 0 20 20" fill="currentColor">
+                        <path d="M10 2a5 5 0 00-5 5v2a2 2 0 00-2 2v5a2 2 0 002 2h10a2 2 0 002-2v-5a2 2 0 00-2-2H7V7a3 3 0 015.905-.75 1 1 0 001.937-.5A5.002 5.002 0 0010 2z" />
+                    </svg>
+                    已保存离线
+                `;
+                this.elements.offlineDownloadBtn.classList.add('saved');
+            } else {
+                this.elements.offlineDownloadBtn.innerHTML = `
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                    </svg>
+                    保存离线阅读
+                `;
+                this.elements.offlineDownloadBtn.classList.remove('saved');
+            }
+        }
+    }
+    
+    // 下载小说供离线阅读
+    async downloadForOfflineReading() {
+        if (!this.novelId) {
+            this.showToast('无效的小说ID', 'error');
+            return;
+        }
+        
+        try {
+            this.showToast('正在保存小说到离线库...', 'info');
+            
+            const result = await this.offlineManager.downloadNovel(this.novelId);
+            
+            if (result.success) {
+                this.showToast(result.message, 'success');
+                this.updateOfflineStatus(true);
+            } else {
+                this.showToast(result.message, 'warning');
+            }
+        } catch (error) {
+            console.error('保存离线阅读失败:', error);
+            this.showToast('保存失败: ' + (error.message || '未知错误'), 'error');
+        }
+    }
+    
+    // 切换阅读笔记面板
+    toggleNotesPanel() {
+        if (!this.readingNotes) {
+            this.showToast('阅读笔记功能未加载', 'error');
+            return;
+        }
+        
+        // 显示使用提示
+        this.showToast('选择文本后右键或使用快捷键：Ctrl+H高亮、Ctrl+U下划线、Ctrl+N添加笔记', 'info');
+        
+        // 如果有现有笔记，显示笔记摘要
+        const notesSummary = this.readingNotes.getNotesSummary();
+        if (notesSummary.total > 0) {
+            this.showToast(`当前共有 ${notesSummary.total} 个笔记：${notesSummary.highlights}个高亮，${notesSummary.underlines}个下划线，${notesSummary.textNotes}个文字笔记`, 'info');
+        }
+    }
+
+    // 切换全文搜索面板
+    toggleSearchPanel() {
+        // 初始化搜索功能（如果尚未初始化）
+        if (!this.fullTextSearch && typeof FullTextSearch !== 'undefined') {
+            const contentElement = document.getElementById('novelContent');
+            if (contentElement) {
+                this.fullTextSearch = new FullTextSearch(contentElement);
+            }
+        }
+        
+        if (!this.fullTextSearch) {
+            this.showToast('全文搜索功能未加载', 'error');
+            return;
+        }
+        
+        // 显示搜索面板
+        this.fullTextSearch.show();
+    }
+
+    // 切换TTS语音朗读
+    toggleTTSReading() {
+        if (!this.ttsReader) {
+            this.showToast('语音朗读功能未加载', 'error');
+            return;
+        }
+
+        if (!this.ttsReader.isSupported()) {
+            this.showToast('您的浏览器不支持语音朗读功能', 'error');
+            return;
+        }
+
+        if (this.ttsReader.isReading) {
+            if (this.ttsReader.isPaused) {
+                // 继续朗读
+                this.ttsReader.resume();
+                this.showToast('继续朗读', 'info');
+            } else {
+                // 暂停朗读
+                this.ttsReader.pause();
+                this.showToast('已暂停', 'info');
+            }
+        } else {
+            // 开始朗读
+            const contentElement = document.getElementById('novelContent');
+            if (contentElement) {
+                const textContent = contentElement.textContent;
+                if (textContent && textContent.trim()) {
+                    this.ttsReader.speak(textContent);
+                    this.showToast('开始朗读', 'info');
+                } else {
+                    this.showToast('没有可朗读的内容', 'error');
+                }
+            }
+        }
+    }
+
+    // 打开阅读统计面板
+    openAnalyticsPanel() {
+        if (!this.readingAnalytics) {
+            this.showToast('阅读统计功能未加载', 'error');
+            return;
+        }
+
+        // 生成阅读报告
+        const report = this.readingAnalytics.generateReadingReport();
+        
+        // 创建统计面板
+        this.createAnalyticsModal(report);
+    }
+
+    // 创建阅读统计模态框
+    createAnalyticsModal(report) {
+        // 移除现有模态框
+        const existingModal = document.getElementById('analyticsModal');
+        if (existingModal) {
+            existingModal.remove();
+        }
+
+        const modal = document.createElement('div');
+        modal.id = 'analyticsModal';
+        modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50';
+        
+        const modalContent = document.createElement('div');
+        modalContent.className = 'bg-white rounded-lg p-6 max-w-md w-full mx-4 max-h-80vh overflow-y-auto';
+        
+        modalContent.innerHTML = `
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-lg font-bold">阅读统计</h3>
+                <button id="closeAnalytics" class="text-gray-500 hover:text-gray-700 text-xl">&times;</button>
+            </div>
+            
+            <div class="space-y-4">
+                <div class="bg-blue-50 p-4 rounded-lg">
+                    <h4 class="font-semibold text-blue-800 mb-2">本次阅读</h4>
+                    <div class="text-sm text-blue-600 space-y-1">
+                        <p>阅读时长: ${Math.round(report.currentSession.duration)} 分钟</p>
+                        <p>已读字数: ${report.currentSession.wordsRead} 字</p>
+                        <p>阅读速度: ${report.currentSession.readingSpeed} 字/分钟</p>
+                        <p>专注时间: ${Math.round(report.currentSession.activeTime)} 分钟</p>
+                    </div>
+                </div>
+                
+                <div class="bg-green-50 p-4 rounded-lg">
+                    <h4 class="font-semibold text-green-800 mb-2">累计统计</h4>
+                    <div class="text-sm text-green-600 space-y-1">
+                        <p>总阅读时长: ${Math.round(report.cumulative.totalReadingTime)} 分钟</p>
+                        <p>总阅读字数: ${report.cumulative.totalWordsRead} 字</p>
+                        <p>平均阅读速度: ${report.cumulative.avgReadingSpeed} 字/分钟</p>
+                        <p>阅读会话: ${report.cumulative.sessionCount} 次</p>
+                    </div>
+                </div>
+                
+                ${Object.keys(report.dailyStats).length > 0 ? `
+                <div class="bg-purple-50 p-4 rounded-lg">
+                    <h4 class="font-semibold text-purple-800 mb-2">最近阅读记录</h4>
+                    <div class="text-sm text-purple-600 space-y-1 max-h-24 overflow-y-auto">
+                        ${Object.entries(report.dailyStats)
+                            .sort(([a], [b]) => new Date(b).getTime() - new Date(a).getTime())
+                            .slice(0, 5)
+                            .map(([date, stats]) => `
+                                <p>${new Date(date).toLocaleDateString()}: ${Math.round(stats.readingTime)} 分钟, ${stats.wordsRead} 字</p>
+                            `).join('')}
+                    </div>
+                </div>
+                ` : ''}
+            </div>
+        `;
+        
+        modal.appendChild(modalContent);
+        document.body.appendChild(modal);
+
+        // 绑定关闭事件
+        document.getElementById('closeAnalytics').addEventListener('click', () => {
+            modal.remove();
+        });
+        
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) {
+                modal.remove();
+            }
+        });
     }
 }
 

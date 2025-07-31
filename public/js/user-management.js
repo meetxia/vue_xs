@@ -7,7 +7,86 @@ class UserManagement {
         this.stats = {};
         this.onlineUsers = [];
         
+        // 检查登录状态
+        if (!this.checkLoginStatus()) {
+            return;
+        }
+        
         this.init();
+    }
+    
+    // 检查登录状态
+    checkLoginStatus() {
+        const token = localStorage.getItem('adminToken');
+        const loginTime = localStorage.getItem('adminLoginTime');
+        
+        if (!token || !loginTime) {
+            this.redirectToLogin('未登录');
+            return false;
+        }
+        
+        const now = Date.now();
+        const loginTimestamp = parseInt(loginTime);
+        const oneDay = 24 * 60 * 60 * 1000; // 24小时
+        
+        if (now - loginTimestamp >= oneDay) {
+            this.clearLoginData();
+            this.redirectToLogin('登录已过期');
+            return false;
+        }
+        
+        return true;
+    }
+    
+    // 清除登录数据
+    clearLoginData() {
+        localStorage.removeItem('adminToken');
+        localStorage.removeItem('adminLoginTime');
+        localStorage.removeItem('adminUsername');
+    }
+    
+    // 重定向到登录页面
+    redirectToLogin(message = '请先登录') {
+        alert(message + '，即将跳转到登录页面');
+        window.location.href = 'admin-login.html';
+    }
+    
+    // 获取认证头
+    getAuthHeaders() {
+        const token = localStorage.getItem('adminToken');
+        return token ? {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+        } : {
+            'Content-Type': 'application/json'
+        };
+    }
+    
+    // 通用API调用方法，自动处理权限错误
+    async apiCall(url, options = {}) {
+        try {
+            const response = await fetch(url, {
+                ...options,
+                headers: {
+                    ...this.getAuthHeaders(),
+                    ...(options.headers || {})
+                }
+            });
+            
+            const data = await response.json();
+            
+            if (response.status === 401 || response.status === 403) {
+                // 权限问题，清除登录状态并重定向
+                this.clearLoginData();
+                this.redirectToLogin(data.message || '权限验证失败');
+                return null;
+            }
+            
+            return { response, data };
+        } catch (error) {
+            console.error('API调用失败:', error);
+            throw error;
+        }
     }
     
     init() {
@@ -57,9 +136,10 @@ class UserManagement {
                 search: this.searchTerm
             });
             
-            const response = await fetch(`/api/admin/users?${params}`);
-            const data = await response.json();
+            const result = await this.apiCall(`/api/admin/users?${params}`);
+            if (!result) return; // 权限错误已被处理
             
+            const { data } = result;
             if (data.success) {
                 this.users = data.data.users;
                 this.stats = data.data.stats;
@@ -77,9 +157,10 @@ class UserManagement {
     
     async loadOnlineStats() {
         try {
-            const response = await fetch('/api/admin/online-stats');
-            const data = await response.json();
+            const result = await this.apiCall('/api/admin/online-stats');
+            if (!result) return; // 权限错误已被处理
             
+            const { data } = result;
             if (data.success) {
                 this.onlineUsers = data.data.onlineUsers;
                 this.renderOnlineUsers();
@@ -133,6 +214,7 @@ class UserManagement {
                 <thead>
                     <tr>
                         <th>用户信息</th>
+                        <th>会员状态</th>
                         <th>注册时间</th>
                         <th>最后登录</th>
                         <th>最后活动</th>
@@ -175,6 +257,11 @@ class UserManagement {
             statusText = '在线';
         }
         
+        // 会员状态显示
+        const membership = user.membership || { type: 'free', status: 'active' };
+        const membershipText = this.getMembershipText(membership.type);
+        const membershipClass = `membership-${membership.type}`;
+        
         // 活动统计
         const stats = user.stats || {};
         const userStats = `
@@ -200,6 +287,12 @@ class UserManagement {
                         </div>
                     </div>
                 </td>
+                <td>
+                    <span class="membership-badge ${membershipClass}">
+                        ${membershipText}
+                    </span>
+                    ${membership.status !== 'active' ? `<br><small style="color: #ef4444;">状态: ${this.getMembershipStatusText(membership.status)}</small>` : ''}
+                </td>
                 <td>${registerTime}</td>
                 <td>${lastLogin}</td>
                 <td>
@@ -219,6 +312,9 @@ class UserManagement {
                         <button class="action-btn edit" onclick="editUser(${user.id})" title="编辑用户">
                             ✏️
                         </button>
+                        <button class="membership-btn upgrade" onclick="showMembershipModal(${user.id})" title="管理会员">
+                            💎
+                        </button>
                         <button class="action-btn toggle ${user.isEnabled === false ? 'enable' : 'disable'}" 
                                 onclick="toggleUserStatus(${user.id})" 
                                 title="${user.isEnabled === false ? '启用用户' : '禁用用户'}">
@@ -228,6 +324,24 @@ class UserManagement {
                 </td>
             </tr>
         `;
+    }
+    
+    getMembershipText(type) {
+        switch(type) {
+            case 'vip': return 'VIP会员';
+            case 'premium': return '高级会员';
+            case 'free': 
+            default: return '免费用户';
+        }
+    }
+    
+    getMembershipStatusText(status) {
+        switch(status) {
+            case 'expired': return '已过期';
+            case 'suspended': return '已暂停';
+            case 'active':
+            default: return '有效';
+        }
     }
     
     renderOnlineUsers() {
@@ -344,11 +458,29 @@ function changePage(direction) {
     }
 }
 
+// 通用权限错误处理函数
+function handleApiError(response, data) {
+    if (response.status === 401 || response.status === 403) {
+        // 权限问题，清除登录状态并重定向
+        localStorage.removeItem('adminToken');
+        localStorage.removeItem('adminLoginTime');
+        localStorage.removeItem('adminUsername');
+        alert((data.message || '权限验证失败') + '，即将跳转到登录页面');
+        window.location.href = 'admin-login.html';
+        return true;
+    }
+    return false;
+}
+
 // 查看用户详情
 async function viewUserDetail(userId) {
     try {
-        const response = await fetch(`/api/admin/users/${userId}`);
+        const response = await fetch(`/api/admin/users/${userId}`, {
+            headers: window.userManagement.getAuthHeaders()
+        });
         const data = await response.json();
+        
+        if (handleApiError(response, data)) return;
         
         if (data.success) {
             showUserDetailModal(data.data);
@@ -380,6 +512,7 @@ function showUserDetailModal(user) {
     
     const stats = user.stats || {};
     const profile = user.profile || {};
+    const membership = user.membership || { type: 'free', status: 'active' };
     
     modalBody.innerHTML = `
         <div class="user-detail-section">
@@ -426,6 +559,40 @@ function showUserDetailModal(user) {
                 <div class="detail-item">
                     <div class="detail-label">最后活动</div>
                     <div class="detail-value">${lastActivity}</div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="user-detail-section">
+            <h3>会员信息</h3>
+            <div class="detail-grid">
+                <div class="detail-item">
+                    <div class="detail-label">会员类型</div>
+                    <div class="detail-value">
+                        <span class="membership-badge membership-${membership.type}">
+                            ${window.userManagement.getMembershipText(membership.type)}
+                        </span>
+                    </div>
+                </div>
+                <div class="detail-item">
+                    <div class="detail-label">会员状态</div>
+                    <div class="detail-value">${window.userManagement.getMembershipStatusText(membership.status)}</div>
+                </div>
+                <div class="detail-item">
+                    <div class="detail-label">开始时间</div>
+                    <div class="detail-value">${membership.startDate ? new Date(membership.startDate).toLocaleString('zh-CN') : '未设置'}</div>
+                </div>
+                <div class="detail-item">
+                    <div class="detail-label">到期时间</div>
+                    <div class="detail-value">${membership.endDate ? new Date(membership.endDate).toLocaleString('zh-CN') : '永久有效'}</div>
+                </div>
+                <div class="detail-item">
+                    <div class="detail-label">自动续费</div>
+                    <div class="detail-value">${membership.autoRenew ? '开启' : '关闭'}</div>
+                </div>
+                <div class="detail-item">
+                    <div class="detail-label">支付历史</div>
+                    <div class="detail-value">${membership.paymentHistory ? membership.paymentHistory.length : 0} 笔记录</div>
                 </div>
             </div>
         </div>
@@ -491,8 +658,12 @@ function showUserDetailModal(user) {
 // 加载用户活动记录
 async function loadUserActivity(userId) {
     try {
-        const response = await fetch(`/api/admin/users/${userId}/activity?limit=10`);
+        const response = await fetch(`/api/admin/users/${userId}/activity?limit=10`, {
+            headers: window.userManagement.getAuthHeaders()
+        });
         const data = await response.json();
+        
+        if (handleApiError(response, data)) return;
         
         const activityList = document.getElementById('activityList');
         
@@ -534,11 +705,11 @@ async function toggleUserStatus(userId) {
     try {
         const response = await fetch(`/api/admin/users/${userId}/toggle-status`, {
             method: 'PATCH',
-            headers: {
-                'Content-Type': 'application/json'
-            }
+            headers: window.userManagement.getAuthHeaders()
         });
         const data = await response.json();
+        
+        if (handleApiError(response, data)) return;
         
         if (data.success) {
             alert(data.message);
@@ -558,8 +729,12 @@ async function toggleUserStatus(userId) {
 // 编辑用户
 async function editUser(userId) {
     try {
-        const response = await fetch(`/api/admin/users/${userId}`);
+        const response = await fetch(`/api/admin/users/${userId}`, {
+            headers: window.userManagement.getAuthHeaders()
+        });
         const data = await response.json();
+        
+        if (handleApiError(response, data)) return;
         
         if (data.success) {
             showUserEditModal(data.data);
@@ -582,6 +757,21 @@ function showUserEditModal(user) {
     document.getElementById('editEmail').value = user.email || '';
     document.getElementById('editRole').value = user.role || 'user';
     document.getElementById('editStatus').value = user.isEnabled !== false ? 'true' : 'false';
+    
+    // 填充会员信息
+    const membership = user.membership || { type: 'free', status: 'active', autoRenew: false };
+    document.getElementById('editMembershipType').value = membership.type || 'free';
+    document.getElementById('editMembershipStatus').value = membership.status || 'active';
+    document.getElementById('editAutoRenew').value = membership.autoRenew ? 'true' : 'false';
+    
+    // 处理到期时间
+    if (membership.endDate && membership.endDate !== null) {
+        const endDate = new Date(membership.endDate);
+        const localDateTime = new Date(endDate.getTime() - endDate.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
+        document.getElementById('editMembershipEnd').value = localDateTime;
+    } else {
+        document.getElementById('editMembershipEnd').value = '';
+    }
     
     const profile = user.profile || {};
     document.getElementById('editBio').value = profile.bio || '';
@@ -623,19 +813,25 @@ document.addEventListener('DOMContentLoaded', () => {
                     bio: formData.get('bio'),
                     location: formData.get('location'),
                     website: formData.get('website')
+                },
+                membership: {
+                    type: formData.get('membershipType'),
+                    status: formData.get('membershipStatus'),
+                    autoRenew: formData.get('autoRenew') === 'true',
+                    endDate: formData.get('membershipEndDate') ? new Date(formData.get('membershipEndDate')).toISOString() : null
                 }
             };
             
             try {
                 const response = await fetch(`/api/admin/users/${userId}`, {
                     method: 'PUT',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
+                    headers: window.userManagement.getAuthHeaders(),
                     body: JSON.stringify(updateData)
                 });
                 
                 const data = await response.json();
+                
+                if (handleApiError(response, data)) return;
                 
                 if (data.success) {
                     alert('用户信息更新成功');
@@ -665,6 +861,83 @@ window.onclick = function(event) {
     }
     if (event.target == userEditModal) {
         closeUserEditModal();
+    }
+}
+
+// 显示会员状态管理模态框（快捷设置）
+async function showMembershipModal(userId) {
+    try {
+        const response = await fetch(`/api/admin/users/${userId}`, {
+            headers: window.userManagement.getAuthHeaders()
+        });
+        const data = await response.json();
+        
+        if (handleApiError(response, data)) return;
+        
+        if (data.success) {
+            const user = data.data;
+            const membership = user.membership || { type: 'free', status: 'active' };
+            
+            const result = prompt(`管理用户 "${user.username}" 的会员状态:\n\n当前状态: ${window.userManagement.getMembershipText(membership.type)}\n\n请选择新的会员类型:\n1. 免费用户 (free)\n2. 高级会员 (premium)\n3. VIP会员 (vip)\n\n请输入数字 (1-3):`, '');
+            
+            if (result === null) return; // 用户取消
+            
+            let newType;
+            switch(result.trim()) {
+                case '1': newType = 'free'; break;
+                case '2': newType = 'premium'; break;
+                case '3': newType = 'vip'; break;
+                default:
+                    alert('输入无效，请输入 1、2 或 3');
+                    return;
+            }
+            
+            // 计算到期时间（VIP和高级会员默认6个月）
+            let endDate = null;
+            if (newType !== 'free') {
+                const sixMonthsLater = new Date();
+                sixMonthsLater.setMonth(sixMonthsLater.getMonth() + 6);
+                endDate = sixMonthsLater.toISOString();
+            }
+            
+            // 更新会员状态
+            const updateData = {
+                ...user,
+                membership: {
+                    ...membership,
+                    type: newType,
+                    status: 'active',
+                    startDate: membership.startDate || new Date().toISOString(),
+                    endDate: endDate,
+                    autoRenew: membership.autoRenew || false
+                }
+            };
+            
+            const updateResponse = await fetch(`/api/admin/users/${userId}`, {
+                method: 'PUT',
+                headers: window.userManagement.getAuthHeaders(),
+                body: JSON.stringify(updateData)
+            });
+            
+            const updateResult = await updateResponse.json();
+            
+            if (handleApiError(updateResponse, updateResult)) return;
+            
+            if (updateResult.success) {
+                alert(`会员状态已更新为: ${window.userManagement.getMembershipText(newType)}`);
+                // 刷新用户列表
+                if (window.userManagement) {
+                    window.userManagement.loadUsers();
+                }
+            } else {
+                alert('更新失败: ' + updateResult.message);
+            }
+        } else {
+            alert('获取用户信息失败: ' + data.message);
+        }
+    } catch (error) {
+        console.error('会员状态管理失败:', error);
+        alert('网络错误，请稍后重试');
     }
 }
 
