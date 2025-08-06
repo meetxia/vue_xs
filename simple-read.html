@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>简化阅读页面</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .reader-content {
+            line-height: 1.8;
+            font-size: 18px;
+            background: white;
+            border-radius: 16px;
+            padding: 32px;
+            margin: 20px 0;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+            border: 1px solid #f0f0f0;
+            word-wrap: break-word;
+            word-break: break-word;
+            white-space: pre-wrap;
+        }
+
+        .reader-content .paragraph {
+            margin-bottom: 1.5rem;
+            text-indent: 2em;
+            line-height: 1.8;
+            text-align: justify;
+        }
+
+        .reader-content .chapter-title {
+            text-align: center;
+            font-weight: bold;
+            margin: 2rem 0 1.5rem 0;
+            color: #333;
+            border-bottom: 2px solid #f0f0f0;
+            padding-bottom: 0.5rem;
+        }
+
+        .reader-content .section-title {
+            font-weight: 600;
+            margin: 1.5rem 0 1rem 0;
+            color: #444;
+        }
+    </style>
+</head>
+<body class="bg-gray-100">
+    <div class="container mx-auto px-4 py-8">
+        <div class="max-w-4xl mx-auto">
+            <!-- 小说信息 -->
+            <div class="bg-white rounded-lg shadow-lg p-6 mb-6" id="novelInfo" style="display: none;">
+                <h1 class="text-2xl font-bold mb-4" id="novelTitle">小说标题</h1>
+                <p class="text-gray-600 mb-4" id="novelSummary">小说简介</p>
+                <div class="flex items-center gap-4 text-sm text-gray-500">
+                    <span>阅读量: <span id="novelViews">0</span></span>
+                    <span>发布时间: <span id="publishTime">未知</span></span>
+                </div>
+                <div id="novelTags" class="mt-4"></div>
+            </div>
+
+            <!-- 正文内容 -->
+            <main class="reader-content" id="novelContent">
+                <div class="text-center py-20">
+                    <div class="animate-spin w-8 h-8 border-2 border-red-500 border-t-transparent rounded-full mx-auto mb-4"></div>
+                    <p class="text-gray-500">正在加载小说内容...</p>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <script>
+        class SimpleReader {
+            constructor() {
+                this.novelId = this.getNovelIdFromUrl();
+                this.elements = {
+                    novelTitle: document.getElementById('novelTitle'),
+                    novelViews: document.getElementById('novelViews'),
+                    publishTime: document.getElementById('publishTime'),
+                    novelTags: document.getElementById('novelTags'),
+                    novelSummary: document.getElementById('novelSummary'),
+                    novelInfo: document.getElementById('novelInfo'),
+                    novelContent: document.getElementById('novelContent')
+                };
+                
+                this.loadNovel();
+            }
+
+            getNovelIdFromUrl() {
+                const urlParams = new URLSearchParams(window.location.search);
+                return urlParams.get('id') || '15';
+            }
+
+            async loadNovel() {
+                try {
+                    console.log('正在加载小说ID:', this.novelId);
+                    
+                    const response = await fetch('/api/novels/' + this.novelId);
+                    console.log('API响应状态:', response.status);
+                    
+                    if (response.ok) {
+                        const data = await response.json();
+                        console.log('API响应数据:', data);
+                        
+                        if (data.success && data.data) {
+                            this.displayNovel(data.data);
+                        } else {
+                            this.showError(data.message || '获取小说内容失败');
+                        }
+                    } else {
+                        this.showError('网络请求失败');
+                    }
+                } catch (error) {
+                    console.error('加载小说失败:', error);
+                    this.showError('加载失败: ' + error.message);
+                }
+            }
+
+            displayNovel(novel) {
+                console.log('开始显示小说内容:', novel);
+
+                // 更新页面标题
+                document.title = `${novel.title} - 小说阅读`;
+
+                // 更新小说信息
+                this.elements.novelTitle.textContent = novel.title;
+                this.elements.novelViews.textContent = novel.views || 0;
+                this.elements.publishTime.textContent = this.formatPublishTime(novel.publishTime);
+                this.elements.novelSummary.textContent = novel.summary || '暂无简介';
+
+                // 更新标签
+                if (novel.tags && novel.tags.length > 0) {
+                    this.elements.novelTags.innerHTML = novel.tags.map(tag =>
+                        `<span class="inline-block bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded mr-2">${tag}</span>`
+                    ).join('');
+                }
+
+                // 显示小说信息卡片
+                this.elements.novelInfo.style.display = 'block';
+
+                // 检查权限
+                if (novel.hasAccess === false) {
+                    this.showAccessDenied(novel);
+                    return;
+                }
+
+                // 格式化并显示内容
+                let content = novel.content;
+                console.log('小说原始内容长度:', content ? content.length : 0);
+                
+                if (!content || content.trim() === '') {
+                    content = '暂无内容';
+                }
+                
+                const formattedContent = this.formatContent(content);
+                console.log('格式化后的内容长度:', formattedContent.length);
+                
+                this.elements.novelContent.innerHTML = formattedContent;
+            }
+
+            formatContent(content) {
+                if (!content) return '<p class="text-center text-gray-500 py-8">暂无内容</p>';
+
+                // 检查内容是否已经是HTML格式
+                if (content.trim().startsWith('<p>') || content.trim().startsWith('<div>') || content.includes('<p>')) {
+                    console.log('内容已经是HTML格式，直接返回');
+                    return this.enhanceHtmlContent(content);
+                }
+
+                // 如果不是HTML格式，则进行格式化
+                console.log('内容是纯文本格式，进行格式化');
+                
+                // 处理换行符，保留段落结构
+                const lines = content.split(/\r?\n/);
+                const formattedParagraphs = [];
+                let currentParagraph = '';
+
+                for (let i = 0; i < lines.length; i++) {
+                    const line = lines[i].trim();
+                    
+                    if (line === '') {
+                        // 空行表示段落结束
+                        if (currentParagraph.trim()) {
+                            formattedParagraphs.push(this.formatParagraph(currentParagraph.trim()));
+                            currentParagraph = '';
+                        }
+                    } else {
+                        // 非空行，添加到当前段落
+                        if (currentParagraph) {
+                            currentParagraph += ' ' + line;
+                        } else {
+                            currentParagraph = line;
+                        }
+                    }
+                }
+
+                // 处理最后一个段落
+                if (currentParagraph.trim()) {
+                    formattedParagraphs.push(this.formatParagraph(currentParagraph.trim()));
+                }
+
+                return formattedParagraphs.join('');
+            }
+
+            formatParagraph(paragraph) {
+                // 检查是否是章节标题
+                if (paragraph.match(/^第.+章/)) {
+                    return `<h2 class="chapter-title text-xl font-bold mt-8 mb-6 text-center">${paragraph}</h2>`;
+                }
+
+                // 检查是否是其他标题格式
+                if (paragraph.match(/^【.+】$/) || paragraph.match(/^\d+\./)) {
+                    return `<h3 class="section-title text-lg font-semibold mt-6 mb-4">${paragraph}</h3>`;
+                }
+
+                // 普通段落，添加适当的间距
+                return `<p class="paragraph mb-4 leading-relaxed text-justify">${paragraph}</p>`;
+            }
+
+            enhanceHtmlContent(htmlContent) {
+                let enhanced = htmlContent;
+                
+                enhanced = enhanced.replace(/<p>/g, '<p class="paragraph mb-4 leading-relaxed text-justify">');
+                enhanced = enhanced.replace(/<h1>/g, '<h1 class="chapter-title text-2xl font-bold mt-8 mb-6 text-center">');
+                enhanced = enhanced.replace(/<h2>/g, '<h2 class="chapter-title text-xl font-bold mt-8 mb-6 text-center">');
+                enhanced = enhanced.replace(/<h3>/g, '<h3 class="section-title text-lg font-semibold mt-6 mb-4">');
+                enhanced = enhanced.replace(/<blockquote>/g, '<blockquote class="border-l-4 border-gray-300 pl-4 italic my-4">');
+                
+                return enhanced;
+            }
+
+            formatPublishTime(publishTime) {
+                if (!publishTime) return '未知';
+                const date = new Date(publishTime);
+                return date.toLocaleDateString('zh-CN');
+            }
+
+            showError(message) {
+                this.elements.novelContent.innerHTML = `
+                    <div class="text-center py-20">
+                        <p class="text-red-500 text-lg">${message}</p>
+                    </div>
+                `;
+            }
+
+            showAccessDenied(novel) {
+                this.elements.novelContent.innerHTML = `
+                    <div class="text-center py-20">
+                        <p class="text-yellow-600 text-lg">此内容需要登录并开通会员</p>
+                        <p class="text-gray-500 mt-2">${novel.message || ''}</p>
+                    </div>
+                `;
+            }
+        }
+
+        // 页面加载完成后初始化
+        document.addEventListener('DOMContentLoaded', () => {
+            new SimpleReader();
+        });
+    </script>
+</body>
+</html>

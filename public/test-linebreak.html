@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>换行测试页面</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            line-height: 1.6;
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        .content-display {
+            background: #f9f9f9;
+            padding: 15px;
+            border-radius: 3px;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+        .content-display p {
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 3px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+    </style>
+</head>
+<body>
+    <h1>换行显示测试</h1>
+    
+    <div class="test-section">
+        <h2>测试1: 原始文本内容</h2>
+        <div id="rawContent" class="content-display"></div>
+        <button onclick="loadRawContent()">加载原始内容</button>
+    </div>
+    
+    <div class="test-section">
+        <h2>测试2: 前端格式化后的内容</h2>
+        <div id="formattedContent" class="content-display"></div>
+        <button onclick="loadFormattedContent()">加载格式化内容</button>
+    </div>
+    
+    <div class="test-section">
+        <h2>测试3: 管理后台编辑器格式化</h2>
+        <div id="editorContent" class="content-display"></div>
+        <button onclick="loadEditorContent()">加载编辑器格式化内容</button>
+    </div>
+
+    <script>
+        // 模拟从数据库获取的原始内容
+        const testContent = "这是第一行文字\n这是第二行文字\n这是第三行文字\n\n这是一个新段落的开始\n这是新段落的第二行\n这是新段落的第三行\n\n这是另一个段落\n包含多行内容\n每行都应该正确显示\n\n最后一个段落\n测试换行效果";
+        
+        function loadRawContent() {
+            document.getElementById('rawContent').textContent = testContent;
+        }
+        
+        // 模拟reader.js中的formatContent方法
+        function formatContent(content) {
+            if (!content) return '';
+            
+            // 处理换行符，保留段落结构
+            const lines = content.split(/\r?\n/);
+            const formattedParagraphs = [];
+            let currentParagraph = '';
+
+            for (let i = 0; i < lines.length; i++) {
+                const line = lines[i].trim();
+
+                if (line === '') {
+                    // 空行表示段落结束
+                    if (currentParagraph.trim()) {
+                        formattedParagraphs.push(formatParagraph(currentParagraph.trim()));
+                        currentParagraph = '';
+                    }
+                } else {
+                    // 非空行，添加到当前段落
+                    if (currentParagraph) {
+                        // 保留换行符，使用<br>标签
+                        currentParagraph += '<br>' + line;
+                    } else {
+                        currentParagraph = line;
+                    }
+                }
+            }
+
+            // 处理最后一个段落
+            if (currentParagraph.trim()) {
+                formattedParagraphs.push(formatParagraph(currentParagraph.trim()));
+            }
+
+            return formattedParagraphs.join('');
+        }
+        
+        function formatParagraph(content) {
+            return `<div class="paragraph">${content}</div>`;
+        }
+        
+        function loadFormattedContent() {
+            const formatted = formatContent(testContent);
+            document.getElementById('formattedContent').innerHTML = formatted;
+        }
+        
+        // 模拟管理后台的prepareContentForEditor方法
+        function prepareContentForEditor(content) {
+            if (!content) return '';
+
+            // 检查是否已经是HTML格式
+            if (content.trim().startsWith('<p>') || content.trim().startsWith('<div>') || content.includes('<p>')) {
+                console.log('内容已经是HTML格式，直接使用');
+                return content;
+            }
+
+            // 如果是纯文本，转换为HTML格式
+            console.log('内容是纯文本格式，转换为HTML');
+            const lines = content.split('\n');
+            const htmlParagraphs = [];
+            let currentParagraph = '';
+
+            for (let i = 0; i < lines.length; i++) {
+                const line = lines[i].trim();
+
+                if (line === '') {
+                    // 空行表示段落结束
+                    if (currentParagraph.trim()) {
+                        htmlParagraphs.push(`<p>${currentParagraph.trim()}</p>`);
+                        currentParagraph = '';
+                    }
+                } else {
+                    // 非空行，添加到当前段落
+                    if (currentParagraph) {
+                        // 保留换行符，使用<br>标签
+                        currentParagraph += '<br>' + line;
+                    } else {
+                        currentParagraph = line;
+                    }
+                }
+            }
+
+            // 处理最后一个段落
+            if (currentParagraph.trim()) {
+                htmlParagraphs.push(`<p>${currentParagraph.trim()}</p>`);
+            }
+
+            return htmlParagraphs.join('');
+        }
+        
+        function loadEditorContent() {
+            const editorFormatted = prepareContentForEditor(testContent);
+            document.getElementById('editorContent').innerHTML = editorFormatted;
+        }
+    </script>
+</body>
+</html>

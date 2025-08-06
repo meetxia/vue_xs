@@ -81,7 +81,60 @@
             margin: 20px 0;
             box-shadow: 0 2px 12px rgba(0,0,0,0.08);
             border: 1px solid #f0f0f0;
+            word-wrap: break-word;
+            word-break: break-word;
+            white-space: pre-wrap;
         }
+
+        /* 段落样式 */
+        .reader-content .paragraph {
+            margin-bottom: 1.5rem;
+            text-indent: 2em;
+            line-height: 1.8;
+            text-align: justify;
+            white-space: pre-wrap; /* 确保保留换行符和空格 */
+        }
+
+        /* 确保所有文本内容都正确处理换行 */
+        .reader-content p {
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+
+        /* 处理br标签的显示 */
+        .reader-content br {
+            line-height: 1.8;
+        }
+
+        /* 章节标题样式 */
+        .reader-content .chapter-title {
+            text-align: center;
+            font-weight: bold;
+            margin: 2rem 0 1.5rem 0;
+            color: #333;
+            border-bottom: 2px solid #f0f0f0;
+            padding-bottom: 0.5rem;
+        }
+
+        /* 小节标题样式 */
+        .reader-content .section-title {
+            font-weight: 600;
+            margin: 1.5rem 0 1rem 0;
+            color: #444;
+        }
+
+        /* 引用样式 */
+        .reader-content blockquote {
+            border-left: 4px solid #e2e8f0;
+            padding-left: 1rem;
+            margin: 1rem 0;
+            font-style: italic;
+            color: #666;
+            background: #f8fafc;
+            border-radius: 0 4px 4px 0;
+        }
+
+        /* 对话样式 - 通过JavaScript动态添加 */
 
         .reader-content p {
             margin-bottom: 1.5em;
@@ -885,7 +938,7 @@
         }
     </style>
 </head>
-<body class="theme-light">
+<body class="theme-light reading-page">
     <!-- 阅读进度条 -->
     <div class="progress-bar" id="progressBar"></div>
 
@@ -897,11 +950,7 @@
             </button>
             <h1 class="text-lg font-medium truncate mx-4" id="novelTitle">正在加载...</h1>
             <div class="flex items-center space-x-2">
-                <!-- 离线状态指示器 -->
-                <div id="offlineIndicator" class="flex items-center gap-1 px-2 py-1 rounded-full text-xs hidden" title="离线阅读">
-                    <span class="w-2 h-2 rounded-full bg-green-500"></span>
-                    <span class="text-green-600 font-medium">离线</span>
-                </div>
+                <!-- 离线状态指示器已移除 -->
 
                 <!-- 阅读数据统计按钮 -->
                 <button id="analyticsBtn" class="text-xl hover:text-blue-500 transition-colors" title="阅读统计">
@@ -1218,7 +1267,7 @@
         </div>
     </div>
 
-    <script src="js/offline-reader.js"></script>
+    <!-- 离线阅读脚本已移除 -->
     <script src="js/pagination-manager.js"></script>
     <script src="js/reader.js"></script>
     <script src="js/smart-reader.js"></script>

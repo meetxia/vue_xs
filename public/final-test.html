@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>最终测试页面</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="css/style.css">
+    <style>
+        .test-result { margin: 5px 0; padding: 8px; border-radius: 4px; font-size: 14px; }
+        .success { background-color: #d4edda; color: #155724; }
+        .error { background-color: #f8d7da; color: #721c24; }
+        .info { background-color: #d1ecf1; color: #0c5460; }
+        .warning { background-color: #fff3cd; color: #856404; }
+    </style>
+</head>
+<body class="bg-gray-100">
+    <div class="container mx-auto p-4">
+        <h1 class="text-2xl font-bold mb-4">最终测试页面</h1>
+        <div id="test-results" class="mb-6"></div>
+        
+        <!-- 测试按钮 -->
+        <div class="mb-4">
+            <button onclick="testMobileSearch()" class="bg-blue-500 text-white px-4 py-2 rounded mr-2">测试移动端搜索</button>
+            <button onclick="testDataLoading()" class="bg-green-500 text-white px-4 py-2 rounded mr-2">测试数据加载</button>
+            <button onclick="testModules()" class="bg-purple-500 text-white px-4 py-2 rounded">测试模块</button>
+        </div>
+        
+        <!-- 移动端搜索栏 -->
+        <div id="mobileSearchBar" class="md:hidden bg-white border-b border-gray-100 px-4 py-3 shadow-sm hidden">
+            <input type="text" id="mobileSearchInput" placeholder="搜索小说..." class="w-full px-4 py-2 rounded-full border border-gray-200 focus:outline-none focus:border-red-500" />
+        </div>
+        
+        <!-- 瀑布流容器 -->
+        <div class="waterfall-container" id="waterfallContainer">
+            <!-- 小说卡片将通过JS动态生成 -->
+        </div>
+        
+        <!-- 加载动画 -->
+        <div id="loading" class="text-center py-8 hidden">
+            <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-red-500"></div>
+            <p class="mt-2 text-gray-600">加载中...</p>
+        </div>
+    </div>
+    
+    <script>
+        function addTestResult(message, type = 'info') {
+            const div = document.createElement('div');
+            div.className = `test-result ${type}`;
+            div.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+            document.getElementById('test-results').appendChild(div);
+        }
+        
+        function testMobileSearch() {
+            addTestResult('测试移动端搜索功能...', 'info');
+            
+            try {
+                if (typeof toggleMobileSearch === 'function') {
+                    toggleMobileSearch();
+                    addTestResult('✓ toggleMobileSearch函数可用', 'success');
+                } else {
+                    addTestResult('✗ toggleMobileSearch函数不可用', 'error');
+                }
+            } catch (e) {
+                addTestResult(`✗ 移动端搜索测试失败: ${e.message}`, 'error');
+            }
+        }
+        
+        function testDataLoading() {
+            addTestResult('测试数据加载...', 'info');
+            
+            fetch('/api/novels')
+                .then(response => {
+                    if (response.ok) {
+                        addTestResult('✓ API连接正常', 'success');
+                        return response.json();
+                    } else {
+                        throw new Error(`HTTP ${response.status}`);
+                    }
+                })
+                .then(data => {
+                    if (data.success && data.novels) {
+                        addTestResult(`✓ 成功获取 ${data.novels.length} 部小说`, 'success');
+                    } else {
+                        addTestResult('✗ 数据格式错误', 'error');
+                    }
+                })
+                .catch(error => {
+                    addTestResult(`✗ 数据加载失败: ${error.message}`, 'error');
+                });
+        }
+        
+        function testModules() {
+            addTestResult('测试JavaScript模块...', 'info');
+            
+            const modules = [
+                'Utils',
+                'ThemeManager', 
+                'UserManager',
+                'SearchManager',
+                'NovelCardRenderer',
+                'InteractionManager',
+                'WaterfallLayout'
+            ];
+            
+            modules.forEach(moduleName => {
+                if (typeof window[moduleName] !== 'undefined') {
+                    addTestResult(`✓ ${moduleName} 模块已加载`, 'success');
+                } else {
+                    addTestResult(`✗ ${moduleName} 模块未加载`, 'error');
+                }
+            });
+            
+            // 测试主应用
+            if (window.mainApp) {
+                addTestResult('✓ 主应用已初始化', 'success');
+            } else {
+                addTestResult('✗ 主应用未初始化', 'error');
+            }
+        }
+        
+        // 页面加载完成后自动运行测试
+        document.addEventListener('DOMContentLoaded', function() {
+            addTestResult('页面加载完成', 'info');
+            
+            setTimeout(() => {
+                testModules();
+                testDataLoading();
+            }, 1000);
+        });
+    </script>
+    
+    <!-- 加载所有JavaScript模块 -->
+    <script src="js/main/utils.js"></script>
+    <script src="js/main/theme-manager.js"></script>
+    <script src="js/main/user-manager.js"></script>
+    <script src="js/interaction-manager.js"></script>
+    <script src="js/main/waterfall-layout.js"></script>
+    <script src="js/main/search-manager.js"></script>
+    <script src="js/main/novel-card-renderer.js"></script>
+    <script src="js/main.js"></script>
+</body>
+</html>

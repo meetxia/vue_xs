@@ -71,13 +71,29 @@ class NovelManager {
             const { result } = response;
             if (result.success) {
                 const novel = result.data;
-                
+
+                console.log('编辑作品数据:', novel);
+                console.log('作品内容长度:', novel.content ? novel.content.length : 0);
+
                 // 填充表单
                 document.getElementById('novelTitle').value = novel.title;
                 document.getElementById('novelSummary').value = novel.summary;
-                
-                if (window.quill) {
-                    window.quill.root.innerHTML = novel.content;
+
+                // 设置编辑器内容
+                if (novel.content) {
+                    const processedContent = this.prepareContentForEditor(novel.content);
+
+                    if (window.quill) {
+                        console.log('使用window.quill设置内容');
+                        window.quill.root.innerHTML = processedContent;
+                    } else if (window.editorManager) {
+                        console.log('使用editorManager设置内容');
+                        window.editorManager.setContent(processedContent);
+                    } else {
+                        console.warn('编辑器未找到');
+                    }
+                } else {
+                    console.warn('内容为空');
                 }
 
                 // 设置标签
@@ -159,7 +175,16 @@ class NovelManager {
     async publishNovel() {
         const title = document.getElementById('novelTitle').value;
         const summary = document.getElementById('novelSummary').value;
-        const content = window.quill ? window.quill.root.innerHTML : '';
+
+        // 获取编辑器内容，优先使用HTML格式
+        let content = '';
+        if (window.quill) {
+            // 获取HTML内容，但清理不必要的Quill特定标签
+            content = this.cleanQuillContent(window.quill.root.innerHTML);
+        } else if (window.editorManager) {
+            content = this.cleanQuillContent(window.editorManager.getContent());
+        }
+
         const selectedTags = Array.from(document.querySelectorAll('.tag-option.selected')).map(tag => tag.textContent);
         const coverType = document.querySelector('input[name="coverType"]:checked').value;
 
@@ -533,6 +558,88 @@ class NovelManager {
     refreshNovelsList() {
         this.loadNovels();
         utils.showMessage('作品列表已刷新', 'success');
+    }
+
+    // 清理Quill编辑器内容，移除不必要的标签和属性
+    cleanQuillContent(htmlContent) {
+        if (!htmlContent) return '';
+
+        // 创建临时DOM元素来处理HTML
+        const tempDiv = document.createElement('div');
+        tempDiv.innerHTML = htmlContent;
+
+        // 移除Quill特定的类和属性
+        const elements = tempDiv.querySelectorAll('*');
+        elements.forEach(el => {
+            // 移除Quill特定的类
+            el.classList.remove('ql-editor', 'ql-blank');
+
+            // 移除空的class属性
+            if (el.className === '') {
+                el.removeAttribute('class');
+            }
+
+            // 移除data-*属性
+            Array.from(el.attributes).forEach(attr => {
+                if (attr.name.startsWith('data-')) {
+                    el.removeAttribute(attr.name);
+                }
+            });
+        });
+
+        // 处理空段落
+        const paragraphs = tempDiv.querySelectorAll('p');
+        paragraphs.forEach(p => {
+            if (p.innerHTML.trim() === '<br>' || p.innerHTML.trim() === '') {
+                p.innerHTML = '&nbsp;'; // 保留空段落作为段落间距
+            }
+        });
+
+        return tempDiv.innerHTML;
+    }
+
+    // 为编辑器准备内容，处理纯文本到HTML的转换
+    prepareContentForEditor(content) {
+        if (!content) return '';
+
+        // 检查是否已经是HTML格式
+        if (content.trim().startsWith('<p>') || content.trim().startsWith('<div>') || content.includes('<p>')) {
+            console.log('内容已经是HTML格式，直接使用');
+            return content;
+        }
+
+        // 如果是纯文本，转换为HTML格式
+        console.log('内容是纯文本格式，转换为HTML');
+        const lines = content.split('\n');
+        const htmlParagraphs = [];
+        let currentParagraph = '';
+
+        for (let i = 0; i < lines.length; i++) {
+            const line = lines[i].trim();
+
+            if (line === '') {
+                // 空行表示段落结束
+                if (currentParagraph.trim()) {
+                    htmlParagraphs.push(`<p>${currentParagraph.trim()}</p>`);
+                    currentParagraph = '';
+                }
+            } else {
+                // 非空行，添加到当前段落
+                if (currentParagraph) {
+                    // 保留换行符，使用<br>标签
+                    currentParagraph += '<br>' + line;
+                } else {
+                    currentParagraph = line;
+                }
+            }
+        }
+
+        // 处理最后一个段落
+        if (currentParagraph.trim()) {
+            htmlParagraphs.push(`<p>${currentParagraph.trim()}</p>`);
+        }
+
+        return htmlParagraphs.join('');
     }
 }
 

@@ -4,11 +4,8 @@ class NovelReader {
         this.novelId = this.getNovelIdFromUrl();
         this.settings = this.loadSettings();
         this.readingProgress = this.loadProgress();
-        
-        // 初始化离线管理器（如果存在）
-        this.offlineManager = null;
-        this.isOffline = false;
-        this.initOfflineManager();
+
+        // 离线管理器已移除
 
         // 初始化分页管理器
         this.paginationManager = null;
@@ -18,6 +15,10 @@ class NovelReader {
         this.initializeFeatureModules();
         this.bindEvents();
         this.applySettings();
+
+        // 确保设置面板初始状态是隐藏的
+        this.ensureSettingsPanelHidden();
+
         this.loadNovel();
     }
 
@@ -659,40 +660,33 @@ class NovelReader {
                 </div>
             `;
 
-            // 如果有离线管理器，检查是否有离线版本
-            if (this.offlineManager) {
-                try {
-                    const offlineNovel = await this.offlineManager.getNovel(this.novelId);
-
-                    if (offlineNovel) {
-                        console.log('找到离线缓存版本，使用离线数据');
-                        this.isOffline = true;
-                        this.displayNovel(offlineNovel);
-                        this.updateOfflineIndicator(true);
-                        return;
-                    }
-                } catch (offlineError) {
-                    console.error('获取离线数据失败:', offlineError);
-                    // 离线功能异常，但不影响在线阅读，继续执行
-                }
-
-                // 没有离线版本，检查网络
-                if (!navigator.onLine) {
-                    console.log('网络已断开，无法加载小说');
-                    this.showError('网络已断开，无法加载小说内容。请先将小说保存到离线库再阅读。');
-                    this.updateOfflineStatus && this.updateOfflineStatus(false, true);
-                    return;
-                }
-            } else if (!navigator.onLine) {
-                // 没有离线管理器且网络断开
-                console.log('网络已断开且离线功能不可用');
-                this.showError('网络已断开，且离线阅读功能不可用。请检查网络连接后重试。');
+            // 离线功能已移除，直接检查网络
+            if (!navigator.onLine) {
+                console.log('网络已断开，无法加载小说');
+                this.showError('网络已断开，无法加载小说内容。请检查网络连接后重试。');
                 return;
             }
             
             // 尝试从API加载
             console.log('正在请求小说ID:', this.novelId);
-            const response = await fetch('/api/novels/' + this.novelId);
+
+            // 准备请求头，包含认证token
+            const headers = {
+                'Content-Type': 'application/json'
+            };
+
+            const token = localStorage.getItem('token');
+            if (token) {
+                headers['Authorization'] = `Bearer ${token}`;
+                console.log('发送请求时包含认证token');
+            } else {
+                console.log('未找到认证token，以游客身份请求');
+            }
+
+            const response = await fetch('/api/novels/' + this.novelId, {
+                method: 'GET',
+                headers: headers
+            });
             console.log('API响应状态:', response.status);
             
             if (response.ok) {
@@ -700,9 +694,7 @@ class NovelReader {
                 console.log('API响应数据:', data);
                 
                 if (data.success && data.data) {
-                    this.isOffline = false;
                     this.displayNovel(data.data);
-                    this.updateOfflineIndicator(false);
                     return;
                 } else {
                     console.error('API返回失败:', data);
@@ -725,16 +717,7 @@ class NovelReader {
         } catch (error) {
             console.error('加载小说失败:', error);
             
-            // 网络错误时，尝试切换到离线模式
-            if (this.offlineManager && !navigator.onLine) {
-                const offlineNovel = await this.offlineManager.getNovel(this.novelId);
-                if (offlineNovel) {
-                    this.isOffline = true;
-                    this.displayNovel(offlineNovel);
-                    this.updateOfflineIndicator(true);
-                    return;
-                }
-            }
+            // 离线功能已移除
             
             // 最后兜底：显示错误信息
             this.showError('加载失败: ' + (error.message || '网络连接错误'));
@@ -744,33 +727,40 @@ class NovelReader {
     // 显示小说内容
     displayNovel(novel) {
         console.log('开始显示小说内容:', novel);
-        
+
         // 更新页面标题
         document.title = `${novel.title} - 小红书风格小说网站`;
-        
+
         // 更新标题
         this.elements.novelTitle.textContent = novel.title;
         this.elements.novelTitleMain.textContent = novel.title;
-        
+
         // 更新小说信息
         this.elements.novelViews.textContent = this.formatViews(novel.views || 0);
         this.elements.publishTime.textContent = this.formatPublishTime(novel.publishTime);
         this.elements.novelSummary.textContent = novel.summary || '暂无简介';
-        
+
         // 更新标签
         if (novel.tags && novel.tags.length > 0) {
-            this.elements.novelTags.innerHTML = novel.tags.map(tag => 
+            this.elements.novelTags.innerHTML = novel.tags.map(tag =>
                 `<span class="tag">${tag}</span>`
             ).join('');
         }
-        
+
         // 显示小说信息卡片
         this.elements.novelInfo.style.display = 'block';
-        
+
+        // 检查权限
+        if (novel.hasAccess === false) {
+            console.log('用户没有访问权限，显示权限提示');
+            this.showAccessDenied(novel);
+            return;
+        }
+
         // 检查小说内容
         let content = novel.content;
         console.log('小说原始内容:', content);
-        
+
         // 如果没有内容或内容为空，生成示例内容
         if (!content || content.trim() === '') {
             console.log('小说内容为空，生成示例内容');
@@ -1014,6 +1004,18 @@ class NovelReader {
         this.elements.settingsPanel.classList.remove('active');
         this.elements.settingsOverlay.classList.remove('opacity-100', 'visible');
         this.elements.settingsOverlay.classList.add('opacity-0', 'invisible');
+        document.body.style.overflow = '';
+    }
+
+    // 确保设置面板初始状态是隐藏的
+    ensureSettingsPanelHidden() {
+        if (this.elements.settingsPanel) {
+            this.elements.settingsPanel.classList.remove('active');
+        }
+        if (this.elements.settingsOverlay) {
+            this.elements.settingsOverlay.classList.remove('opacity-100', 'visible');
+            this.elements.settingsOverlay.classList.add('opacity-0', 'invisible');
+        }
         document.body.style.overflow = '';
     }
 
@@ -1285,25 +1287,83 @@ class NovelReader {
     // 格式化内容
     formatContent(content) {
         if (!content) return '<p class="text-center text-gray-500 py-8">暂无内容</p>';
-        
-        const paragraphs = content.split('\n').filter(p => p.trim());
-        
-        return paragraphs.map(paragraph => {
-            paragraph = paragraph.trim();
-            
-            // 检查是否是章节标题
-            if (paragraph.match(/^第.+章/)) {
-                return `<h2 class="text-xl font-bold mt-8 mb-4 text-center">${paragraph}</h2>`;
+
+        // 检查内容是否已经是HTML格式
+        if (content.trim().startsWith('<p>') || content.trim().startsWith('<div>') || content.includes('<p>')) {
+            console.log('内容已经是HTML格式，直接返回');
+            // 确保HTML内容有适当的样式类
+            return this.enhanceHtmlContent(content);
+        }
+
+        // 如果不是HTML格式，则进行格式化
+        console.log('内容是纯文本格式，进行格式化');
+
+        // 处理换行符，保留段落结构
+        const lines = content.split(/\r?\n/);
+        const formattedParagraphs = [];
+        let currentParagraph = '';
+
+        for (let i = 0; i < lines.length; i++) {
+            const line = lines[i].trim();
+
+            if (line === '') {
+                // 空行表示段落结束
+                if (currentParagraph.trim()) {
+                    formattedParagraphs.push(this.formatParagraph(currentParagraph.trim()));
+                    currentParagraph = '';
+                }
+            } else {
+                // 非空行，添加到当前段落
+                if (currentParagraph) {
+                    // 保留换行符，使用<br>标签
+                    currentParagraph += '<br>' + line;
+                } else {
+                    currentParagraph = line;
+                }
             }
-            
-            // 检查是否是其他标题格式
-            if (paragraph.match(/^【.+】$/) || paragraph.match(/^\d+\./)) {
-                return `<h3 class="text-lg font-semibold mt-6 mb-3">${paragraph}</h3>`;
-            }
-            
-            // 普通段落
-            return `<p>${paragraph}</p>`;
-        }).join('');
+        }
+
+        // 处理最后一个段落
+        if (currentParagraph.trim()) {
+            formattedParagraphs.push(this.formatParagraph(currentParagraph.trim()));
+        }
+
+        return formattedParagraphs.join('');
+    }
+
+    // 格式化单个段落
+    formatParagraph(paragraph) {
+        // 检查是否是章节标题
+        if (paragraph.match(/^第.+章/)) {
+            return `<h2 class="chapter-title text-xl font-bold mt-8 mb-6 text-center">${paragraph}</h2>`;
+        }
+
+        // 检查是否是其他标题格式
+        if (paragraph.match(/^【.+】$/) || paragraph.match(/^\d+\./)) {
+            return `<h3 class="section-title text-lg font-semibold mt-6 mb-4">${paragraph}</h3>`;
+        }
+
+        // 普通段落，添加适当的间距
+        return `<p class="paragraph mb-4 leading-relaxed text-justify">${paragraph}</p>`;
+    }
+
+    // 增强HTML内容的样式
+    enhanceHtmlContent(htmlContent) {
+        // 为HTML内容添加适当的CSS类
+        let enhanced = htmlContent;
+
+        // 为段落添加样式类
+        enhanced = enhanced.replace(/<p>/g, '<p class="paragraph mb-4 leading-relaxed text-justify">');
+
+        // 为标题添加样式类
+        enhanced = enhanced.replace(/<h1>/g, '<h1 class="chapter-title text-2xl font-bold mt-8 mb-6 text-center">');
+        enhanced = enhanced.replace(/<h2>/g, '<h2 class="chapter-title text-xl font-bold mt-8 mb-6 text-center">');
+        enhanced = enhanced.replace(/<h3>/g, '<h3 class="section-title text-lg font-semibold mt-6 mb-4">');
+
+        // 为引用添加样式
+        enhanced = enhanced.replace(/<blockquote>/g, '<blockquote class="border-l-4 border-gray-300 pl-4 italic my-4">');
+
+        return enhanced;
     }
 
     // 格式化阅读量
@@ -1348,31 +1408,11 @@ class NovelReader {
 
     // 显示错误信息
     showError(message) {
-        // 检查是否是离线相关错误
-        const isOfflineError = message.includes('离线') || message.includes('数据库') || message.includes('IndexedDB');
-
-        let additionalInfo = '';
-        if (isOfflineError) {
-            additionalInfo = `
-                <div class="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg text-left max-w-md mx-auto">
-                    <h4 class="font-medium text-blue-800 mb-2">解决方案：</h4>
-                    <ul class="text-sm text-blue-700 space-y-1">
-                        <li>• 刷新页面重试</li>
-                        <li>• 检查浏览器是否允许存储数据</li>
-                        <li>• 清理浏览器缓存后重试</li>
-                        <li>• 尝试使用无痕模式</li>
-                        <li>• 您仍可以正常在线阅读</li>
-                    </ul>
-                </div>
-            `;
-        }
-
         this.elements.novelContent.innerHTML = `
             <div class="text-center py-20">
-                <div class="text-6xl mb-4">${isOfflineError ? '💾' : '😔'}</div>
-                <h2 class="text-xl font-semibold text-gray-700 mb-2">${isOfflineError ? '离线功能异常' : '出错了'}</h2>
+                <div class="text-6xl mb-4">😔</div>
+                <h2 class="text-xl font-semibold text-gray-700 mb-2">出错了</h2>
                 <p class="text-gray-500 mb-6">${message}</p>
-                ${additionalInfo}
                 <div class="space-x-4 mt-6">
                     <button onclick="location.reload()"
                             class="px-6 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors">
@@ -1382,6 +1422,51 @@ class NovelReader {
                             class="px-6 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors">
                         返回上一页
                     </button>
+                </div>
+            </div>
+        `;
+    }
+
+    // 显示权限不足提示
+    showAccessDenied(novel) {
+        console.log('显示权限不足提示:', novel);
+
+        const membershipText = novel.requiredMembership === 'premium' ? '高级会员' : 'VIP会员';
+        const isLoggedIn = !!localStorage.getItem('token');
+
+        this.elements.novelContent.innerHTML = `
+            <div class="text-center py-20">
+                <div class="text-6xl mb-4">🔒</div>
+                <h2 class="text-xl font-semibold text-gray-700 mb-2">需要${membershipText}权限</h2>
+                <p class="text-gray-500 mb-6">这是一篇${membershipText}专享内容，需要开通相应会员才能阅读完整内容。</p>
+
+                <div class="max-w-2xl mx-auto mb-8 p-6 bg-gray-50 rounded-lg text-left">
+                    <h4 class="font-medium text-gray-800 mb-3">📖 内容预览：</h4>
+                    <div class="text-gray-600 text-sm leading-relaxed">
+                        ${novel.summary || '暂无预览内容'}
+                    </div>
+                </div>
+
+                <div class="space-x-4">
+                    ${isLoggedIn ? `
+                        <button onclick="window.location.href='/membership.html'"
+                                class="px-8 py-3 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-lg hover:from-purple-600 hover:to-pink-600 transition-all duration-200 shadow-lg">
+                            ✨ 查看${membershipText}套餐
+                        </button>
+                    ` : `
+                        <button onclick="window.location.href='/login.html'"
+                                class="px-8 py-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors">
+                            🔑 登录账户
+                        </button>
+                    `}
+                    <button onclick="window.history.back()"
+                            class="px-6 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors">
+                        返回上一页
+                    </button>
+                </div>
+
+                <div class="mt-6 text-sm text-gray-500">
+                    <p>💡 提示：会员开通需要联系管理员处理，我们不支持在线自动开通</p>
                 </div>
             </div>
         `;
@@ -1423,174 +1508,15 @@ class NovelReader {
         }
     }
 
-    // 初始化离线管理器
-    async initOfflineManager() {
-        if (typeof OfflineReaderManager !== 'undefined') {
-            try {
-                this.offlineManager = new OfflineReaderManager();
-                console.log('离线管理器创建成功');
+    // 离线管理器已移除
 
-                // 检查当前小说是否已离线保存（延迟初始化数据库）
-                if (this.novelId) {
-                    try {
-                        const isOfflineAvailable = await this.offlineManager.isNovelAvailableOffline(this.novelId);
-                        this.updateOfflineIndicator(isOfflineAvailable);
-                        console.log('离线状态检查完成');
-                    } catch (error) {
-                        console.error('检查离线状态失败:', error);
-                        // 不影响主要功能，只是无法显示离线状态
-                        this.showOfflineError(error.message);
-                    }
-                }
-            } catch (error) {
-                console.error('离线管理器初始化失败:', error);
-                this.offlineManager = null;
+    // 离线功能错误提示已移除
 
-                // 显示用户友好的错误提示
-                this.showOfflineError(error.message);
-            }
-        } else {
-            console.warn('OfflineReaderManager 未加载，离线功能不可用');
-        }
-    }
+    // 离线状态指示器已移除
 
-    // 显示离线功能错误提示
-    showOfflineError(message) {
-        // 隐藏离线相关的UI元素
-        const offlineIndicator = document.getElementById('offlineIndicator');
-        if (offlineIndicator) {
-            offlineIndicator.style.display = 'none';
-        }
-
-        // 只在严重错误时显示通知，避免过度打扰用户
-        if (message.includes('不支持') || message.includes('被阻止') || message.includes('重试')) {
-            // 创建错误提示元素
-            const errorDiv = document.createElement('div');
-            errorDiv.className = 'offline-error-notice';
-            errorDiv.innerHTML = `
-                <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-3 mb-4">
-                    <div class="flex items-start">
-                        <div class="flex-shrink-0">
-                            <svg class="h-4 w-4 text-yellow-400 mt-0.5" viewBox="0 0 20 20" fill="currentColor">
-                                <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
-                            </svg>
-                        </div>
-                        <div class="ml-3 flex-1">
-                            <h3 class="text-sm font-medium text-yellow-800">离线功能暂时不可用</h3>
-                            <div class="mt-1 text-sm text-yellow-700">
-                                <p>您仍可以正常在线阅读</p>
-                            </div>
-                            <div class="mt-2">
-                                <button onclick="this.parentElement.parentElement.parentElement.parentElement.remove()"
-                                        class="text-xs bg-yellow-100 text-yellow-800 px-2 py-1 rounded hover:bg-yellow-200 transition-colors">
-                                    知道了
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            `;
-
-            // 插入到页面顶部
-            const container = document.querySelector('.reader-container');
-            if (container) {
-                container.insertBefore(errorDiv, container.firstChild);
-
-                // 5秒后自动隐藏
-                setTimeout(() => {
-                    if (errorDiv.parentNode) {
-                        errorDiv.remove();
-                    }
-                }, 5000);
-            }
-        }
-    }
-
-    // 更新离线状态指示器
-    updateOfflineIndicator(isOffline) {
-        const indicator = document.getElementById('offlineIndicator');
-        if (indicator) {
-            if (isOffline) {
-                indicator.classList.remove('hidden');
-            } else {
-                indicator.classList.add('hidden');
-            }
-        }
-    }
-
-    updateOfflineStatus(isOffline, isOfflineNeeded = false) {
-        // 更新状态指示器
-        if (this.elements.offlineStatus) {
-            if (isOffline) {
-                this.elements.offlineStatus.innerHTML = `
-                    <span class="offline-badge">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 15a4 4 0 004 4h9a5 5 0 10-.1-9.999 5.002 5.002 0 10-9.78 2.096A4.001 4.001 0 003 15z" />
-                        </svg>
-                        离线阅读中
-                    </span>
-                `;
-                this.elements.offlineStatus.classList.remove('hidden');
-            } else if (isOfflineNeeded) {
-                this.elements.offlineStatus.innerHTML = `
-                    <span class="offline-needed-badge">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                        </svg>
-                        需要离线保存
-                    </span>
-                `;
-                this.elements.offlineStatus.classList.remove('hidden');
-            } else {
-                this.elements.offlineStatus.classList.add('hidden');
-            }
-        }
-        
-        // 更新离线下载按钮状态
-        if (this.elements.offlineDownloadBtn) {
-            if (isOffline) {
-                this.elements.offlineDownloadBtn.innerHTML = `
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-1" viewBox="0 0 20 20" fill="currentColor">
-                        <path d="M10 2a5 5 0 00-5 5v2a2 2 0 00-2 2v5a2 2 0 002 2h10a2 2 0 002-2v-5a2 2 0 00-2-2H7V7a3 3 0 015.905-.75 1 1 0 001.937-.5A5.002 5.002 0 0010 2z" />
-                    </svg>
-                    已保存离线
-                `;
-                this.elements.offlineDownloadBtn.classList.add('saved');
-            } else {
-                this.elements.offlineDownloadBtn.innerHTML = `
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-                    </svg>
-                    保存离线阅读
-                `;
-                this.elements.offlineDownloadBtn.classList.remove('saved');
-            }
-        }
-    }
+    // 离线状态更新已移除
     
-    // 下载小说供离线阅读
-    async downloadForOfflineReading() {
-        if (!this.novelId) {
-            this.showToast('无效的小说ID', 'error');
-            return;
-        }
-        
-        try {
-            this.showToast('正在保存小说到离线库...', 'info');
-            
-            const result = await this.offlineManager.downloadNovel(this.novelId);
-            
-            if (result.success) {
-                this.showToast(result.message, 'success');
-                this.updateOfflineStatus(true);
-            } else {
-                this.showToast(result.message, 'warning');
-            }
-        } catch (error) {
-            console.error('保存离线阅读失败:', error);
-            this.showToast('保存失败: ' + (error.message || '未知错误'), 'error');
-        }
-    }
+    // 离线下载功能已移除
     
     // 切换阅读笔记面板
     toggleNotesPanel() {

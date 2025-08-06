@@ -46,7 +46,19 @@ router.get('/', optionalAuthenticateToken, (req, res) => {
         const offsetNum = parseInt(offset) || 0;
         const paginatedNovels = novels.slice(offsetNum, offsetNum + limitNum);
         
-        // 只返回列表需要的字段，并添加权限信息
+        // 获取用户的点赞和收藏状态
+        let userLikes = [];
+        let userFavorites = [];
+        if (req.user) {
+            const userData = DataHandler.readUsersData();
+            const currentUser = userData.users.find(u => u.id === req.user.userId);
+            if (currentUser) {
+                userLikes = currentUser.likes || [];
+                userFavorites = currentUser.favorites || [];
+            }
+        }
+        
+        // 只返回列表需要的字段，并添加权限信息和用户互动状态
         const novelList = paginatedNovels.map(novel => {
             const hasAccess = UserUtils.checkContentAccess(userMembership, novel.accessLevel);
             return {
@@ -63,7 +75,9 @@ router.get('/', optionalAuthenticateToken, (req, res) => {
                 status: novel.status,
                 accessLevel: novel.accessLevel || 'free',
                 hasAccess: hasAccess,
-                requiresLogin: !req.user && novel.accessLevel !== 'free'
+                requiresLogin: !req.user && novel.accessLevel !== 'free',
+                userHasLiked: userLikes.includes(novel.id),
+                userHasFavorited: userFavorites.includes(novel.id)
             };
         });
         
@@ -88,16 +102,32 @@ router.get('/:id', optionalAuthenticateToken, (req, res) => {
     try {
         const data = DataHandler.readNovelsData();
         const novelId = parseInt(req.params.id);
-        
+
         const novel = data.novels.find(n => n.id === novelId);
-        
+
         if (!novel) {
             return res.status(404).json({
                 success: false,
                 message: '小说不存在'
             });
         }
-        
+
+        // 检查是否为管理员
+        const isAdmin = req.user && req.user.isAdmin;
+
+        // 管理员可以访问所有内容，无需权限检查
+        if (isAdmin) {
+            res.json({
+                success: true,
+                data: {
+                    ...novel,
+                    hasAccess: true,
+                    accessLevel: novel.accessLevel || 'free'
+                }
+            });
+            return;
+        }
+
         // 获取用户会员状态
         let userMembership = { type: 'free', status: 'active', isValid: true };
         if (req.user) {
@@ -107,10 +137,10 @@ router.get('/:id', optionalAuthenticateToken, (req, res) => {
                 userMembership = UserUtils.getUserMembershipStatus(currentUser);
             }
         }
-        
+
         // 检查用户是否有权限访问此内容
         const hasAccess = UserUtils.checkContentAccess(userMembership, novel.accessLevel);
-        
+
         if (!hasAccess) {
             // 如果没有权限，返回限制的内容
             const restrictedNovel = {
@@ -131,20 +161,20 @@ router.get('/:id', optionalAuthenticateToken, (req, res) => {
                 requiredMembership: novel.accessLevel,
                 content: null
             };
-            
+
             return res.json({
                 success: true,
                 data: restrictedNovel,
-                message: req.user ? 
-                    `此内容需要${novel.accessLevel === 'premium' ? '高级' : 'VIP'}会员权限` : 
+                message: req.user ?
+                    `此内容需要${novel.accessLevel === 'premium' ? '高级' : 'VIP'}会员权限` :
                     '此内容需要登录并开通会员'
             });
         }
-        
+
         // 有权限访问，增加阅读量并返回完整内容
         novel.views = (novel.views || 0) + 1;
         DataHandler.writeNovelsData(data);
-        
+
         res.json({
             success: true,
             data: {
@@ -289,11 +319,14 @@ router.delete('/:id', (req, res) => {
 });
 
 // 点赞小说
-router.post('/:id/like', (req, res) => {
+router.post('/:id/like', authenticateToken, (req, res) => {
     try {
-        const data = DataHandler.readNovelsData();
         const novelId = parseInt(req.params.id);
-        const novel = data.novels.find(n => n.id === novelId);
+        const userId = req.user.userId;
+        
+        // 读取小说数据
+        const novelsData = DataHandler.readNovelsData();
+        const novel = novelsData.novels.find(n => n.id === novelId);
         
         if (!novel) {
             return res.status(404).json({
@@ -302,14 +335,69 @@ router.post('/:id/like', (req, res) => {
             });
         }
         
+        // 读取用户数据
+        const usersData = DataHandler.readUsersData();
+        const user = usersData.users.find(u => u.id === userId);
+        
+        if (!user) {
+            return res.status(404).json({
+                success: false,
+                message: '用户不存在'
+            });
+        }
+        
+        // 确保用户的likes数组存在
+        if (!user.likes) {
+            user.likes = [];
+        }
+        
+        // 检查用户是否已经点赞过这个小说
+        const hasLiked = user.likes.includes(novelId);
+        
+        if (hasLiked) {
+            return res.status(400).json({
+                success: false,
+                message: '您已经点赞过这个小说了',
+                data: {
+                    novelId: novelId,
+                    likes: novel.likes || 0,
+                    userHasLiked: true
+                }
+            });
+        }
+        
+        // 用户点赞：更新用户的点赞列表和小说的点赞数
+        user.likes.push(novelId);
         novel.likes = (novel.likes || 0) + 1;
         
-        if (DataHandler.writeNovelsData(data)) {
+        // 更新用户统计
+        if (!user.stats) {
+            user.stats = {};
+        }
+        user.stats.totalLikes = (user.stats.totalLikes || 0) + 1;
+        
+        // 添加活动日志
+        if (!user.activityLog) {
+            user.activityLog = [];
+        }
+        user.activityLog.unshift({
+            action: 'like',
+            timestamp: new Date().toISOString(),
+            details: `点赞小说《${novel.title}》`,
+            novelId: novelId
+        });
+        
+        // 保存数据
+        const saveNovels = DataHandler.writeNovelsData(novelsData);
+        const saveUsers = DataHandler.writeUsersData(usersData);
+        
+        if (saveNovels && saveUsers) {
             res.json({
                 success: true,
                 data: {
                     novelId: novelId,
-                    likes: novel.likes
+                    likes: novel.likes,
+                    userHasLiked: true
                 },
                 message: '点赞成功'
             });
@@ -328,12 +416,15 @@ router.post('/:id/like', (req, res) => {
     }
 });
 
-// 收藏小说
-router.post('/:id/favorite', (req, res) => {
+// 取消点赞小说
+router.delete('/:id/like', authenticateToken, (req, res) => {
     try {
-        const data = DataHandler.readNovelsData();
         const novelId = parseInt(req.params.id);
-        const novel = data.novels.find(n => n.id === novelId);
+        const userId = req.user.userId;
+        
+        // 读取小说数据
+        const novelsData = DataHandler.readNovelsData();
+        const novel = novelsData.novels.find(n => n.id === novelId);
         
         if (!novel) {
             return res.status(404).json({
@@ -342,14 +433,166 @@ router.post('/:id/favorite', (req, res) => {
             });
         }
         
-        novel.favorites = (novel.favorites || 0) + 1;
+        // 读取用户数据
+        const usersData = DataHandler.readUsersData();
+        const user = usersData.users.find(u => u.id === userId);
         
-        if (DataHandler.writeNovelsData(data)) {
+        if (!user) {
+            return res.status(404).json({
+                success: false,
+                message: '用户不存在'
+            });
+        }
+        
+        // 确保用户的likes数组存在
+        if (!user.likes) {
+            user.likes = [];
+        }
+        
+        // 检查用户是否已经点赞过这个小说
+        const likeIndex = user.likes.indexOf(novelId);
+        
+        if (likeIndex === -1) {
+            return res.status(400).json({
+                success: false,
+                message: '您还没有点赞过这个小说',
+                data: {
+                    novelId: novelId,
+                    likes: novel.likes || 0,
+                    userHasLiked: false
+                }
+            });
+        }
+        
+        // 取消点赞：从用户点赞列表中移除，减少小说点赞数
+        user.likes.splice(likeIndex, 1);
+        novel.likes = Math.max((novel.likes || 0) - 1, 0);
+        
+        // 更新用户统计
+        if (user.stats) {
+            user.stats.totalLikes = Math.max((user.stats.totalLikes || 0) - 1, 0);
+        }
+        
+        // 添加活动日志
+        if (!user.activityLog) {
+            user.activityLog = [];
+        }
+        user.activityLog.unshift({
+            action: 'unlike',
+            timestamp: new Date().toISOString(),
+            details: `取消点赞小说《${novel.title}》`,
+            novelId: novelId
+        });
+        
+        // 保存数据
+        const saveNovels = DataHandler.writeNovelsData(novelsData);
+        const saveUsers = DataHandler.writeUsersData(usersData);
+        
+        if (saveNovels && saveUsers) {
             res.json({
                 success: true,
                 data: {
                     novelId: novelId,
-                    favorites: novel.favorites
+                    likes: novel.likes,
+                    userHasLiked: false
+                },
+                message: '取消点赞成功'
+            });
+        } else {
+            res.status(500).json({
+                success: false,
+                message: '保存失败'
+            });
+        }
+    } catch (error) {
+        console.error('取消点赞失败:', error);
+        res.status(500).json({
+            success: false,
+            message: '服务器内部错误'
+        });
+    }
+});
+
+// 收藏小说
+router.post('/:id/favorite', authenticateToken, (req, res) => {
+    try {
+        const novelId = parseInt(req.params.id);
+        const userId = req.user.userId;
+        
+        // 读取小说数据
+        const novelsData = DataHandler.readNovelsData();
+        const novel = novelsData.novels.find(n => n.id === novelId);
+        
+        if (!novel) {
+            return res.status(404).json({
+                success: false,
+                message: '小说不存在'
+            });
+        }
+        
+        // 读取用户数据
+        const usersData = DataHandler.readUsersData();
+        const user = usersData.users.find(u => u.id === userId);
+        
+        if (!user) {
+            return res.status(404).json({
+                success: false,
+                message: '用户不存在'
+            });
+        }
+        
+        // 确保用户的favorites数组存在
+        if (!user.favorites) {
+            user.favorites = [];
+        }
+        
+        // 检查用户是否已经收藏过这个小说
+        const hasFavorited = user.favorites.includes(novelId);
+        
+        if (hasFavorited) {
+            return res.status(400).json({
+                success: false,
+                message: '您已经收藏过这个小说了',
+                data: {
+                    novelId: novelId,
+                    favorites: novel.favorites || 0,
+                    userHasFavorited: true
+                }
+            });
+        }
+        
+        // 用户收藏：更新用户的收藏列表和小说的收藏数
+        user.favorites.push(novelId);
+        novel.favorites = (novel.favorites || 0) + 1;
+        
+        // 更新用户统计
+        if (!user.stats) {
+            user.stats = {};
+        }
+        user.stats.totalFavorites = (user.stats.totalFavorites || 0) + 1;
+        
+        // 添加活动日志
+        if (!user.activityLog) {
+            user.activityLog = [];
+        }
+        user.activityLog.unshift({
+            action: 'favorite',
+            timestamp: new Date().toISOString(),
+            details: `收藏小说《${novel.title}》`,
+            novelId: novelId
+        });
+        
+        // 保存数据
+        const saveNovels = DataHandler.writeNovelsData(novelsData);
+        const saveUsers = DataHandler.writeUsersData(usersData);
+        
+        if (saveNovels && saveUsers) {
+            res.json({
+                success: true,
+                data: {
+                    novelId: novelId,
+                    favorites: novel.favorites,
+                    userHasFavorited: true
                 },
                 message: '收藏成功'
             });
@@ -361,6 +604,103 @@ router.post('/:id/favorite', (req, res) => {
         }
     } catch (error) {
         console.error('收藏失败:', error);
+        res.status(500).json({
+            success: false,
+            message: '服务器内部错误'
+        });
+    }
+});
+
+// 取消收藏小说
+router.delete('/:id/favorite', authenticateToken, (req, res) => {
+    try {
+        const novelId = parseInt(req.params.id);
+        const userId = req.user.userId;
+        
+        // 读取小说数据
+        const novelsData = DataHandler.readNovelsData();
+        const novel = novelsData.novels.find(n => n.id === novelId);
+        
+        if (!novel) {
+            return res.status(404).json({
+                success: false,
+                message: '小说不存在'
+            });
+        }
+        
+        // 读取用户数据
+        const usersData = DataHandler.readUsersData();
+        const user = usersData.users.find(u => u.id === userId);
+        
+        if (!user) {
+            return res.status(404).json({
+                success: false,
+                message: '用户不存在'
+            });
+        }
+        
+        // 确保用户的favorites数组存在
+        if (!user.favorites) {
+            user.favorites = [];
+        }
+        
+        // 检查用户是否已经收藏过这个小说
+        const favoriteIndex = user.favorites.indexOf(novelId);
+        
+        if (favoriteIndex === -1) {
+            return res.status(400).json({
+                success: false,
+                message: '您还没有收藏过这个小说',
+                data: {
+                    novelId: novelId,
+                    favorites: novel.favorites || 0,
+                    userHasFavorited: false
+                }
+            });
+        }
+        
+        // 取消收藏：从用户收藏列表中移除，减少小说收藏数
+        user.favorites.splice(favoriteIndex, 1);
+        novel.favorites = Math.max((novel.favorites || 0) - 1, 0);
+        
+        // 更新用户统计
+        if (user.stats) {
+            user.stats.totalFavorites = Math.max((user.stats.totalFavorites || 0) - 1, 0);
+        }
+        
+        // 添加活动日志
+        if (!user.activityLog) {
+            user.activityLog = [];
+        }
+        user.activityLog.unshift({
+            action: 'unfavorite',
+            timestamp: new Date().toISOString(),
+            details: `取消收藏小说《${novel.title}》`,
+            novelId: novelId
+        });
+        
+        // 保存数据
+        const saveNovels = DataHandler.writeNovelsData(novelsData);
+        const saveUsers = DataHandler.writeUsersData(usersData);
+        
+        if (saveNovels && saveUsers) {
+            res.json({
+                success: true,
+                data: {
+                    novelId: novelId,
+                    favorites: novel.favorites,
+                    userHasFavorited: false
+                },
+                message: '取消收藏成功'
+            });
+        } else {
+            res.status(500).json({
+                success: false,
+                message: '保存失败'
+            });
+        }
+    } catch (error) {
+        console.error('取消收藏失败:', error);
         res.status(500).json({
             success: false,
             message: '服务器内部错误'
@@ -650,28 +990,81 @@ router.post('/batch-status', (req, res) => {
     }
 });
 
+// 更新单个小说的访问权限
+router.put('/:id/access', (req, res) => {
+    try {
+        const data = DataHandler.readNovelsData();
+        const novelId = parseInt(req.params.id);
+        const { accessLevel } = req.body;
+
+        // 验证访问级别
+        const validLevels = ['free', 'premium', 'vip'];
+        if (!validLevels.includes(accessLevel)) {
+            return res.status(400).json({
+                success: false,
+                message: '无效的访问权限级别'
+            });
+        }
+
+        const novelIndex = data.novels.findIndex(n => n.id === novelId);
+
+        if (novelIndex === -1) {
+            return res.status(404).json({
+                success: false,
+                message: '小说不存在'
+            });
+        }
+
+        // 更新访问权限
+        data.novels[novelIndex].accessLevel = accessLevel;
+        data.novels[novelIndex].updated_at = new Date().toISOString();
+
+        if (DataHandler.writeNovelsData(data)) {
+            res.json({
+                success: true,
+                data: {
+                    novelId: novelId,
+                    accessLevel: accessLevel
+                },
+                message: '权限设置更新成功'
+            });
+        } else {
+            res.status(500).json({
+                success: false,
+                message: '保存失败'
+            });
+        }
+    } catch (error) {
+        console.error('更新小说权限失败:', error);
+        res.status(500).json({
+            success: false,
+            message: '服务器内部错误'
+        });
+    }
+});
+
 // 批量修改小说访问权限
-router.post('/batch-access', (req, res) => {
+router.put('/batch-access', (req, res) => {
     try {
         const { novelIds, accessLevel } = req.body;
-        
+
         if (!novelIds || !Array.isArray(novelIds) || novelIds.length === 0) {
             return res.status(400).json({
                 success: false,
                 message: '请提供要修改的作品ID列表'
             });
         }
-        
+
         if (!accessLevel || !['free', 'premium', 'vip'].includes(accessLevel)) {
             return res.status(400).json({
                 success: false,
                 message: '请提供有效的访问权限级别'
             });
         }
-        
+
         const data = DataHandler.readNovelsData();
         let updatedCount = 0;
-        
+
         // 更新指定小说的访问权限
         novelIds.forEach(novelId => {
             const novel = data.novels.find(n => n.id === parseInt(novelId));
@@ -681,7 +1074,7 @@ router.post('/batch-access', (req, res) => {
                 updatedCount++;
             }
         });
-        
+
         if (DataHandler.writeNovelsData(data)) {
             res.json({
                 success: true,
@@ -696,6 +1089,43 @@ router.post('/batch-access', (req, res) => {
         }
     } catch (error) {
         console.error('批量修改访问权限失败:', error);
+        res.status(500).json({
+            success: false,
+            message: '服务器内部错误'
+        });
+    }
+});
+
+// 获取用户对小说的互动状态
+router.get('/:id/interaction', authenticateToken, (req, res) => {
+    try {
+        const novelId = parseInt(req.params.id);
+        const userId = req.user.userId;
+        
+        // 读取用户数据
+        const usersData = DataHandler.readUsersData();
+        const user = usersData.users.find(u => u.id === userId);
+        
+        if (!user) {
+            return res.status(404).json({
+                success: false,
+                message: '用户不存在'
+            });
+        }
+        
+        const userLikes = user.likes || [];
+        const userFavorites = user.favorites || [];
+        
+        res.json({
+            success: true,
+            data: {
+                novelId: novelId,
+                userHasLiked: userLikes.includes(novelId),
+                userHasFavorited: userFavorites.includes(novelId)
+            }
+        });
+    } catch (error) {
+        console.error('获取互动状态失败:', error);
         res.status(500).json({
             success: false,
             message: '服务器内部错误'

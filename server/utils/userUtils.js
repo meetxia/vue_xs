@@ -3,11 +3,27 @@ const DataHandler = require('./dataHandler');
 class UserUtils {
     // 获取用户会员状态
     static getUserMembershipStatus(user) {
-        if (!user || !user.membership) {
+        if (!user) {
             return { type: 'free', status: 'active', isValid: true };
         }
         
-        const membership = user.membership;
+        // 处理两种数据结构：
+        // 1. 新结构：user.membership = { type, status, endDate, ... }
+        // 2. 旧结构：user直接包含 { type, status, endDate, ... }
+        let membership;
+        if (user.membership) {
+            membership = user.membership;
+        } else if (user.type) {
+            // 兼容旧的数据结构，直接从user对象读取会员信息
+            membership = {
+                type: user.type,
+                status: user.status,
+                endDate: user.endDate
+            };
+        } else {
+            return { type: 'free', status: 'active', isValid: true };
+        }
+        
         const now = new Date();
         
         // 检查会员是否过期
@@ -22,8 +38,8 @@ class UserUtils {
         
         return {
             type: membership.type,
-            status: membership.status,
-            isValid: membership.status === 'active',
+            status: membership.status || 'active',
+            isValid: (membership.status || 'active') === 'active',
             endDate: membership.endDate
         };
     }

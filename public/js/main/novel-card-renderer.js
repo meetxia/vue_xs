@@ -21,11 +21,23 @@ class NovelCardRenderer {
     createNovelCard(novel, userManager = null) {
         const card = document.createElement('div');
         card.className = 'novel-card bg-white rounded-xl shadow-sm hover:shadow-md transition-all duration-300 cursor-pointer transform hover:-translate-y-1';
-        
-        // 检查权限
-        const hasAccess = !userManager || userManager.canAccessContent(novel.accessLevel);
-        const requiresLogin = userManager && !userManager.isLoggedIn() && novel.accessLevel !== 'free';
-        
+
+        // 使用服务器返回的权限信息，如果没有则回退到客户端计算
+        const hasAccess = novel.hasAccess !== undefined ? novel.hasAccess :
+                         (!userManager || userManager.canAccessContent(novel.accessLevel));
+        const requiresLogin = novel.requiresLogin !== undefined ? novel.requiresLogin :
+                             (userManager && !userManager.isLoggedIn() && novel.accessLevel !== 'free');
+
+        // 调试日志 - 仅显示高级会员内容的权限信息
+        if (novel.accessLevel === 'premium') {
+            console.log(`高级会员小说 "${novel.title}" 权限检查:`, {
+                serverHasAccess: novel.hasAccess,
+                finalHasAccess: hasAccess,
+                userLoggedIn: userManager ? userManager.isLoggedIn() : false,
+                membershipType: userManager ? userManager.getMembershipStatus().type : 'unknown'
+            });
+        }
+
         // 设置点击事件
         card.onclick = () => this.handleCardClick(novel, hasAccess, requiresLogin);
 
@@ -79,17 +91,10 @@ class NovelCardRenderer {
                         </span>
                     </div>
                     <div class="card-actions">
-                        <button class="like-btn text-gray-400 hover:text-red-500 transition-colors duration-200"
+                        <button class="like-btn text-gray-400 hover:text-red-500 transition-colors duration-200 ${novel.userHasLiked ? 'liked text-red-500' : ''}"
                                 data-novel-id="${novel.id}"
                                 onclick="handleLike(event, ${novel.id})">
-                            <span class="like-icon">🤍</span>
-                        </button>
-                        <button class="offline-btn text-gray-400 hover:text-blue-500 transition-colors duration-200"
-                                data-novel-id="${novel.id}"
-                                onclick="handleOfflineDownload(event, ${novel.id})"
-                                title="离线下载"
-                                ${!hasAccess ? 'disabled style="opacity: 0.5; cursor: not-allowed;"' : ''}>
-                            <span class="offline-icon">📥</span>
+                            <span class="like-icon">${novel.userHasLiked ? '❤️' : '🤍'}</span>
                         </button>
                     </div>
                 </div>
@@ -124,33 +129,20 @@ class NovelCardRenderer {
                 </div>
                 <div class="flex items-center justify-between border-t pt-2 mt-2">
                     <div class="flex items-center space-x-3">
-                        <button class="like-btn flex items-center space-x-1 text-xs text-gray-500 hover:text-red-500 transition-colors duration-200"
+                        <button class="like-btn flex items-center space-x-1 text-xs text-gray-500 hover:text-red-500 transition-colors duration-200 ${novel.userHasLiked ? 'liked text-red-500' : ''}"
                                 data-novel-id="${novel.id}"
                                 onclick="handleLike(event, ${novel.id})">
-                            <span class="like-icon">🤍</span>
+                            <span class="like-icon">${novel.userHasLiked ? '❤️' : '🤍'}</span>
                             <span class="like-count">${this.formatViews(novel.likes || 0)}</span>
                         </button>
-                        <button class="favorite-btn flex items-center space-x-1 text-xs text-gray-500 hover:text-yellow-500 transition-colors duration-200"
+                        <button class="favorite-btn flex items-center space-x-1 text-xs text-gray-500 hover:text-yellow-500 transition-colors duration-200 ${novel.userHasFavorited ? 'favorited text-yellow-500' : ''}"
                                 data-novel-id="${novel.id}"
                                 onclick="handleFavorite(event, ${novel.id})">
                             <span class="favorite-icon">⭐</span>
                             <span class="favorite-count">${this.formatViews(novel.favorites || 0)}</span>
                         </button>
                     </div>
-                    <div class="flex items-center space-x-2">
-                        <button class="offline-btn text-xs text-gray-500 hover:text-blue-500 transition-colors duration-200"
-                                data-novel-id="${novel.id}"
-                                onclick="handleOfflineDownload(event, ${novel.id})"
-                                title="离线下载"
-                                ${!hasAccess ? 'disabled style="opacity: 0.5; cursor: not-allowed;"' : ''}>
-                            <span class="offline-icon">📥</span>
-                        </button>
-                        <button class="share-btn text-xs text-gray-500 hover:text-green-500 transition-colors duration-200"
-                                onclick="handleShare(event, ${novel.id})"
-                                title="分享">
-                            <span>🔗</span>
-                        </button>
-                    </div>
+                    <!-- 离线下载和分享功能已移除 -->
                 </div>
             </div>
         `;
@@ -282,27 +274,7 @@ class NovelCardRenderer {
         }
     }
 
-    /**
-     * 处理离线下载
-     */
-    async handleOfflineDownload(event, novelId) {
-        event.stopPropagation();
-        
-        if (window.handleOfflineDownload) {
-            window.handleOfflineDownload(event, novelId);
-        }
-    }
-
-    /**
-     * 处理分享
-     */
-    handleShare(event, novelId) {
-        event.stopPropagation();
-        
-        if (window.handleShare) {
-            window.handleShare(event, novelId);
-        }
-    }
+    // 离线下载和分享功能已移除
 
     /**
      * 处理图片加载完成

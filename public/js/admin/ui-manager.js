@@ -23,17 +23,22 @@ class UIManager {
 
         sidebarItems.forEach(item => {
             item.addEventListener('click', (e) => {
+                // 如果是外部链接（如用户管理），不阻止默认行为
+                if (item.hasAttribute('target') || item.getAttribute('href').endsWith('.html')) {
+                    return; // 让浏览器处理链接跳转
+                }
+
                 e.preventDefault();
-                
+
                 // 移除所有活动状态
                 sidebarItems.forEach(si => si.classList.remove('active'));
                 sections.forEach(section => section.classList.remove('active'));
-                
+
                 // 添加当前活动状态
                 item.classList.add('active');
                 const sectionId = item.getAttribute('data-section');
                 const section = document.getElementById(`${sectionId}-section`);
-                
+
                 if (section) {
                     section.classList.add('active');
                     this.currentSection = sectionId;
@@ -62,12 +67,7 @@ class UIManager {
                     window.draftManager.loadDrafts();
                 }
                 break;
-            case 'users':
-                if (window.userManager) {
-                    window.userManager.loadUsers();
-                    window.userManager.loadUserStats();
-                }
-                break;
+            // users 现在跳转到独立页面，不需要在这里处理
             case 'batch-import':
                 this.initBatchImport();
                 break;

@@ -298,6 +298,84 @@ router.get('/online-stats', requireAdmin, (req, res) => {
     }
 });
 
+// 修改用户密码
+router.patch('/users/:id/password', requireAdmin, async (req, res) => {
+    try {
+        const { newPassword } = req.body;
+        const userId = parseInt(req.params.id);
+
+        // 验证新密码
+        if (!newPassword || newPassword.length < 6) {
+            return res.status(400).json({
+                success: false,
+                message: '密码长度至少6位字符'
+            });
+        }
+
+        const userData = DataHandler.readUsersData();
+        const userIndex = userData.users.findIndex(u => u.id === userId);
+
+        if (userIndex === -1) {
+            return res.status(404).json({
+                success: false,
+                message: '用户不存在'
+            });
+        }
+
+        const user = userData.users[userIndex];
+
+        // 加密新密码
+        const bcrypt = require('bcrypt');
+        const hashedPassword = await bcrypt.hash(newPassword, 10);
+
+        // 更新密码
+        userData.users[userIndex] = {
+            ...user,
+            password: hashedPassword,
+            lastActivity: new Date().toISOString()
+        };
+
+        // 记录操作日志
+        if (!userData.users[userIndex].activityLog) {
+            userData.users[userIndex].activityLog = [];
+        }
+
+        userData.users[userIndex].activityLog.unshift({
+            action: 'password_reset',
+            timestamp: new Date().toISOString(),
+            details: '管理员重置了密码',
+            operator: 'admin'
+        });
+
+        // 清除用户的现有会话（强制重新登录）
+        if (userData.sessions) {
+            userData.sessions = userData.sessions.filter(session => session.userId !== userId);
+        }
+
+        if (DataHandler.writeUsersData(userData)) {
+            res.json({
+                success: true,
+                data: {
+                    userId: userId,
+                    username: user.username
+                },
+                message: '密码修改成功，用户需要重新登录'
+            });
+        } else {
+            res.status(500).json({
+                success: false,
+                message: '保存失败'
+            });
+        }
+    } catch (error) {
+        console.error('修改密码失败:', error);
+        res.status(500).json({
+            success: false,
+            message: '服务器内部错误'
+        });
+    }
+});
+
 // 切换用户状态（启用/禁用）
 router.patch('/users/:id/toggle-status', requireAdmin, (req, res) => {
     try {

@@ -7,14 +7,6 @@
 let novelsData = [];
 let filteredNovels = [];
 
-// 模块实例
-let userManager = null;
-let themeManager = null;
-let searchManager = null;
-let waterfallInstance = null;
-let cardRenderer = null;
-let offlineManager = null;
-
 // 应用程序主类
 class MainApplication {
     constructor() {
@@ -28,20 +20,28 @@ class MainApplication {
      */
     async init() {
         console.log('开始初始化应用程序...');
-        
+
         try {
             // 初始化各个模块
+            console.log('1. 初始化模块...');
             await this.initializeModules();
-            
+            console.log('1. 模块初始化完成');
+
             // 绑定全局事件
+            console.log('2. 绑定全局事件...');
             this.bindGlobalEvents();
-            
+            console.log('2. 全局事件绑定完成');
+
             // 加载数据
+            console.log('3. 加载初始数据...');
             await this.loadInitialData();
-            
+            console.log('3. 初始数据加载完成');
+
             // 初始化UI组件
+            console.log('4. 初始化UI组件...');
             this.initializeUI();
-            
+            console.log('4. UI组件初始化完成');
+
             this.isInitialized = true;
             console.log('应用程序初始化完成');
         } catch (error) {
@@ -54,25 +54,86 @@ class MainApplication {
      * 初始化各个模块
      */
     async initializeModules() {
-        // 初始化主题管理器
-        themeManager = new ThemeManager();
-        this.modules.theme = themeManager;
-        
-        // 初始化用户管理器
-        userManager = new UserManager();
-        this.modules.user = userManager;
-        
-        // 初始化搜索管理器
-        searchManager = new SearchManager();
-        this.modules.search = searchManager;
-        
-        // 初始化卡片渲染器
-        cardRenderer = new NovelCardRenderer({
-            cardClickHandler: this.handleNovelClick.bind(this)
-        });
-        this.modules.cardRenderer = cardRenderer;
-        
-        console.log('所有模块初始化完成');
+        try {
+            // 初始化主题管理器
+            if (typeof ThemeManager !== 'undefined') {
+                window.themeManager = new ThemeManager();
+                this.modules.theme = window.themeManager;
+                console.log('主题管理器初始化完成');
+            } else {
+                console.error('ThemeManager 类未找到');
+                return;
+            }
+
+            // 初始化用户管理器并等待完成
+            if (typeof UserManager !== 'undefined') {
+                window.userManager = new UserManager();
+                this.modules.user = window.userManager;
+
+                // 等待用户管理器完全初始化
+                if (window.userManager.token) {
+                    console.log('等待用户管理器初始化完成...');
+                    // 等待会员信息加载完成
+                    let attempts = 0;
+                    const maxAttempts = 50; // 最多等待5秒
+                    await new Promise(resolve => {
+                        const checkInitialization = () => {
+                            attempts++;
+                            if (window.userManager.membershipInfo !== null || attempts >= maxAttempts) {
+                                console.log('用户管理器初始化完成，会员状态:', window.userManager.getMembershipStatus());
+                                resolve();
+                            } else {
+                                setTimeout(checkInitialization, 100);
+                            }
+                        };
+                        checkInitialization();
+                    });
+                } else {
+                    console.log('用户未登录，跳过会员信息加载');
+                }
+                console.log('用户管理器初始化完成');
+            } else {
+                console.error('UserManager 类未找到');
+                return;
+            }
+
+            // 初始化搜索管理器
+            if (typeof SearchManager !== 'undefined') {
+                window.searchManager = new SearchManager();
+                this.modules.search = window.searchManager;
+                console.log('搜索管理器初始化完成');
+            } else {
+                console.error('SearchManager 类未找到');
+                return;
+            }
+
+            // 初始化卡片渲染器
+            if (typeof NovelCardRenderer !== 'undefined') {
+                window.cardRenderer = new NovelCardRenderer({
+                    cardClickHandler: this.handleNovelClick.bind(this)
+                });
+                this.modules.cardRenderer = window.cardRenderer;
+                console.log('卡片渲染器初始化完成');
+            } else {
+                console.error('NovelCardRenderer 类未找到');
+                return;
+            }
+
+            // 初始化交互管理器
+            if (typeof InteractionManager !== 'undefined' && window.userManager) {
+                window.interactionManager = new InteractionManager(window.userManager);
+                this.modules.interaction = window.interactionManager;
+                console.log('交互管理器初始化完成');
+            } else {
+                console.error('InteractionManager 类未找到或用户管理器未初始化');
+                return;
+            }
+
+            console.log('所有模块初始化完成');
+        } catch (error) {
+            console.error('模块初始化过程中发生错误:', error);
+            throw error;
+        }
     }
 
     /**
@@ -117,11 +178,6 @@ class MainApplication {
             
             // 确保移动端按钮正确初始化
             this.initializeMobileComponents();
-            
-            // 初始化离线阅读管理器
-            setTimeout(() => {
-                this.initOfflineManager();
-            }, 100);
         }, 300);
     }
 
@@ -164,8 +220,10 @@ class MainApplication {
      */
     handleInitializationError(error) {
         console.error('应用程序启动失败:', error);
-        if (window.Utils && window.Utils.showToast) {
+        if (typeof Utils !== 'undefined' && Utils.showToast) {
             Utils.showToast('应用程序启动失败，请刷新页面重试', 'error');
+        } else {
+            alert('应用程序启动失败，请刷新页面重试');
         }
     }
 
@@ -187,8 +245,8 @@ class MainApplication {
                 };
                 
                 // 如果用户已登录，添加认证头
-                if (userManager && userManager.token) {
-                    headers['Authorization'] = `Bearer ${userManager.token}`;
+                if (window.userManager && window.userManager.token) {
+                    headers['Authorization'] = `Bearer ${window.userManager.token}`;
                 }
                 
                 const response = await fetch('/api/novels', { headers });
@@ -208,8 +266,8 @@ class MainApplication {
             filteredNovels = [...novelsData];
             
             // 设置搜索管理器的数据
-            if (searchManager) {
-                searchManager.setNovelsData(novelsData);
+            if (window.searchManager) {
+                window.searchManager.setNovelsData(novelsData);
             }
             
             this.renderNovels();
@@ -245,23 +303,23 @@ class MainApplication {
      */
     renderNovels() {
         const container = document.querySelector('.waterfall-container');
-        if (!container || !cardRenderer) return;
+        if (!container || !window.cardRenderer) return;
 
         // 使用卡片渲染器渲染小说
-        cardRenderer.renderNovels(filteredNovels, container, userManager);
+        window.cardRenderer.renderNovels(filteredNovels, container, window.userManager);
 
         // 渲染完成后重新布局瀑布流
         requestAnimationFrame(() => {
             setTimeout(() => {
-                if (waterfallInstance) {
-                    waterfallInstance.refresh();
+                if (window.waterfallInstance) {
+                    window.waterfallInstance.refresh();
                 } else {
                     this.initMasonryLayout();
                 }
                 // 额外延迟确保卡片高度计算正确
                 setTimeout(() => {
-                    if (waterfallInstance) {
-                        waterfallInstance.refresh();
+                    if (window.waterfallInstance) {
+                        window.waterfallInstance.refresh();
                     }
                 }, 300);
             }, 100);
@@ -276,8 +334,8 @@ class MainApplication {
         if (!container) return;
 
         // 销毁旧实例
-        if (waterfallInstance) {
-            waterfallInstance.destroy();
+        if (window.waterfallInstance) {
+            window.waterfallInstance.destroy();
         }
 
         // 创建新实例，根据屏幕尺寸调整参数
@@ -306,8 +364,8 @@ class MainApplication {
             config = { ...config, gap: 12, minColumnWidth: 150, maxColumns: 2, padding: 12 };
         }
 
-        waterfallInstance = new WaterfallLayout(container, config);
-        waterfallInstance.layout();
+        window.waterfallInstance = new WaterfallLayout(container, config);
+        window.waterfallInstance.layout();
     }
 
     /**
@@ -317,6 +375,7 @@ class MainApplication {
         const mobileSearchBtn = document.getElementById('mobileSearchBtn');
         const mobileSearchBar = document.getElementById('mobileSearchBar');
         const themeToggle = document.getElementById('themeToggle');
+        const hamburgerBtn = document.getElementById('hamburgerBtn');
 
         // 确保移动端搜索栏初始状态正确
         if (mobileSearchBar) {
@@ -325,9 +384,15 @@ class MainApplication {
             console.log('移动端搜索栏初始状态已设置为隐藏');
         }
 
+        // 绑定汉堡菜单按钮事件
+        if (hamburgerBtn) {
+            hamburgerBtn.addEventListener('click', toggleHamburgerMenu);
+            console.log('汉堡菜单按钮事件已绑定');
+        }
+
         // 为移动设备优化点击事件
         this.optimizeForMobileDevices();
-        
+
         console.log('移动端组件初始化完成');
     }
 
@@ -354,42 +419,7 @@ class MainApplication {
         }
     }
 
-    /**
-     * 初始化离线阅读管理器
-     */
-    initOfflineManager() {
-        console.log('开始初始化离线阅读管理器...');
-
-        if (typeof OfflineReaderManager !== 'undefined') {
-            try {
-                offlineManager = new OfflineReaderManager();
-
-                // 注册Toast通知函数
-                if (typeof Utils.showToast === 'function') {
-                    offlineManager.registerToastFunction(Utils.showToast);
-                    console.log('Toast通知函数注册成功');
-                }
-
-                console.log('离线阅读管理器初始化成功');
-
-                // 延迟更新按钮状态
-                setTimeout(() => {
-                    updateAllOfflineButtonStates();
-                }, 500);
-
-            } catch (error) {
-                console.error('离线阅读管理器初始化失败:', error);
-            }
-        } else {
-            console.error('OfflineReaderManager类未加载，请检查offline-reader.js是否正确引入');
-
-            // 重试机制
-            setTimeout(() => {
-                console.log('重试初始化离线管理器...');
-                this.initOfflineManager();
-            }, 2000);
-        }
-    }
+    // 离线阅读管理器已移除
 
     /**
      * 获取模块实例
@@ -426,9 +456,20 @@ let mainApp = null;
  */
 document.addEventListener('DOMContentLoaded', function() {
     console.log('页面加载完成，开始初始化应用程序...');
-    
+
+    // 检查是否已经初始化过
+    if (window.mainApp) {
+        console.log('主应用已经初始化过，跳过重复初始化');
+        return;
+    }
+
     // 创建主应用实例
-    mainApp = new MainApplication();
+    try {
+        window.mainApp = new MainApplication();
+        console.log('主应用初始化成功');
+    } catch (error) {
+        console.error('主应用初始化失败:', error);
+    }
 });
 
 // =============== 兼容性函数 - 保持与现有代码的兼容性 ===============
@@ -464,8 +505,8 @@ function initMasonryLayout() {
  * 切换主题（兼容性函数）
  */
 function toggleTheme() {
-    if (themeManager) {
-        themeManager.toggleTheme();
+    if (window.themeManager) {
+        window.themeManager.toggleTheme();
     }
 }
 
@@ -473,8 +514,8 @@ function toggleTheme() {
  * 更新主题切换图标（兼容性函数）
  */
 function updateThemeToggleIcons() {
-    if (themeManager) {
-        themeManager.updateThemeToggleIcons();
+    if (window.themeManager) {
+        window.themeManager.updateThemeToggleIcons();
     }
 }
 
@@ -482,8 +523,8 @@ function updateThemeToggleIcons() {
  * 处理搜索（兼容性函数）
  */
 function handleSearch(event) {
-    if (searchManager) {
-        searchManager.handleSearch(event);
+    if (window.searchManager) {
+        window.searchManager.handleSearch(event);
     }
 }
 
@@ -555,10 +596,34 @@ function showReadHistory() {
  * 退出登录
  */
 async function logout() {
-    if (userManager) {
-        await userManager.logout();
+    if (window.userManager) {
+        await window.userManager.logout();
     }
     toggleUserDropdown();
+}
+
+// =============== 移动端搜索相关函数 ===============
+
+/**
+ * 切换移动端搜索栏
+ */
+function toggleMobileSearch() {
+    const mobileSearchBar = document.getElementById('mobileSearchBar');
+    if (mobileSearchBar) {
+        const isHidden = mobileSearchBar.classList.contains('hidden');
+        if (isHidden) {
+            mobileSearchBar.classList.remove('hidden');
+            mobileSearchBar.classList.add('show');
+            // 聚焦到搜索框
+            const searchInput = document.getElementById('mobileSearchInput');
+            if (searchInput) {
+                setTimeout(() => searchInput.focus(), 100);
+            }
+        } else {
+            mobileSearchBar.classList.add('hidden');
+            mobileSearchBar.classList.remove('show');
+        }
+    }
 }
 
 // =============== 汉堡菜单相关函数 ===============
@@ -741,150 +806,9 @@ async function handleFavorite(event, novelId) {
     }
 }
 
-/**
- * 处理分享
- */
-function handleShare(event, novelId) {
-    event.stopPropagation();
-    
-    const novel = novelsData.find(n => n.id === novelId);
-    if (!novel) return;
-    
-    const shareUrl = `${window.location.origin}/read.html?id=${novelId}`;
-    const shareText = `推荐一部好小说：${novel.title}`;
-    
-    if (navigator.share) {
-        navigator.share({
-            title: novel.title,
-            text: shareText,
-            url: shareUrl
-        }).catch(err => console.log('分享失败:', err));
-    } else {
-        // 复制链接到剪贴板
-        Utils.copyToClipboard(shareUrl).then(success => {
-            if (success) {
-                Utils.showToast('链接已复制到剪贴板', 'success');
-            } else {
-                Utils.showToast('分享失败', 'error');
-            }
-        });
-    }
-}
+// 分享功能已移除
 
-// =============== 离线下载相关函数 ===============
-
-/**
- * 处理离线下载
- */
-async function handleOfflineDownload(event, novelId) {
-    event.stopPropagation();
-
-    console.log(`开始处理离线下载，小说ID: ${novelId}`);
-
-    // 确保离线管理器已初始化
-    if (!offlineManager) {
-        console.log('离线管理器未初始化，尝试重新初始化...');
-        if (mainApp) {
-            mainApp.initOfflineManager();
-        }
-
-        await Utils.sleep(500);
-
-        if (!offlineManager) {
-            console.error('离线管理器初始化失败');
-            Utils.showToast('离线功能不可用，请刷新页面重试', 'error');
-            return;
-        }
-    }
-
-    const btn = event.target.closest('.offline-btn');
-    const icon = btn.querySelector('.offline-icon');
-
-    if (!btn || !icon) {
-        console.error('找不到离线按钮或图标元素');
-        return;
-    }
-
-    try {
-        // 检查是否已经离线保存
-        const isOfflineAvailable = await offlineManager.isNovelAvailableOffline(novelId);
-
-        if (isOfflineAvailable) {
-            // 已经离线保存，询问是否删除
-            if (confirm('该小说已离线保存，是否删除离线版本？')) {
-                try {
-                    await offlineManager.deleteNovel(novelId);
-                    icon.textContent = '📥';
-                    btn.classList.remove('offline-downloaded');
-                    btn.title = '离线下载';
-                    Utils.showToast('离线版本已删除', 'success');
-                } catch (error) {
-                    console.error('删除离线版本失败:', error);
-                    Utils.showToast('删除失败，请稍后重试', 'error');
-                }
-            }
-            return;
-        }
-
-        // 开始下载
-        console.log('开始下载小说到离线存储...');
-
-        // 更新按钮状态为下载中
-        icon.textContent = '⏳';
-        btn.disabled = true;
-        btn.title = '下载中...';
-
-        const result = await offlineManager.downloadNovel(novelId);
-
-        if (result && result.success) {
-            icon.textContent = '✅';
-            btn.classList.add('offline-downloaded');
-            btn.title = '已离线保存，点击删除';
-            Utils.showToast(result.message || '小说已保存到离线阅读库', 'success');
-        } else {
-            icon.textContent = '📥';
-            btn.title = '离线下载';
-            const errorMsg = result ? result.message : '下载失败，请稍后重试';
-            Utils.showToast(errorMsg, 'warning');
-        }
-    } catch (error) {
-        console.error('离线下载过程中发生错误:', error);
-        icon.textContent = '📥';
-        btn.title = '离线下载';
-        Utils.showToast(`下载失败: ${error.message}`, 'error');
-    } finally {
-        btn.disabled = false;
-    }
-}
-
-/**
- * 更新所有离线按钮状态
- */
-async function updateAllOfflineButtonStates() {
-    if (!offlineManager) return;
-
-    const offlineButtons = document.querySelectorAll('.offline-btn');
-
-    for (const btn of offlineButtons) {
-        const novelId = parseInt(btn.dataset.novelId);
-        const icon = btn.querySelector('.offline-icon');
-
-        try {
-            const isAvailable = await offlineManager.isNovelAvailableOffline(novelId);
-            if (isAvailable) {
-                icon.textContent = '✅';
-                btn.classList.add('offline-downloaded');
-                btn.title = '已离线保存，点击删除';
-            } else {
-                icon.textContent = '📥';
-                btn.classList.remove('offline-downloaded');
-                btn.title = '离线下载';
-            }
-        } catch (error) {
-            console.error('检查离线状态失败:', error);
-        }
-    }
-}
+// 离线下载功能已移除
 
 // =============== 会员中心相关函数 ===============
 
@@ -892,11 +816,11 @@ async function updateAllOfflineButtonStates() {
  * 显示会员中心
  */
 function showMembershipCenter() {
-    if (!userManager || !userManager.isLoggedIn()) {
+    if (!window.userManager || !window.userManager.isLoggedIn()) {
         window.location.href = 'login.html';
         return;
     }
-    
+
     showMembershipModal();
 }
 
@@ -945,7 +869,7 @@ function closeMembershipModal() {
  */
 async function loadMembershipModalContent() {
     try {
-        const membership = userManager.getMembershipStatus();
+        const membership = window.userManager.getMembershipStatus();
         const plansResponse = await fetch('/api/membership/plans');
         const plansResult = await plansResponse.json();
         
@@ -965,8 +889,8 @@ async function loadMembershipModalContent() {
             statusHtml = `
                 <div class="mb-6">
                     <div class="flex items-center justify-center mb-2">
-                        <span class="text-lg font-medium">${userManager.getMembershipDisplayName()}</span>
-                        ${userManager.getMembershipBadge()}
+                        <span class="text-lg font-medium">${window.userManager.getMembershipDisplayName()}</span>
+                        ${window.userManager.getMembershipBadge()}
                     </div>
                     <p class="text-sm text-gray-500">到期时间：${endDate}</p>
                 </div>
@@ -1007,38 +931,18 @@ async function loadMembershipModalContent() {
 }
 
 /**
- * 升级会员
+ * 升级会员 - 仅显示购买引导，禁止直接开通
  */
 async function upgradeMembership(membershipType) {
-    try {
-        const response = await fetch('/api/membership/upgrade', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${userManager.token}`
-            },
-            body: JSON.stringify({
-                membershipType: membershipType,
-                duration: 1, // 默认1个月
-                paymentMethod: 'demo' // 演示模式
-            })
-        });
-        
-        const result = await response.json();
-        
-        if (result.success) {
-            alert(result.message);
-            await userManager.loadMembershipInfo();
-            userManager.updateUI();
-            closeMembershipModal();
-            // 刷新小说列表以更新权限状态
-            await loadNovels();
-        } else {
-            alert(result.message || '开通失败');
-        }
-    } catch (error) {
-        console.error('开通会员失败:', error);
-        alert('开通失败，请稍后重试');
+    // 安全措施：禁止前端直接开通会员
+    const membershipText = membershipType === 'premium' ? '高级会员' : 'VIP会员';
+    const price = membershipType === 'premium' ? '19.9' : '39.9';
+    
+    alert(`${membershipText} (¥${price}/月)\n\n为确保支付安全，请联系客服开通：\n• 微信：novel-service\n• 邮件：service@novel-site.com\n\n我们将为您提供安全的支付方式和专业的开通服务。`);
+    
+    // 可选：跳转到会员页面查看详细信息
+    if (confirm('是否查看会员套餐详情？')) {
+        window.open('/membership.html', '_blank');
     }
 }
 
@@ -1274,12 +1178,7 @@ document.head.appendChild(style);
 
 // 将重要的模块实例暴露到全局作用域，以便其他脚本使用
 window.mainApp = mainApp;
-window.userManager = userManager;
-window.themeManager = themeManager;
-window.searchManager = searchManager;
-window.waterfallInstance = waterfallInstance;
-window.cardRenderer = cardRenderer;
-window.offlineManager = offlineManager;
+// 其他模块实例已经在初始化时赋值到window对象
 
 // 暴露兼容性函数
 window.loadNovels = loadNovels;
@@ -1294,9 +1193,7 @@ window.formatViews = formatViews;
 window.getTimeAgo = getTimeAgo;
 window.handleLike = handleLike;
 window.handleFavorite = handleFavorite;
-window.handleShare = handleShare;
-window.handleOfflineDownload = handleOfflineDownload;
-window.updateAllOfflineButtonStates = updateAllOfflineButtonStates;
+// 分享和离线下载功能已移除
 window.handleImageLoaded = handleImageLoaded;
 window.handleImageError = handleImageError;
 window.showMembershipCenter = showMembershipCenter;
@@ -1307,6 +1204,7 @@ window.showError = showError;
 window.logout = logout;
 window.showFavorites = showFavorites;
 window.showReadHistory = showReadHistory;
+window.toggleMobileSearch = toggleMobileSearch;
 window.toggleHamburgerMenu = toggleHamburgerMenu;
 window.openHamburgerMenu = openHamburgerMenu;
 window.closeHamburgerMenu = closeHamburgerMenu;

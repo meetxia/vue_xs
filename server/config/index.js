@@ -4,6 +4,12 @@ const config = {
     // 服务器配置
     PORT: process.env.PORT || 3000,
     JWT_SECRET: process.env.JWT_SECRET || 'xiaohongshu-novel-secret-key-2024',
+
+    // 请求体大小限制配置
+    requestLimits: {
+        json: '50mb',        // JSON请求体大小限制
+        urlencoded: '50mb'   // URL编码请求体大小限制
+    },
     
     // 文件路径配置
     dataPath: {
@@ -45,8 +51,8 @@ const config = {
             },
             tongyi: {
                 name: '通义千问',
-                apiKey: process.env.TONGYI_API_KEY,
-                endpoint: 'https://dashscope.aliyuncs.com/api/v1/services/aigc/text-generation/generation'
+                apiKey: process.env.DASHSCOPE_API_KEY,
+                endpoint: 'https://dashscope.aliyuncs.com/compatible-mode/v1'
             }
         },
         enabled: false

@@ -156,6 +156,34 @@
       "updateTime": "2025-07-31T15:10:07.055Z",
       "replies": [],
       "isDeleted": false
+    },
+    {
+      "id": 10,
+      "novelId": 15,
+      "userId": 5,
+      "parentId": null,
+      "level": 0,
+      "content": "好香好香",
+      "likes": 0,
+      "createTime": "2025-08-05T07:03:37.647Z",
+      "updateTime": "2025-08-05T07:03:37.647Z",
+      "replies": [
+        11
+      ],
+      "isDeleted": false
+    },
+    {
+      "id": 11,
+      "novelId": 15,
+      "userId": 5,
+      "parentId": 10,
+      "level": 1,
+      "content": "😄",
+      "likes": 0,
+      "createTime": "2025-08-05T07:03:49.531Z",
+      "updateTime": "2025-08-05T07:03:49.531Z",
+      "replies": [],
+      "isDeleted": false
     }
   ]
 }

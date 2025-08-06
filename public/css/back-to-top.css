@@ -14,10 +14,10 @@
     justify-content: center;
     box-shadow: 0 4px 12px rgba(255, 36, 66, 0.3);
     z-index: 1000;
-    opacity: 0;
-    visibility: hidden;
+    opacity: 1;
+    visibility: visible;
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    transform: translateY(20px);
+    transform: translateY(0);
     outline: none;
     user-select: none;
 }
@@ -50,33 +50,17 @@
     transform: translateY(-1px);
 }
 
-/* 移动端适配 */
+/* 移动端适配 - 隐藏返回顶部按钮 */
 @media (max-width: 768px) {
     .back-to-top {
-        right: 20px;
-        bottom: 20px;
-        width: 45px;
-        height: 45px;
-    }
-    
-    .back-to-top-icon {
-        width: 18px;
-        height: 18px;
+        display: none !important;
     }
 }
 
-/* 小屏幕设备适配 */
+/* 小屏幕设备适配 - 隐藏返回顶部按钮 */
 @media (max-width: 480px) {
     .back-to-top {
-        right: 15px;
-        bottom: 15px;
-        width: 40px;
-        height: 40px;
-    }
-    
-    .back-to-top-icon {
-        width: 16px;
-        height: 16px;
+        display: none !important;
     }
 }
 
@@ -86,12 +70,14 @@
     outline-offset: 2px;
 }
 
-/* 避免与其他浮动元素冲突 */
-@media (max-width: 768px) {
-    .back-to-top {
-        bottom: 80px; /* 为移动端可能的底部导航留出空间 */
-    }
+/* 避免与其他浮动元素冲突 - 移动端已隐藏 */
+
+/* 针对阅读页面的特殊样式 */
+body.reading-page .back-to-top {
+    z-index: 1001; /* 确保在阅读页面元素之上 */
 }
+
+/* 阅读页面移动端已隐藏返回顶部按钮 */
 
 /* 高对比度模式支持 */
 @media (prefers-contrast: high) {

@@ -8,6 +8,7 @@
     <link rel="stylesheet" href="css/style.css">
     <link rel="stylesheet" href="css/back-to-top.css">
     <script>
+        // 配置Tailwind CSS并禁用生产环境警告
         tailwind.config = {
             theme: {
                 extend: {
@@ -19,6 +20,11 @@
                     }
                 }
             }
+        };
+
+        // 禁用Tailwind CSS的生产环境警告
+        if (typeof window !== 'undefined') {
+            window.tailwindConfig = tailwind.config;
         }
     </script>
 </head>
@@ -101,13 +107,7 @@
                     </svg>
                     阅读历史
                 </a>
-                <a href="offline-manager.html"
-                   class="flex items-center px-4 py-3 text-gray-700 hover:text-xhs-red hover:bg-gray-50 rounded-lg transition-colors">
-                    <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
-                    </svg>
-                    离线管理
-                </a>
+                <!-- 离线管理功能已移除 -->
                 <a href="batch-import.html"
                    class="flex items-center px-4 py-3 text-gray-700 hover:text-xhs-red hover:bg-gray-50 rounded-lg transition-colors">
                     <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -166,10 +166,11 @@
     <script src="js/main/utils.js"></script>
     <script src="js/main/theme-manager.js"></script>
     <script src="js/main/user-manager.js"></script>
+    <script src="js/interaction-manager.js"></script>
     <script src="js/main/waterfall-layout.js"></script>
     <script src="js/main/search-manager.js"></script>
     <script src="js/main/novel-card-renderer.js"></script>
-    <script src="js/offline-reader.js"></script>
+    <!-- 离线阅读脚本已移除 -->
     <script src="js/main.js"></script>
     <script src="js/back-to-top.js"></script>
 </body>

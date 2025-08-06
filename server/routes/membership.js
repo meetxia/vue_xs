@@ -24,9 +24,9 @@ router.get('/status', authenticateToken, (req, res) => {
             success: true,
             data: {
                 ...membershipStatus,
-                startDate: user.membership?.startDate,
-                autoRenew: user.membership?.autoRenew || false,
-                paymentHistory: user.membership?.paymentHistory || []
+                startDate: user.membership?.startDate || user.startDate,
+                autoRenew: user.membership?.autoRenew || user.autoRenew || false,
+                paymentHistory: user.membership?.paymentHistory || user.paymentHistory || []
             }
         });
     } catch (error) {
@@ -38,10 +38,38 @@ router.get('/status', authenticateToken, (req, res) => {
     }
 });
 
-// 开通/升级会员
+// 开通/升级会员 - 需要管理员权限或支付验证
 router.post('/upgrade', authenticateToken, (req, res) => {
     try {
-        const { membershipType, duration, paymentMethod } = req.body;
+        const { membershipType, duration, paymentMethod, paymentProof, adminOverride } = req.body;
+        
+        // 获取用户信息
+        const userData = DataHandler.readUsersData();
+        const user = userData.users.find(u => u.id === req.user.userId);
+        
+        if (!user) {
+            return res.status(404).json({
+                success: false,
+                message: '用户不存在'
+            });
+        }
+        
+        // 安全检查：只允许管理员或有效支付证明的请求
+        const isAdmin = user.role === 'admin';
+        const hasValidPaymentProof = paymentProof && paymentProof.verified === true;
+        
+        if (!isAdmin && !hasValidPaymentProof && !adminOverride) {
+            return res.status(403).json({
+                success: false,
+                message: '无权限直接开通会员。请联系客服完成支付流程。',
+                requiresPayment: true,
+                contactInfo: {
+                    wechat: 'novel-service',
+                    email: 'service@novel-site.com',
+                    workHours: '9:00-21:00'
+                }
+            });
+        }
         
         // 验证输入
         if (!['premium', 'vip'].includes(membershipType)) {
@@ -55,16 +83,6 @@ router.post('/upgrade', authenticateToken, (req, res) => {
             return res.status(400).json({
                 success: false,
                 message: '无效的时长'
-            });
-        }
-        
-        const userData = DataHandler.readUsersData();
-        const user = userData.users.find(u => u.id === req.user.userId);
-        
-        if (!user) {
-            return res.status(404).json({
-                success: false,
-                message: '用户不存在'
             });
         }
         
@@ -107,8 +125,10 @@ router.post('/upgrade', authenticateToken, (req, res) => {
             type: membershipType,
             duration: duration,
             paymentTime: now.toISOString(),
-            paymentMethod: paymentMethod || 'unknown',
-            status: 'completed'
+            paymentMethod: paymentMethod || 'manual_verification',
+            status: 'completed',
+            verifiedBy: isAdmin ? 'admin_override' : 'payment_proof',
+            adminUserId: isAdmin ? user.id : null
         };
         
         user.membership.paymentHistory.push(paymentRecord);
@@ -134,6 +154,113 @@ router.post('/upgrade', authenticateToken, (req, res) => {
         }
     } catch (error) {
         console.error('开通会员失败:', error);
+        res.status(500).json({
+            success: false,
+            message: '服务器内部错误'
+        });
+    }
+});
+
+// 管理员开通会员功能
+router.post('/admin/activate', authenticateToken, (req, res) => {
+    try {
+        const { userId, membershipType, duration, notes } = req.body;
+        
+        const userData = DataHandler.readUsersData();
+        const adminUser = userData.users.find(u => u.id === req.user.userId);
+        
+        // 验证管理员权限
+        if (!adminUser || adminUser.role !== 'admin') {
+            return res.status(403).json({
+                success: false,
+                message: '需要管理员权限'
+            });
+        }
+        
+        const targetUser = userData.users.find(u => u.id === parseInt(userId));
+        if (!targetUser) {
+            return res.status(404).json({
+                success: false,
+                message: '目标用户不存在'
+            });
+        }
+        
+        // 验证输入
+        if (!['premium', 'vip'].includes(membershipType)) {
+            return res.status(400).json({
+                success: false,
+                message: '无效的会员类型'
+            });
+        }
+        
+        if (!duration || duration <= 0) {
+            return res.status(400).json({
+                success: false,
+                message: '无效的时长'
+            });
+        }
+        
+        // 计算会员结束时间
+        const now = new Date();
+        const currentMembership = UserUtils.getUserMembershipStatus(targetUser);
+        
+        let startDate = now;
+        if (currentMembership.isValid && currentMembership.endDate) {
+            startDate = new Date(currentMembership.endDate);
+        }
+        
+        const endDate = new Date(startDate);
+        endDate.setMonth(endDate.getMonth() + duration);
+        
+        // 更新用户会员信息
+        if (!targetUser.membership) {
+            targetUser.membership = { paymentHistory: [] };
+        }
+        
+        targetUser.membership.type = membershipType;
+        targetUser.membership.status = 'active';
+        targetUser.membership.startDate = startDate.toISOString();
+        targetUser.membership.endDate = endDate.toISOString();
+        targetUser.membership.autoRenew = false;
+        
+        // 添加管理员操作记录
+        const operationRecord = {
+            id: Date.now(),
+            type: 'admin_activation',
+            membershipType: membershipType,
+            duration: duration,
+            operationTime: now.toISOString(),
+            adminUserId: adminUser.id,
+            adminUsername: adminUser.username,
+            notes: notes || '管理员开通',
+            status: 'completed'
+        };
+        
+        targetUser.membership.paymentHistory.push(operationRecord);
+        targetUser.lastActivity = now.toISOString();
+        
+        if (DataHandler.writeUsersData(userData)) {
+            res.json({
+                success: true,
+                data: {
+                    userId: targetUser.id,
+                    username: targetUser.username,
+                    membershipType: membershipType,
+                    startDate: startDate.toISOString(),
+                    endDate: endDate.toISOString(),
+                    duration: duration,
+                    operatedBy: adminUser.username
+                },
+                message: `成功为用户 ${targetUser.username} 开通${membershipType === 'premium' ? '高级' : 'VIP'}会员`
+            });
+        } else {
+            res.status(500).json({
+                success: false,
+                message: '保存失败'
+            });
+        }
+    } catch (error) {
+        console.error('管理员开通会员失败:', error);
         res.status(500).json({
             success: false,
             message: '服务器内部错误'

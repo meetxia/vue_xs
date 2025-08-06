@@ -197,7 +197,7 @@ class BatchManager {
 
         try {
             const response = await fetch('/api/novels/batch-access', {
-                method: 'POST',
+                method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',
                     'Authorization': `Bearer ${localStorage.getItem('adminToken')}`

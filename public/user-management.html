@@ -136,6 +136,19 @@
             background: #5a67d8;
         }
 
+        .batch-btn {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 6px;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .batch-btn:hover {
+            background: #7c3aed !important;
+        }
+
         .users-table {
             width: 100%;
             border-collapse: collapse;
@@ -447,6 +460,15 @@
 
         .action-btn.disable:hover {
             background: #dc2626;
+        }
+
+        .action-btn.password {
+            background: #8b5cf6;
+            color: white;
+        }
+
+        .action-btn.password:hover {
+            background: #7c3aed;
         }
 
         /* 会员状态标签样式 */
@@ -786,7 +808,7 @@
     </style>
 </head>
 <body>
-    <a href="admin.html" class="back-btn">← 返回管理后台</a>
+    <a href="admin.html" class="back-btn" target="_blank">← 返回管理后台</a>
 
     <div class="admin-container">
         <div class="admin-header">
@@ -819,6 +841,7 @@
                 <div class="search-controls">
                     <input type="text" class="search-input" placeholder="搜索用户名或邮箱..." id="searchInput">
                     <button class="refresh-btn" onclick="loadUsers()">🔄 刷新</button>
+                    <button class="batch-btn" onclick="showBatchPasswordModal()" style="background: #8b5cf6; color: white; margin-left: 8px;">🔑 批量重置密码</button>
                 </div>
             </div>
 
@@ -948,6 +971,86 @@
                     <div class="form-actions">
                         <button type="button" class="btn btn-cancel" onclick="closeUserEditModal()">取消</button>
                         <button type="submit" class="btn btn-primary">保存</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- 密码修改模态框 -->
+    <div id="passwordChangeModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>修改用户密码</h2>
+                <button class="close" onclick="closePasswordChangeModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="passwordChangeForm">
+                    <div class="form-section">
+                        <h3>密码信息</h3>
+                        <div class="form-group">
+                            <label for="targetUsername">目标用户</label>
+                            <input type="text" id="targetUsername" readonly style="background: #f9fafb; color: #6b7280;">
+                        </div>
+                        <div class="form-group">
+                            <label for="newPassword">新密码 <span style="color: #ef4444;">*</span></label>
+                            <input type="password" id="newPassword" name="newPassword" placeholder="请输入新密码（至少6位字符）" required>
+                            <div id="passwordStrength" style="margin-top: 5px; font-size: 12px;"></div>
+                            <small style="color: #6b7280;">密码长度至少6位字符，建议包含字母和数字</small>
+                        </div>
+                        <div class="form-group">
+                            <label for="confirmPassword">确认密码 <span style="color: #ef4444;">*</span></label>
+                            <input type="password" id="confirmPassword" name="confirmPassword" placeholder="请再次输入新密码" required>
+                        </div>
+                    </div>
+
+                    <div class="form-actions">
+                        <button type="button" class="btn btn-cancel" onclick="closePasswordChangeModal()">取消</button>
+                        <button type="submit" class="btn btn-primary">修改密码</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- 批量密码重置模态框 -->
+    <div id="batchPasswordModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>批量重置密码</h2>
+                <button class="close" onclick="closeBatchPasswordModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="batchPasswordForm">
+                    <div class="form-section">
+                        <h3>批量操作设置</h3>
+                        <div class="form-group">
+                            <label for="batchNewPassword">统一新密码 <span style="color: #ef4444;">*</span></label>
+                            <input type="password" id="batchNewPassword" name="batchNewPassword" placeholder="请输入统一的新密码（至少6位字符）" required>
+                            <div id="batchPasswordStrength" style="margin-top: 5px; font-size: 12px;"></div>
+                            <small style="color: #6b7280;">此密码将应用于所有选中的用户</small>
+                        </div>
+                        <div class="form-group">
+                            <label for="batchConfirmPassword">确认密码 <span style="color: #ef4444;">*</span></label>
+                            <input type="password" id="batchConfirmPassword" name="batchConfirmPassword" placeholder="请再次输入新密码" required>
+                        </div>
+                        <div class="form-group">
+                            <label>
+                                <input type="checkbox" id="selectAllUsers" onchange="toggleAllUsers()">
+                                选择所有用户（除管理员外）
+                            </label>
+                        </div>
+                        <div class="form-group">
+                            <label>选择要重置密码的用户：</label>
+                            <div id="userCheckboxList" style="max-height: 200px; overflow-y: auto; border: 1px solid #d1d5db; border-radius: 6px; padding: 10px; margin-top: 5px;">
+                                <!-- 用户复选框列表将通过JavaScript动态填充 -->
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-actions">
+                        <button type="button" class="btn btn-cancel" onclick="closeBatchPasswordModal()">取消</button>
+                        <button type="submit" class="btn btn-primary">批量重置密码</button>
                     </div>
                 </form>
             </div>

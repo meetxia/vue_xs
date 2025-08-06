@@ -906,11 +906,15 @@
                 <i>📚</i>
                 <span>作品管理</span>
             </a>
+            <a href="#tags" class="sidebar-item" data-section="tags">
+                <i>🏷️</i>
+                <span>标签管理</span>
+            </a>
             <a href="#batch-import" class="sidebar-item" data-section="batch-import">
                 <i>📁</i>
                 <span>批量导入</span>
             </a>
-            <a href="#users" class="sidebar-item" data-section="users">
+            <a href="user-management.html" class="sidebar-item" target="_blank">
                 <i>👥</i>
                 <span>用户管理</span>
             </a>
@@ -1187,6 +1191,120 @@
                 </div>
             </div>
 
+            <!-- 标签管理页面 -->
+            <div id="tags-section" class="content-section p-6">
+                <!-- 统计卡片 -->
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
+                    <div class="card text-center">
+                        <div class="text-3xl font-bold text-purple-600" id="totalCategories">0</div>
+                        <p class="text-gray-600 mt-2">分类数量</p>
+                    </div>
+                    <div class="card text-center">
+                        <div class="text-3xl font-bold text-blue-600" id="totalCommonTags">0</div>
+                        <p class="text-gray-600 mt-2">通用标签</p>
+                    </div>
+                    <div class="card text-center">
+                        <div class="text-3xl font-bold text-green-600" id="totalActiveTags">0</div>
+                        <p class="text-gray-600 mt-2">已使用标签</p>
+                    </div>
+                    <div class="card text-center">
+                        <div class="text-3xl font-bold text-orange-600" id="totalUnusedTags">0</div>
+                        <p class="text-gray-600 mt-2">未使用标签</p>
+                    </div>
+                </div>
+
+                <!-- 标签管理选项卡 -->
+                <div class="card">
+                    <div class="flex items-center justify-between mb-6">
+                        <h3 class="text-lg font-semibold">标签分类管理</h3>
+                        <div class="flex items-center space-x-4">
+                            <button class="btn btn-secondary btn-sm" onclick="refreshTagsData()">
+                                🔄 刷新数据
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- 选项卡导航 -->
+                    <div class="border-b border-gray-200 mb-6">
+                        <nav class="-mb-px flex space-x-8">
+                            <button class="py-2 px-1 border-b-2 border-purple-500 text-purple-600 font-medium text-sm tab-btn active" 
+                                    onclick="switchTagsTab('categories')" data-tab="categories">
+                                分类管理
+                            </button>
+                            <button class="py-2 px-1 border-b-2 border-transparent text-gray-500 hover:text-gray-700 font-medium text-sm tab-btn" 
+                                    onclick="switchTagsTab('common-tags')" data-tab="common-tags">
+                                通用标签
+                            </button>
+                            <button class="py-2 px-1 border-b-2 border-transparent text-gray-500 hover:text-gray-700 font-medium text-sm tab-btn" 
+                                    onclick="switchTagsTab('statistics')" data-tab="statistics">
+                                使用统计
+                            </button>
+                        </nav>
+                    </div>
+
+                    <!-- 分类管理选项卡 -->
+                    <div id="categories-tab" class="tab-content">
+                        <div class="flex items-center justify-between mb-4">
+                            <h4 class="text-lg font-medium">小说分类管理</h4>
+                            <button class="btn btn-primary" onclick="showAddCategoryModal()">
+                                ➕ 添加分类
+                            </button>
+                        </div>
+                        
+                        <div id="categoriesList" class="space-y-4">
+                            <!-- 分类列表将在这里生成 -->
+                        </div>
+                    </div>
+
+                    <!-- 通用标签选项卡 -->
+                    <div id="common-tags-tab" class="tab-content hidden">
+                        <div class="flex items-center justify-between mb-4">
+                            <h4 class="text-lg font-medium">通用标签管理</h4>
+                            <button class="btn btn-primary" onclick="showAddTagModal()">
+                                ➕ 添加标签
+                            </button>
+                        </div>
+                        
+                        <div class="mb-4">
+                            <input type="text" id="tagSearchInput" class="form-input" placeholder="搜索标签..." onkeyup="filterCommonTags()">
+                        </div>
+                        
+                        <div id="commonTagsList" class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3">
+                            <!-- 标签列表将在这里生成 -->
+                        </div>
+                    </div>
+
+                    <!-- 使用统计选项卡 -->
+                    <div id="statistics-tab" class="tab-content hidden">
+                        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                            <!-- 分类使用统计 -->
+                            <div>
+                                <h4 class="text-lg font-medium mb-4">分类使用统计</h4>
+                                <div id="categoryStats" class="space-y-3">
+                                    <!-- 分类统计将在这里生成 -->
+                                </div>
+                            </div>
+                            
+                            <!-- 标签使用统计 -->
+                            <div>
+                                <h4 class="text-lg font-medium mb-4">热门标签统计</h4>
+                                <div id="tagStats" class="space-y-3">
+                                    <!-- 标签统计将在这里生成 -->
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 未使用的标签 -->
+                        <div class="mt-8">
+                            <h4 class="text-lg font-medium mb-4">未使用的标签</h4>
+                            <div id="unusedTags" class="flex flex-wrap gap-2">
+                                <!-- 未使用标签将在这里生成 -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             <!-- 批量导入页面 -->
             <div id="batch-import-section" class="content-section batch-import-section">
                 <div class="card">
@@ -1249,58 +1367,12 @@
                 </div>
             </div>
 
-            <!-- 用户管理页面 -->
+            <!-- 用户管理页面 - 已迁移到独立页面 user-management.html -->
+            <!--
             <div id="users-section" class="content-section p-6">
-                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
-                    <div class="card text-center">
-                        <div class="text-3xl font-bold text-blue-600" id="totalUsers">0</div>
-                        <p class="text-gray-600 mt-2">总用户数</p>
-                    </div>
-                    <div class="card text-center">
-                        <div class="text-3xl font-bold text-green-600" id="onlineUsers">0</div>
-                        <p class="text-gray-600 mt-2">在线用户</p>
-                    </div>
-                    <div class="card text-center">
-                        <div class="text-3xl font-bold text-purple-600" id="newUsers">0</div>
-                        <p class="text-gray-600 mt-2">今日新增</p>
-                    </div>
-                    <div class="card text-center">
-                        <div class="text-3xl font-bold text-orange-600" id="activeSessions">0</div>
-                        <p class="text-gray-600 mt-2">活跃会话</p>
-                    </div>
-                </div>
-
-                <div class="card">
-                    <div class="flex items-center justify-between mb-6">
-                        <h3 class="text-lg font-semibold">用户列表</h3>
-                        <div class="flex items-center space-x-4">
-                            <input type="text" id="userSearchInput" placeholder="搜索用户名或邮箱..." 
-                                   class="form-input w-64" style="margin-bottom: 0;">
-                            <button class="btn btn-primary" onclick="refreshUsers()">🔄 刷新</button>
-                        </div>
-                    </div>
-                    
-                    <div id="usersContent">
-                        <div class="text-center py-12 text-gray-500">
-                            <div class="text-4xl mb-4">👥</div>
-                            <p>正在加载用户数据...</p>
-                        </div>
-                    </div>
-
-                    <div id="userPagination" class="flex justify-center items-center mt-6 space-x-4" style="display: none;">
-                        <button id="prevUserPage" class="btn btn-secondary" onclick="changeUserPage(-1)">上一页</button>
-                        <span id="userPageInfo" class="text-gray-600">第 1 页，共 1 页</span>
-                        <button id="nextUserPage" class="btn btn-secondary" onclick="changeUserPage(1)">下一页</button>
-                    </div>
-                </div>
-
-                <div id="onlineUsersSection" class="card mt-6" style="display: none;">
-                    <h3 class="text-lg font-semibold mb-4">在线用户 <span id="onlineCount">(0)</span></h3>
-                    <div id="onlineUserList" class="flex flex-wrap gap-3">
-                        <!-- 在线用户列表 -->
-                    </div>
-                </div>
+                用户管理功能已迁移到独立页面，请点击侧边栏的"用户管理"菜单访问
             </div>
+            -->
 
             <!-- 数据统计页面 -->
             <div id="stats-section" class="content-section p-6">
@@ -1334,77 +1406,84 @@
         </div>
     </div>
 
-    <!-- 用户详情模态框 -->
-    <div id="userDetailModal" class="fixed inset-0 bg-black/50 hidden z-50 flex items-center justify-center p-4">
-        <div class="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+    <!-- 添加分类模态框 -->
+    <div id="addCategoryModal" class="fixed inset-0 bg-black/50 hidden z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-lg max-w-md w-full max-h-[90vh] overflow-y-auto">
             <div class="sticky top-0 bg-white border-b px-6 py-4 flex items-center justify-between">
-                <h3 class="text-lg font-semibold">用户详细信息</h3>
-                <button onclick="closeUserDetailModal()" class="text-gray-500 hover:text-gray-700 text-2xl">&times;</button>
-            </div>
-            <div id="userModalBody" class="p-6">
-                <!-- 用户详情内容将通过JavaScript动态填充 -->
-            </div>
-        </div>
-    </div>
-
-    <!-- 用户编辑模态框 -->
-    <div id="userEditModal" class="fixed inset-0 bg-black/50 hidden z-50 flex items-center justify-center p-4">
-        <div class="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-            <div class="sticky top-0 bg-white border-b px-6 py-4 flex items-center justify-between">
-                <h3 class="text-lg font-semibold">编辑用户信息</h3>
-                <button onclick="closeUserEditModal()" class="text-gray-500 hover:text-gray-700 text-2xl">&times;</button>
+                <h3 class="text-lg font-semibold" id="categoryModalTitle">添加新分类</h3>
+                <button onclick="closeCategoryModal()" class="text-gray-500 hover:text-gray-700 text-2xl">&times;</button>
             </div>
             <div class="p-6">
-                <form id="userEditForm">
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-                        <div class="form-group">
-                            <label class="form-label">用户名</label>
-                            <input type="text" id="editUsername" name="username" class="form-input" required>
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label">邮箱</label>
-                            <input type="email" id="editEmail" name="email" class="form-input" required>
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label">用户角色</label>
-                            <select id="editRole" name="role" class="form-input">
-                                <option value="user">普通用户</option>
-                                <option value="admin">管理员</option>
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label">账户状态</label>
-                            <select id="editStatus" name="isEnabled" class="form-input">
-                                <option value="true">启用</option>
-                                <option value="false">禁用</option>
-                            </select>
-                        </div>
+                <form id="categoryForm">
+                    <input type="hidden" id="categoryId">
+                    
+                    <div class="form-group">
+                        <label class="form-label">分类名称 *</label>
+                        <input type="text" id="categoryName" class="form-input" placeholder="请输入分类名称" required>
                     </div>
                     
-                    <div class="form-group mb-6">
-                        <label class="form-label">个人简介</label>
-                        <textarea id="editBio" name="bio" class="form-textarea" rows="3"></textarea>
+                    <div class="form-group">
+                        <label class="form-label">分类描述 *</label>
+                        <textarea id="categoryDescription" class="form-textarea" placeholder="请输入分类描述" rows="3" required></textarea>
                     </div>
                     
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-                        <div class="form-group">
-                            <label class="form-label">所在地区</label>
-                            <input type="text" id="editLocation" name="location" class="form-input">
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label">个人网站</label>
-                            <input type="url" id="editWebsite" name="website" class="form-input">
-                        </div>
+                    <div class="form-group">
+                        <label class="form-label">关键词</label>
+                        <input type="text" id="categoryKeywords" class="form-input" placeholder="请输入关键词，用逗号分隔">
+                        <small class="text-gray-500 mt-1">用于自动分类识别，多个关键词用逗号分隔</small>
                     </div>
                     
-                    <div class="flex justify-end space-x-4">
-                        <button type="button" class="btn btn-secondary" onclick="closeUserEditModal()">取消</button>
+                    <div class="form-group">
+                        <label class="form-label">分类标签</label>
+                        <input type="text" id="categoryTags" class="form-input" placeholder="请输入标签，用逗号分隔，以#开头">
+                        <small class="text-gray-500 mt-1">专属于此分类的标签，如 #玄幻,#修仙</small>
+                    </div>
+                    
+                    <div class="flex justify-end space-x-4 mt-6">
+                        <button type="button" class="btn btn-secondary" onclick="closeCategoryModal()">取消</button>
                         <button type="submit" class="btn btn-primary">保存</button>
                     </div>
                 </form>
             </div>
         </div>
     </div>
+
+    <!-- 添加标签模态框 -->
+    <div id="addTagModal" class="fixed inset-0 bg-black/50 hidden z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-lg max-w-md w-full max-h-[90vh] overflow-y-auto">
+            <div class="sticky top-0 bg-white border-b px-6 py-4 flex items-center justify-between">
+                <h3 class="text-lg font-semibold">添加新标签</h3>
+                <button onclick="closeTagModal()" class="text-gray-500 hover:text-gray-700 text-2xl">&times;</button>
+            </div>
+            <div class="p-6">
+                <form id="tagForm">
+                    <div class="form-group">
+                        <label class="form-label">标签内容 *</label>
+                        <input type="text" id="newTagInput" class="form-input" placeholder="请输入标签，如 #热血" required>
+                        <small class="text-gray-500 mt-1">标签必须以#开头</small>
+                    </div>
+                    
+                    <div class="flex justify-end space-x-4 mt-6">
+                        <button type="button" class="btn btn-secondary" onclick="closeTagModal()">取消</button>
+                        <button type="submit" class="btn btn-primary">添加</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- 用户详情模态框 - 已迁移到独立页面 user-management.html -->
+    <!--
+    <div id="userDetailModal" class="fixed inset-0 bg-black/50 hidden z-50 flex items-center justify-center p-4">
+        用户管理相关模态框已迁移到独立页面
+    </div>
+    -->
+
+    <!-- 用户编辑模态框 - 已迁移到独立页面 user-management.html -->
+    <!--
+        用户管理相关模态框已迁移到独立页面
+    </div>
+    -->
 
     <!-- 预览模态框 -->
     <div id="previewModal" class="fixed inset-0 bg-black/50 hidden z-50 flex items-center justify-center p-4">
@@ -1537,6 +1616,7 @@
     <script src="js/admin/novel-manager.js"></script>
     <script src="js/admin/user-manager.js"></script>
     <script src="js/admin/stats-manager.js"></script>
+    <script src="js/admin/tags-manager.js"></script>
     
     <!-- 主入口文件 -->
     <script src="js/admin.js"></script>

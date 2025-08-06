@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>阅读器调试</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 p-8">
+    <div class="max-w-4xl mx-auto">
+        <h1 class="text-2xl font-bold mb-4">阅读器调试</h1>
+        
+        <div class="bg-white p-6 rounded-lg shadow mb-6">
+            <h2 class="text-lg font-semibold mb-4">测试API调用</h2>
+            <button onclick="testAPI()" class="bg-blue-500 text-white px-4 py-2 rounded">测试API</button>
+            <div id="apiResult" class="mt-4 p-4 bg-gray-100 rounded"></div>
+        </div>
+
+        <div class="bg-white p-6 rounded-lg shadow mb-6">
+            <h2 class="text-lg font-semibold mb-4">测试内容格式化</h2>
+            <button onclick="testFormatContent()" class="bg-green-500 text-white px-4 py-2 rounded">测试格式化</button>
+            <div id="formatResult" class="mt-4 p-4 bg-gray-100 rounded"></div>
+        </div>
+
+        <div class="bg-white p-6 rounded-lg shadow">
+            <h2 class="text-lg font-semibold mb-4">测试完整流程</h2>
+            <button onclick="testFullFlow()" class="bg-purple-500 text-white px-4 py-2 rounded">测试完整流程</button>
+            <div id="fullFlowResult" class="mt-4 p-4 bg-gray-100 rounded"></div>
+        </div>
+    </div>
+
+    <script>
+        async function testAPI() {
+            const resultDiv = document.getElementById('apiResult');
+            resultDiv.innerHTML = '正在测试API...';
+            
+            try {
+                const response = await fetch('/api/novels/15');
+                const data = await response.json();
+                
+                resultDiv.innerHTML = `
+                    <h3 class="font-semibold">API响应:</h3>
+                    <p><strong>状态:</strong> ${response.status}</p>
+                    <p><strong>成功:</strong> ${data.success}</p>
+                    <p><strong>标题:</strong> ${data.data?.title || 'N/A'}</p>
+                    <p><strong>内容长度:</strong> ${data.data?.content?.length || 0}</p>
+                    <p><strong>访问权限:</strong> ${data.data?.hasAccess}</p>
+                    <details class="mt-2">
+                        <summary class="cursor-pointer">查看完整响应</summary>
+                        <pre class="mt-2 text-xs overflow-auto">${JSON.stringify(data, null, 2)}</pre>
+                    </details>
+                `;
+            } catch (error) {
+                resultDiv.innerHTML = `<p class="text-red-500">错误: ${error.message}</p>`;
+            }
+        }
+
+        function formatContent(content) {
+            if (!content) return '<p class="text-center text-gray-500 py-8">暂无内容</p>';
+
+            // 检查内容是否已经是HTML格式
+            if (content.trim().startsWith('<p>') || content.trim().startsWith('<div>') || content.includes('<p>')) {
+                console.log('内容已经是HTML格式，直接返回');
+                return enhanceHtmlContent(content);
+            }
+
+            // 如果不是HTML格式，则进行格式化
+            console.log('内容是纯文本格式，进行格式化');
+            
+            const lines = content.split('\n');
+            const formattedParagraphs = [];
+            let currentParagraph = '';
+
+            for (let i = 0; i < lines.length; i++) {
+                const line = lines[i].trim();
+                
+                if (line === '') {
+                    if (currentParagraph.trim()) {
+                        formattedParagraphs.push(formatParagraph(currentParagraph.trim()));
+                        currentParagraph = '';
+                    }
+                } else {
+                    if (currentParagraph) {
+                        currentParagraph += ' ' + line;
+                    } else {
+                        currentParagraph = line;
+                    }
+                }
+            }
+
+            if (currentParagraph.trim()) {
+                formattedParagraphs.push(formatParagraph(currentParagraph.trim()));
+            }
+
+            return formattedParagraphs.join('');
+        }
+
+        function formatParagraph(paragraph) {
+            if (paragraph.match(/^第.+章/)) {
+                return `<h2 class="chapter-title text-xl font-bold mt-8 mb-6 text-center">${paragraph}</h2>`;
+            }
+
+            if (paragraph.match(/^【.+】$/) || paragraph.match(/^\d+\./)) {
+                return `<h3 class="section-title text-lg font-semibold mt-6 mb-4">${paragraph}</h3>`;
+            }
+
+            return `<p class="paragraph mb-4 leading-relaxed text-justify">${paragraph}</p>`;
+        }
+
+        function enhanceHtmlContent(htmlContent) {
+            let enhanced = htmlContent;
+            
+            enhanced = enhanced.replace(/<p>/g, '<p class="paragraph mb-4 leading-relaxed text-justify">');
+            enhanced = enhanced.replace(/<h1>/g, '<h1 class="chapter-title text-2xl font-bold mt-8 mb-6 text-center">');
+            enhanced = enhanced.replace(/<h2>/g, '<h2 class="chapter-title text-xl font-bold mt-8 mb-6 text-center">');
+            enhanced = enhanced.replace(/<h3>/g, '<h3 class="section-title text-lg font-semibold mt-6 mb-4">');
+            enhanced = enhanced.replace(/<blockquote>/g, '<blockquote class="border-l-4 border-gray-300 pl-4 italic my-4">');
+            
+            return enhanced;
+        }
+
+        function testFormatContent() {
+            const resultDiv = document.getElementById('formatResult');
+            
+            const testContent = `病态占有欲爆棚的龙x 被迫同居的你
+
+第一章：古董店的秘密
+
+"这破钟表店到底在哪儿啊？"
+
+你拖着疲惫的双腿，在城市最偏僻的老街区转了第三圈。作为历史系大三的学生，你的毕业论文选题是《明清时期计时器具的文化内涵》，导师推荐你来这家据说有三百年历史的钟表店取材。
+
+可导师没说这店藏得比地下党接头点还隐秘啊！`;
+
+            try {
+                const formatted = formatContent(testContent);
+                resultDiv.innerHTML = `
+                    <h3 class="font-semibold">格式化结果:</h3>
+                    <div class="border p-4 mt-2">
+                        ${formatted}
+                    </div>
+                    <details class="mt-2">
+                        <summary class="cursor-pointer">查看HTML源码</summary>
+                        <pre class="mt-2 text-xs overflow-auto">${formatted}</pre>
+                    </details>
+                `;
+            } catch (error) {
+                resultDiv.innerHTML = `<p class="text-red-500">错误: ${error.message}</p>`;
+            }
+        }
+
+        async function testFullFlow() {
+            const resultDiv = document.getElementById('fullFlowResult');
+            resultDiv.innerHTML = '正在测试完整流程...';
+            
+            try {
+                // 1. 获取数据
+                const response = await fetch('/api/novels/15');
+                const data = await response.json();
+                
+                if (!data.success) {
+                    throw new Error(data.message || '获取数据失败');
+                }
+                
+                // 2. 格式化内容
+                const content = data.data.content;
+                const formattedContent = formatContent(content);
+                
+                resultDiv.innerHTML = `
+                    <h3 class="font-semibold">完整流程测试结果:</h3>
+                    <p><strong>1. API调用:</strong> ✅ 成功</p>
+                    <p><strong>2. 数据获取:</strong> ✅ 成功 (${content?.length || 0} 字符)</p>
+                    <p><strong>3. 内容格式化:</strong> ✅ 成功</p>
+                    <div class="border p-4 mt-4 max-h-96 overflow-auto">
+                        <h4 class="font-semibold mb-2">格式化后的内容:</h4>
+                        ${formattedContent}
+                    </div>
+                `;
+            } catch (error) {
+                resultDiv.innerHTML = `<p class="text-red-500">错误: ${error.message}</p>`;
+            }
+        }
+    </script>
+</body>
+</html>

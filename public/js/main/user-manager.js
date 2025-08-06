@@ -66,7 +66,14 @@ class UserManager {
 
     getMembershipStatus() {
         if (!this.membershipInfo) {
-            return { type: 'free', status: 'active', isValid: true };
+            // 如果会员信息还没有加载，返回一个保守的状态
+            // 如果用户已登录但会员信息未加载，应该等待加载完成
+            // 如果用户未登录，则为免费用户
+            return {
+                type: 'free',
+                status: 'active',
+                isValid: !this.token // 只有未登录用户才认为是有效的免费用户
+            };
         }
         return this.membershipInfo;
     }

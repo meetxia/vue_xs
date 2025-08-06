@@ -8,6 +8,7 @@ const adminRoutes = require('./admin');
 const novelRoutes = require('./novels');
 const membershipRoutes = require('./membership');
 const commentRoutes = require('./comments');
+const tagsRoutes = require('./tags');
 
 const { DataHandler, NovelAnalyzer, AIService } = require('../utils');
 const { imageUpload, txtUpload } = require('../middleware');
@@ -17,6 +18,7 @@ router.use('/auth', authRoutes);
 router.use('/admin', adminRoutes);
 router.use('/novels', novelRoutes);
 router.use('/membership', membershipRoutes);
+router.use('/tags', tagsRoutes);
 
 // 评论路由需要特殊处理，因为它包含在novels路由中
 // router.use('/comments', commentRoutes);

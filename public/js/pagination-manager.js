@@ -146,9 +146,16 @@ class PaginationManager {
         const pages = [];
         const div = document.createElement('div');
         div.innerHTML = content;
-        
+
         // 获取所有段落元素
         const elements = Array.from(div.children);
+
+        // 如果只有一个元素且内容很长，需要特殊处理
+        if (elements.length === 1 && elements[0].textContent.length > this.wordsPerPage) {
+            console.log('检测到单个大段落，进行文本分割');
+            return this.splitLargeParagraph(elements[0]);
+        }
+
         let currentPageContent = '';
         let currentPageWords = 0;
 
@@ -161,7 +168,7 @@ class PaginationManager {
             if (currentPageWords + elementWords > this.wordsPerPage && currentPageContent.trim()) {
                 // 在合适的位置分页
                 const breakPoint = this.findOptimalBreakPoint(elements, i, currentPageWords);
-                
+
                 if (breakPoint > i - 10) { // 避免页面过短
                     pages.push(currentPageContent);
                     currentPageContent = element.outerHTML;
@@ -182,6 +189,92 @@ class PaginationManager {
         }
 
         return pages.length > 0 ? pages : [content];
+    }
+
+    // 分割大段落
+    splitLargeParagraph(element) {
+        const pages = [];
+        const text = element.textContent || element.innerText || '';
+        const tagName = element.tagName.toLowerCase();
+
+        // 按段落分割（双换行符）
+        const paragraphs = text.split(/\n\s*\n/).filter(p => p.trim());
+
+        let currentPageContent = '';
+        let currentPageWords = 0;
+
+        for (let i = 0; i < paragraphs.length; i++) {
+            const paragraph = paragraphs[i].trim();
+            const paragraphWords = paragraph.length;
+
+            // 如果单个段落就超过限制，需要进一步分割
+            if (paragraphWords > this.wordsPerPage) {
+                // 先保存当前页面
+                if (currentPageContent.trim()) {
+                    pages.push(`<${tagName}>${currentPageContent}</${tagName}>`);
+                    currentPageContent = '';
+                    currentPageWords = 0;
+                }
+
+                // 分割长段落
+                const sentences = this.splitLongParagraph(paragraph);
+                for (const sentence of sentences) {
+                    if (currentPageWords + sentence.length > this.wordsPerPage && currentPageContent.trim()) {
+                        pages.push(`<${tagName}>${currentPageContent}</${tagName}>`);
+                        currentPageContent = sentence;
+                        currentPageWords = sentence.length;
+                    } else {
+                        currentPageContent += (currentPageContent ? '\n\n' : '') + sentence;
+                        currentPageWords += sentence.length;
+                    }
+                }
+            } else {
+                // 检查是否超过页面限制
+                if (currentPageWords + paragraphWords > this.wordsPerPage && currentPageContent.trim()) {
+                    pages.push(`<${tagName}>${currentPageContent}</${tagName}>`);
+                    currentPageContent = paragraph;
+                    currentPageWords = paragraphWords;
+                } else {
+                    currentPageContent += (currentPageContent ? '\n\n' : '') + paragraph;
+                    currentPageWords += paragraphWords;
+                }
+            }
+        }
+
+        // 添加最后一页
+        if (currentPageContent.trim()) {
+            pages.push(`<${tagName}>${currentPageContent}</${tagName}>`);
+        }
+
+        console.log(`大段落分页完成: 共${pages.length}页`);
+        return pages;
+    }
+
+    // 分割超长段落
+    splitLongParagraph(text) {
+        const sentences = [];
+        const maxLength = Math.floor(this.wordsPerPage * 0.8); // 留一些余量
+
+        // 按句号、问号、感叹号分割
+        const parts = text.split(/([。！？])/).filter(p => p.trim());
+
+        let currentSentence = '';
+        for (let i = 0; i < parts.length; i++) {
+            const part = parts[i];
+
+            if (currentSentence.length + part.length > maxLength && currentSentence.trim()) {
+                sentences.push(currentSentence.trim());
+                currentSentence = part;
+            } else {
+                currentSentence += part;
+            }
+        }
+
+        if (currentSentence.trim()) {
+            sentences.push(currentSentence.trim());
+        }
+
+        return sentences;
     }
 
     // 寻找最佳分页点

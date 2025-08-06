@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>管理员编辑测试</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .test-section { margin: 20px 0; padding: 15px; border: 1px solid #ddd; border-radius: 5px; }
+        .success { background-color: #d4edda; border-color: #c3e6cb; }
+        .error { background-color: #f8d7da; border-color: #f5c6cb; }
+        button { padding: 10px 15px; margin: 5px; cursor: pointer; }
+        textarea { width: 100%; height: 200px; margin: 10px 0; }
+        pre { background: #f8f9fa; padding: 10px; border-radius: 3px; overflow-x: auto; }
+    </style>
+</head>
+<body>
+    <h1>管理员编辑功能测试</h1>
+    
+    <div class="test-section">
+        <h2>步骤1: 管理员登录</h2>
+        <button onclick="adminLogin()">管理员登录</button>
+        <div id="loginResult"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>步骤2: 获取作品详情</h2>
+        <button onclick="getNovelDetail()">获取作品14详情</button>
+        <div id="novelResult"></div>
+        <textarea id="novelContent" placeholder="作品内容将显示在这里..."></textarea>
+    </div>
+    
+    <div class="test-section">
+        <h2>步骤3: 模拟编辑器加载</h2>
+        <button onclick="simulateEditorLoad()">模拟编辑器加载内容</button>
+        <div id="editorResult"></div>
+    </div>
+
+    <script>
+        // 管理员登录
+        async function adminLogin() {
+            const resultDiv = document.getElementById('loginResult');
+            try {
+                const response = await fetch('/api/admin/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username: 'admin', password: '123456' })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    localStorage.setItem('adminToken', data.data.token);
+                    resultDiv.innerHTML = `<div class="success">✅ 登录成功！Token已保存</div>`;
+                } else {
+                    resultDiv.innerHTML = `<div class="error">❌ 登录失败: ${data.message}</div>`;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `<div class="error">❌ 登录错误: ${error.message}</div>`;
+            }
+        }
+        
+        // 获取作品详情
+        async function getNovelDetail() {
+            const resultDiv = document.getElementById('novelResult');
+            const contentTextarea = document.getElementById('novelContent');
+            
+            try {
+                const token = localStorage.getItem('adminToken');
+                if (!token) {
+                    resultDiv.innerHTML = `<div class="error">❌ 请先登录</div>`;
+                    return;
+                }
+                
+                const response = await fetch('/api/novels/14', {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+                
+                const data = await response.json();
+                
+                if (data.success && data.data.content) {
+                    resultDiv.innerHTML = `
+                        <div class="success">
+                            ✅ 获取成功！<br>
+                            标题: ${data.data.title}<br>
+                            内容长度: ${data.data.content.length} 字符<br>
+                            权限级别: ${data.data.accessLevel}<br>
+                            有访问权限: ${data.data.hasAccess}
+                        </div>
+                    `;
+                    contentTextarea.value = data.data.content.substring(0, 1000) + '...';
+                } else {
+                    resultDiv.innerHTML = `<div class="error">❌ 获取失败: ${data.message || '内容为空'}</div>`;
+                    contentTextarea.value = JSON.stringify(data, null, 2);
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `<div class="error">❌ 请求错误: ${error.message}</div>`;
+            }
+        }
+        
+        // 模拟编辑器加载
+        async function simulateEditorLoad() {
+            const resultDiv = document.getElementById('editorResult');
+            
+            try {
+                const token = localStorage.getItem('adminToken');
+                if (!token) {
+                    resultDiv.innerHTML = `<div class="error">❌ 请先登录</div>`;
+                    return;
+                }
+                
+                // 模拟novel-manager.js中的editNovel方法
+                const response = await fetch('/api/novels/14', {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+                
+                const apiResponse = await response.json();
+                
+                if (apiResponse.success) {
+                    const novel = apiResponse.data;
+                    
+                    // 模拟编辑器内容设置
+                    const mockEditor = {
+                        root: { innerHTML: '' }
+                    };
+                    
+                    // 这里模拟novel-manager.js第80行的逻辑
+                    if (novel.content) {
+                        mockEditor.root.innerHTML = novel.content;
+                        resultDiv.innerHTML = `
+                            <div class="success">
+                                ✅ 编辑器加载成功！<br>
+                                模拟设置内容长度: ${novel.content.length} 字符<br>
+                                编辑器HTML长度: ${mockEditor.root.innerHTML.length} 字符
+                            </div>
+                        `;
+                    } else {
+                        resultDiv.innerHTML = `<div class="error">❌ 编辑器加载失败: 内容为空</div>`;
+                    }
+                } else {
+                    resultDiv.innerHTML = `<div class="error">❌ API调用失败: ${apiResponse.message}</div>`;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `<div class="error">❌ 模拟错误: ${error.message}</div>`;
+            }
+        }
+    </script>
+</body>
+</html>

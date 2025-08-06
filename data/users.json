@@ -3,12 +3,12 @@
     {
       "id": 1,
       "username": "admin",
-      "password": "$2b$10$5VyZm4m0uZ8M9MdwSxVpN.WqcKfUvx3deDhbSp0HyLqucNNo4drH2",
+      "password": "$2b$10$BLEKM/7NIG4I4xaKqi/AAuD9UBz56Lci/p2eUbFFPtrjSGmYrUnvu",
       "email": "admin@example.com",
       "avatar": "default.png",
       "registerTime": "2024-01-01T00:00:00.000Z",
-      "lastLogin": null,
-      "lastActivity": "2024-01-01T00:00:00.000Z",
+      "lastLogin": "2025-08-06T07:37:43.924Z",
+      "lastActivity": "2025-08-06T08:49:10.799Z",
       "isOnline": false,
       "isEnabled": true,
       "role": "admin",
@@ -26,7 +26,14 @@
         "loginCount": 0,
         "readingTime": 0
       },
-      "activityLog": [],
+      "activityLog": [
+        {
+          "action": "password_reset",
+          "timestamp": "2025-08-05T13:31:18.154Z",
+          "details": "管理员重置了密码",
+          "operator": "admin"
+        }
+      ],
       "membership": {
         "type": "vip",
         "status": "active",
@@ -39,12 +46,12 @@
     {
       "id": 2,
       "username": "testuser",
-      "password": "$2b$10$xq7D7dfBzx4WZ2uWVUQLreVREoOzg5r5iccXG5v.hAGljUmmYXBym",
+      "password": "$2b$10$rPzaEAhAPWuOON1fvWAKM.7wwVe1vx5VvqlhDH..5czjzBVxOrtom",
       "email": "test@example.com",
       "avatar": "default.png",
       "registerTime": "2024-01-02T00:00:00.000Z",
       "lastLogin": "2024-01-15T14:30:00.000Z",
-      "lastActivity": "2024-01-15T16:45:00.000Z",
+      "lastActivity": "2025-08-05T09:53:19.704Z",
       "isOnline": false,
       "isEnabled": true,
       "role": "user",
@@ -69,6 +76,12 @@
         "readingTime": 2400
       },
       "activityLog": [
+        {
+          "action": "password_reset",
+          "timestamp": "2025-08-05T09:53:19.704Z",
+          "details": "管理员重置了密码",
+          "operator": "admin"
+        },
         {
           "action": "login",
           "timestamp": "2024-01-15T14:30:00.000Z",
@@ -165,10 +178,12 @@
       "password": "$2b$10$xKWyVMg5ayn7kG5emtrQ5uNnSZyx26AyNIeJ0pqPEbTuhho8YWj.q",
       "avatar": "default.png",
       "registerTime": "2025-07-30T21:40:07.960Z",
-      "lastLogin": "2025-07-31T15:28:00.615Z",
-      "lastActivity": "2025-08-01T04:54:39.818Z",
+      "lastLogin": "2025-08-06T08:47:53.415Z",
+      "lastActivity": "2025-08-06T15:16:37.402Z",
       "isOnline": false,
-      "favorites": [],
+      "favorites": [
+        14
+      ],
       "likes": [],
       "profile": {
         "bio": "这个人很懒，什么都没写",
@@ -184,12 +199,30 @@
       },
       "stats": {
         "totalLikes": 0,
-        "totalFavorites": 0,
+        "totalFavorites": 1,
         "totalViews": 0,
         "loginCount": 1,
         "readingTime": 0
       },
       "activityLog": [
+        {
+          "action": "unlike",
+          "timestamp": "2025-08-06T09:37:38.429Z",
+          "details": "取消点赞小说《搬家第一天就被狼人盯上，还偷我的枕头》",
+          "novelId": 14
+        },
+        {
+          "action": "favorite",
+          "timestamp": "2025-08-06T09:37:15.225Z",
+          "details": "收藏小说《搬家第一天就被狼人盯上，还偷我的枕头》",
+          "novelId": 14
+        },
+        {
+          "action": "like",
+          "timestamp": "2025-08-06T09:37:15.180Z",
+          "details": "点赞小说《搬家第一天就被狼人盯上，还偷我的枕头》",
+          "novelId": 14
+        },
         {
           "action": "membership_expiry_changed",
           "timestamp": "2025-07-31T07:12:47.000Z",
@@ -206,7 +239,89 @@
       "isEnabled": true,
       "bio": "",
       "interests": ""
+    },
+    {
+      "id": 5,
+      "username": "momo02",
+      "email": "1357499168@qq.com",
+      "password": "$2b$10$lsUA18OnK3aeb27uNmlXYeaxJYEtHLPtQvX6mU59TdXLKTsIwGKyi",
+      "avatar": "default.png",
+      "registerTime": "2025-08-05T07:03:11.634Z",
+      "lastLogin": "2025-08-05T07:03:17.803Z",
+      "lastActivity": "2025-08-06T04:56:29.043Z",
+      "isOnline": false,
+      "favorites": [],
+      "likes": [],
+      "profile": {
+        "bio": "这个人很懒，什么都没写",
+        "location": "",
+        "website": ""
+      },
+      "membership": {
+        "type": "vip",
+        "status": "active",
+        "startDate": "2025-11-05T09:24:51.279Z",
+        "endDate": "2025-12-05T09:24:51.279Z",
+        "autoRenew": false,
+        "paymentHistory": [
+          {
+            "id": 1754385891279,
+            "amount": 39.9,
+            "type": "vip",
+            "duration": 1,
+            "paymentTime": "2025-08-05T09:24:51.279Z",
+            "paymentMethod": "demo",
+            "status": "completed"
+          },
+          {
+            "id": 1754456160728,
+            "amount": 19.9,
+            "type": "premium",
+            "duration": 1,
+            "paymentTime": "2025-08-06T04:56:00.728Z",
+            "paymentMethod": "demo",
+            "status": "completed"
+          },
+          {
+            "id": 1754456169348,
+            "amount": 19.9,
+            "type": "premium",
+            "duration": 1,
+            "paymentTime": "2025-08-06T04:56:09.348Z",
+            "paymentMethod": "demo",
+            "status": "completed"
+          },
+          {
+            "id": 1754456174872,
+            "amount": 39.9,
+            "type": "vip",
+            "duration": 1,
+            "paymentTime": "2025-08-06T04:56:14.872Z",
+            "paymentMethod": "demo",
+            "status": "completed"
+          }
+        ]
+      }
     }
   ],
-  "sessions": []
+  "sessions": [
+    {
+      "id": 1754377397807,
+      "userId": 5,
+      "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOjUsInVzZXJuYW1lIjoibW9tbzAyIiwiZW1haWwiOiIxMzU3NDk5MTY4QHFxLmNvbSIsImlhdCI6MTc1NDM3NzM5NywiZXhwIjoxNzU0NDYzNzk3fQ.UCE0u7Bng1Dv-TQKFR8Yc_t5SOkrHG_mXgiNILJfyhU",
+      "loginTime": "2025-08-05T07:03:17.807Z",
+      "lastActivity": "2025-08-05T07:03:17.807Z",
+      "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36",
+      "ip": "::1"
+    },
+    {
+      "id": 1754470073418,
+      "userId": 4,
+      "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOjQsInVzZXJuYW1lIjoibW9tbzAxIiwiZW1haWwiOiIxMzU3NDk5MTI4QHFxLmNvbSIsImlhdCI6MTc1NDQ3MDA3MywiZXhwIjoxNzU0NTU2NDczfQ.rDNE5aN40uS7dh8tE6NywchNcLOIctbAobCSojxW86A",
+      "loginTime": "2025-08-06T08:47:53.418Z",
+      "lastActivity": "2025-08-06T08:47:53.418Z",
+      "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36",
+      "ip": "::1"
+    }
+  ]
 }

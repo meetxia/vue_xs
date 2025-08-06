@@ -5,10 +5,11 @@
 class BackToTop {
     constructor(options = {}) {
         this.options = {
-            showOffset: 400,        // 显示组件的滚动距离
+            showOffset: 0,          // 始终显示组件（设为0）
             scrollDuration: 800,    // 滚动动画时长
             throttleDelay: 100,     // 滚动事件节流延迟
             className: 'back-to-top',
+            alwaysShow: true,       // 新增选项：始终显示
             ...options
         };
         
@@ -97,10 +98,16 @@ class BackToTop {
     // 更新按钮可见性
     updateVisibility() {
         if (!this.button) return;
-        
+
+        // 如果设置为始终显示，则直接显示按钮
+        if (this.options.alwaysShow) {
+            this.button.classList.add('show');
+            return;
+        }
+
         const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
         const shouldShow = scrollTop > this.options.showOffset;
-        
+
         if (shouldShow) {
             this.button.classList.add('show');
         } else {

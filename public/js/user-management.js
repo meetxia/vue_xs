@@ -315,8 +315,11 @@ class UserManagement {
                         <button class="membership-btn upgrade" onclick="showMembershipModal(${user.id})" title="管理会员">
                             💎
                         </button>
-                        <button class="action-btn toggle ${user.isEnabled === false ? 'enable' : 'disable'}" 
-                                onclick="toggleUserStatus(${user.id})" 
+                        <button class="action-btn password" onclick="showPasswordChangeModal(${user.id})" title="修改密码">
+                            🔑
+                        </button>
+                        <button class="action-btn toggle ${user.isEnabled === false ? 'enable' : 'disable'}"
+                                onclick="toggleUserStatus(${user.id})"
                                 title="${user.isEnabled === false ? '启用用户' : '禁用用户'}">
                             ${user.isEnabled === false ? '✅' : '❌'}
                         </button>
@@ -941,7 +944,306 @@ async function showMembershipModal(userId) {
     }
 }
 
+// 检查密码强度
+function checkPasswordStrength(password) {
+    const strengthIndicator = document.getElementById('passwordStrength');
+    if (!strengthIndicator) return;
+
+    let strength = 0;
+    let feedback = [];
+
+    if (password.length >= 6) strength += 1;
+    else feedback.push('至少6位字符');
+
+    if (password.length >= 8) strength += 1;
+    else if (password.length >= 6) feedback.push('建议8位以上');
+
+    if (/[a-z]/.test(password)) strength += 1;
+    else feedback.push('包含小写字母');
+
+    if (/[A-Z]/.test(password)) strength += 1;
+    else feedback.push('包含大写字母');
+
+    if (/[0-9]/.test(password)) strength += 1;
+    else feedback.push('包含数字');
+
+    if (/[^a-zA-Z0-9]/.test(password)) strength += 1;
+    else feedback.push('包含特殊字符');
+
+    let strengthText = '';
+    let strengthColor = '';
+
+    if (strength <= 2) {
+        strengthText = '弱';
+        strengthColor = '#ef4444';
+    } else if (strength <= 4) {
+        strengthText = '中等';
+        strengthColor = '#f59e0b';
+    } else {
+        strengthText = '强';
+        strengthColor = '#10b981';
+    }
+
+    strengthIndicator.innerHTML = `
+        <span style="color: ${strengthColor};">密码强度: ${strengthText}</span>
+        ${feedback.length > 0 ? `<span style="color: #6b7280; margin-left: 10px;">建议: ${feedback.slice(0, 2).join(', ')}</span>` : ''}
+    `;
+}
+
+// 显示密码修改模态框
+function showPasswordChangeModal(userId) {
+    const user = window.userManagement.users.find(u => u.id === userId);
+    if (!user) {
+        alert('用户不存在');
+        return;
+    }
+
+    // 设置目标用户信息
+    document.getElementById('targetUsername').value = user.username;
+
+    // 清空表单
+    document.getElementById('newPassword').value = '';
+    document.getElementById('confirmPassword').value = '';
+
+    // 清空密码强度指示器
+    const strengthIndicator = document.getElementById('passwordStrength');
+    if (strengthIndicator) {
+        strengthIndicator.innerHTML = '';
+    }
+
+    // 存储用户ID到表单
+    document.getElementById('passwordChangeForm').dataset.userId = userId;
+
+    // 显示模态框
+    document.getElementById('passwordChangeModal').style.display = 'block';
+}
+
+// 关闭密码修改模态框
+function closePasswordChangeModal() {
+    document.getElementById('passwordChangeModal').style.display = 'none';
+    document.getElementById('passwordChangeForm').reset();
+}
+
+// 显示批量密码重置模态框
+function showBatchPasswordModal() {
+    // 填充用户列表
+    const userCheckboxList = document.getElementById('userCheckboxList');
+    if (!userCheckboxList || !window.userManagement.users) return;
+
+    const nonAdminUsers = window.userManagement.users.filter(u => u.role !== 'admin');
+
+    userCheckboxList.innerHTML = nonAdminUsers.map(user => `
+        <div style="margin-bottom: 8px;">
+            <label style="display: flex; align-items: center; cursor: pointer;">
+                <input type="checkbox" name="selectedUsers" value="${user.id}" style="margin-right: 8px;">
+                <span>${user.username} (${user.email})</span>
+            </label>
+        </div>
+    `).join('');
+
+    // 清空表单
+    document.getElementById('batchNewPassword').value = '';
+    document.getElementById('batchConfirmPassword').value = '';
+    document.getElementById('selectAllUsers').checked = false;
+
+    // 清空密码强度指示器
+    const strengthIndicator = document.getElementById('batchPasswordStrength');
+    if (strengthIndicator) {
+        strengthIndicator.innerHTML = '';
+    }
+
+    // 显示模态框
+    document.getElementById('batchPasswordModal').style.display = 'block';
+}
+
+// 关闭批量密码重置模态框
+function closeBatchPasswordModal() {
+    document.getElementById('batchPasswordModal').style.display = 'none';
+    document.getElementById('batchPasswordForm').reset();
+}
+
+// 切换所有用户选择状态
+function toggleAllUsers() {
+    const selectAll = document.getElementById('selectAllUsers').checked;
+    const checkboxes = document.querySelectorAll('input[name="selectedUsers"]');
+    checkboxes.forEach(checkbox => {
+        checkbox.checked = selectAll;
+    });
+}
+
+// 处理密码修改表单提交
+async function handlePasswordChange(e) {
+    e.preventDefault();
+
+    const form = e.target;
+    const userId = form.dataset.userId;
+    const newPassword = document.getElementById('newPassword').value;
+    const confirmPassword = document.getElementById('confirmPassword').value;
+
+    // 验证密码
+    if (!newPassword || newPassword.length < 6) {
+        alert('密码长度至少6位字符');
+        return;
+    }
+
+    if (newPassword !== confirmPassword) {
+        alert('两次输入的密码不一致');
+        return;
+    }
+
+    try {
+        const token = localStorage.getItem('adminToken');
+        const response = await fetch(`/api/admin/users/${userId}/password`, {
+            method: 'PATCH',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({ newPassword })
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+            alert('密码修改成功！用户需要重新登录。');
+            closePasswordChangeModal();
+
+            // 刷新用户列表
+            if (window.userManagement) {
+                window.userManagement.loadUsers();
+            }
+        } else {
+            alert('密码修改失败: ' + data.message);
+        }
+    } catch (error) {
+        console.error('修改密码失败:', error);
+        alert('网络错误，请稍后重试');
+    }
+}
+
+// 处理批量密码重置表单提交
+async function handleBatchPasswordChange(e) {
+    e.preventDefault();
+
+    const batchNewPassword = document.getElementById('batchNewPassword').value;
+    const batchConfirmPassword = document.getElementById('batchConfirmPassword').value;
+    const selectedUserIds = Array.from(document.querySelectorAll('input[name="selectedUsers"]:checked')).map(cb => parseInt(cb.value));
+
+    // 验证密码
+    if (!batchNewPassword || batchNewPassword.length < 6) {
+        alert('密码长度至少6位字符');
+        return;
+    }
+
+    if (batchNewPassword !== batchConfirmPassword) {
+        alert('两次输入的密码不一致');
+        return;
+    }
+
+    if (selectedUserIds.length === 0) {
+        alert('请至少选择一个用户');
+        return;
+    }
+
+    if (!confirm(`确定要为 ${selectedUserIds.length} 个用户重置密码吗？此操作不可撤销。`)) {
+        return;
+    }
+
+    try {
+        const token = localStorage.getItem('adminToken');
+        let successCount = 0;
+        let failCount = 0;
+
+        // 逐个处理用户密码重置
+        for (const userId of selectedUserIds) {
+            try {
+                const response = await fetch(`/api/admin/users/${userId}/password`, {
+                    method: 'PATCH',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({ newPassword: batchNewPassword })
+                });
+
+                const data = await response.json();
+                if (data.success) {
+                    successCount++;
+                } else {
+                    failCount++;
+                    console.error(`用户 ${userId} 密码重置失败:`, data.message);
+                }
+            } catch (error) {
+                failCount++;
+                console.error(`用户 ${userId} 密码重置出错:`, error);
+            }
+        }
+
+        alert(`批量密码重置完成！成功: ${successCount} 个，失败: ${failCount} 个`);
+        closeBatchPasswordModal();
+
+        // 刷新用户列表
+        if (window.userManagement) {
+            window.userManagement.loadUsers();
+        }
+
+    } catch (error) {
+        console.error('批量密码重置失败:', error);
+        alert('网络错误，请稍后重试');
+    }
+}
+
 // 页面加载完成后初始化
 document.addEventListener('DOMContentLoaded', () => {
     window.userManagement = new UserManagement();
+
+    // 绑定密码修改表单事件
+    const passwordForm = document.getElementById('passwordChangeForm');
+    if (passwordForm) {
+        passwordForm.addEventListener('submit', handlePasswordChange);
+
+        // 绑定密码输入事件，实时检查密码强度
+        const newPasswordInput = document.getElementById('newPassword');
+        if (newPasswordInput) {
+            newPasswordInput.addEventListener('input', (e) => {
+                checkPasswordStrength(e.target.value);
+            });
+        }
+    }
+
+    // 绑定批量密码重置表单事件
+    const batchPasswordForm = document.getElementById('batchPasswordForm');
+    if (batchPasswordForm) {
+        batchPasswordForm.addEventListener('submit', handleBatchPasswordChange);
+
+        // 绑定批量密码输入事件，实时检查密码强度
+        const batchNewPasswordInput = document.getElementById('batchNewPassword');
+        if (batchNewPasswordInput) {
+            batchNewPasswordInput.addEventListener('input', (e) => {
+                const strengthIndicator = document.getElementById('batchPasswordStrength');
+                if (strengthIndicator) {
+                    // 临时替换指示器ID来复用密码强度检查函数
+                    const originalId = document.getElementById('passwordStrength');
+                    if (originalId) originalId.id = 'temp-strength';
+                    strengthIndicator.id = 'passwordStrength';
+                    checkPasswordStrength(e.target.value);
+                    strengthIndicator.id = 'batchPasswordStrength';
+                    if (originalId) originalId.id = 'passwordStrength';
+                }
+            });
+        }
+    }
+
+    // 点击模态框外部关闭
+    window.addEventListener('click', (event) => {
+        const passwordModal = document.getElementById('passwordChangeModal');
+        const batchPasswordModal = document.getElementById('batchPasswordModal');
+
+        if (event.target === passwordModal) {
+            closePasswordChangeModal();
+        }
+        if (event.target === batchPasswordModal) {
+            closeBatchPasswordModal();
+        }
+    });
 });

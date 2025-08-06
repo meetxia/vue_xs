@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>数据加载调试</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        .test-result { margin: 10px 0; padding: 10px; border-radius: 5px; }
+        .success { background-color: #d4edda; color: #155724; }
+        .error { background-color: #f8d7da; color: #721c24; }
+        .info { background-color: #d1ecf1; color: #0c5460; }
+        .novel-card { border: 1px solid #ddd; margin: 10px 0; padding: 10px; border-radius: 5px; }
+    </style>
+</head>
+<body>
+    <h1>数据加载调试页面</h1>
+    <div id="test-results"></div>
+    <div id="novels-container"></div>
+    
+    <script>
+        function addTestResult(message, type = 'info') {
+            const div = document.createElement('div');
+            div.className = `test-result ${type}`;
+            div.textContent = message;
+            document.getElementById('test-results').appendChild(div);
+        }
+        
+        function displayNovels(novels) {
+            const container = document.getElementById('novels-container');
+            container.innerHTML = '<h2>加载的小说数据：</h2>';
+            
+            novels.forEach(novel => {
+                const div = document.createElement('div');
+                div.className = 'novel-card';
+                div.innerHTML = `
+                    <h3>${novel.title}</h3>
+                    <p><strong>ID:</strong> ${novel.id}</p>
+                    <p><strong>访问级别:</strong> ${novel.accessLevel}</p>
+                    <p><strong>有权限:</strong> ${novel.hasAccess ? '是' : '否'}</p>
+                    <p><strong>需要登录:</strong> ${novel.requiresLogin ? '是' : '否'}</p>
+                    <p><strong>阅读量:</strong> ${novel.views}</p>
+                    <p><strong>标签:</strong> ${novel.tags.join(', ')}</p>
+                `;
+                container.appendChild(div);
+            });
+        }
+        
+        addTestResult('开始测试数据加载...', 'info');
+        
+        // 测试API连接
+        fetch('/api/novels')
+            .then(response => {
+                addTestResult(`API响应状态: ${response.status}`, response.ok ? 'success' : 'error');
+                return response.json();
+            })
+            .then(data => {
+                addTestResult('API响应解析成功', 'success');
+                
+                if (data.success) {
+                    addTestResult('API返回成功状态', 'success');
+                    
+                    if (data.novels && Array.isArray(data.novels)) {
+                        addTestResult(`成功获取 ${data.novels.length} 部小说`, 'success');
+                        displayNovels(data.novels);
+                        
+                        // 测试数据格式
+                        const firstNovel = data.novels[0];
+                        if (firstNovel) {
+                            addTestResult('第一部小说数据格式检查:', 'info');
+                            addTestResult(`- 标题: ${firstNovel.title}`, 'info');
+                            addTestResult(`- ID: ${firstNovel.id}`, 'info');
+                            addTestResult(`- 访问级别: ${firstNovel.accessLevel}`, 'info');
+                            addTestResult(`- 有权限: ${firstNovel.hasAccess}`, 'info');
+                            addTestResult(`- 标签数量: ${firstNovel.tags.length}`, 'info');
+                        }
+                    } else {
+                        addTestResult('小说数据格式错误', 'error');
+                    }
+                } else {
+                    addTestResult('API返回失败状态', 'error');
+                }
+            })
+            .catch(error => {
+                addTestResult(`API请求失败: ${error.message}`, 'error');
+                console.error('API请求错误:', error);
+            });
+        
+        // 测试Utils类
+        setTimeout(() => {
+            try {
+                if (typeof Utils !== 'undefined') {
+                    addTestResult('Utils类可用', 'success');
+                    
+                    // 测试格式化函数
+                    if (typeof Utils.formatViews === 'function') {
+                        const formatted = Utils.formatViews(1234);
+                        addTestResult(`格式化测试: 1234 -> ${formatted}`, 'success');
+                    }
+                } else {
+                    addTestResult('Utils类不可用', 'error');
+                }
+            } catch (e) {
+                addTestResult(`Utils测试错误: ${e.message}`, 'error');
+            }
+        }, 500);
+    </script>
+    
+    <!-- 加载必要的脚本 -->
+    <script src="js/main/utils.js"></script>
+</body>
+</html>
