@@ -465,4 +465,145 @@ router.get('/users/:id/activity', requireAdmin, (req, res) => {
     }
 });
 
+// 获取系统设置
+router.get('/settings', requireAdmin, (req, res) => {
+    try {
+        const fs = require('fs');
+        const path = require('path');
+        const settingsPath = path.join(__dirname, '../../data/settings.json');
+
+        // 检查设置文件是否存在
+        if (!fs.existsSync(settingsPath)) {
+            // 如果不存在，创建默认设置
+            const defaultSettings = {
+                website: {
+                    name: "MOMO炒饭店",
+                    description: "小红书风格个人小说发布网站，提供优质的阅读体验",
+                    keywords: "小说,阅读,小红书,文学,创作"
+                },
+                contact: {
+                    wechat: "novel-service",
+                    email: "service@novel-site.com",
+                    qq: "",
+                    phone: "",
+                    workingHours: "9:00-21:00",
+                    address: "点击右下角客服图标",
+                    supportNote: "为了确保账户安全和服务质量，我们采用人工开通方式。"
+                },
+                admin: {
+                    name: "MOMO",
+                    email: "admin@novel-site.com",
+                    bio: "网站管理员，致力于为用户提供优质的阅读体验"
+                }
+            };
+
+            fs.writeFileSync(settingsPath, JSON.stringify(defaultSettings, null, 2));
+
+            return res.json({
+                success: true,
+                data: defaultSettings,
+                message: '获取系统设置成功'
+            });
+        }
+
+        const settingsData = fs.readFileSync(settingsPath, 'utf8');
+        const settings = JSON.parse(settingsData);
+
+        res.json({
+            success: true,
+            data: settings,
+            message: '获取系统设置成功'
+        });
+    } catch (error) {
+        console.error('获取系统设置失败:', error);
+        res.status(500).json({
+            success: false,
+            message: '服务器内部错误'
+        });
+    }
+});
+
+// 更新系统设置
+router.post('/settings', requireAdmin, (req, res) => {
+    try {
+        const fs = require('fs');
+        const path = require('path');
+        const settingsPath = path.join(__dirname, '../../data/settings.json');
+
+        const { website, contact, admin, membership, system, notifications, security } = req.body;
+
+        // 验证必填字段（只在提供了相应数据时验证）
+        if (website && website.name !== undefined && !website.name.trim()) {
+            return res.status(400).json({
+                success: false,
+                message: '网站名称不能为空'
+            });
+        }
+
+        if (contact && contact.email !== undefined) {
+            if (!contact.email.trim()) {
+                return res.status(400).json({
+                    success: false,
+                    message: '联系邮箱不能为空'
+                });
+            }
+
+            // 验证邮箱格式
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            if (!emailRegex.test(contact.email)) {
+                return res.status(400).json({
+                    success: false,
+                    message: '邮箱格式不正确'
+                });
+            }
+        }
+
+        if (contact && contact.wechat !== undefined && !contact.wechat.trim()) {
+            return res.status(400).json({
+                success: false,
+                message: '微信号不能为空'
+            });
+        }
+
+        // 读取现有设置
+        let currentSettings = {};
+        if (fs.existsSync(settingsPath)) {
+            const settingsData = fs.readFileSync(settingsPath, 'utf8');
+            currentSettings = JSON.parse(settingsData);
+        }
+
+        // 合并设置
+        const updatedSettings = {
+            ...currentSettings,
+            website: { ...currentSettings.website, ...website },
+            contact: { ...currentSettings.contact, ...contact },
+            admin: { ...currentSettings.admin, ...admin },
+            membership: { ...currentSettings.membership, ...membership },
+            system: { ...currentSettings.system, ...system },
+            notifications: { ...currentSettings.notifications, ...notifications },
+            security: { ...currentSettings.security, ...security },
+            meta: {
+                ...currentSettings.meta,
+                lastUpdated: new Date().toISOString(),
+                updatedBy: 'admin'
+            }
+        };
+
+        // 保存设置
+        fs.writeFileSync(settingsPath, JSON.stringify(updatedSettings, null, 2));
+
+        res.json({
+            success: true,
+            data: updatedSettings,
+            message: '系统设置更新成功'
+        });
+    } catch (error) {
+        console.error('更新系统设置失败:', error);
+        res.status(500).json({
+            success: false,
+            message: '服务器内部错误'
+        });
+    }
+});
+
 module.exports = router;

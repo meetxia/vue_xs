@@ -1,0 +1,112 @@
+{
+  "website": {
+    "name": "MOMO炒饭店",
+    "description": "小红书风格个人小说发布网站，提供优质的阅读体验",
+    "keywords": "小说,阅读,小红书,文学,创作",
+    "logo": "/favicon.ico",
+    "favicon": "/favicon.ico",
+    "theme": {
+      "primaryColor": "#FE2C55",
+      "secondaryColor": "#F5E6D3",
+      "backgroundColor": "#FAF5F0"
+    }
+  },
+  "contact": {
+    "wechat": "mo-x168",
+    "email": "1357499128@qq.com",
+    "qq": "1357499128",
+    "phone": "暂无",
+    "workingHours": "9:00-21:00",
+    "address": "点击右下角客服图标",
+    "supportNote": "为了确保账户安全和服务质量，我们采用人工开通方式。"
+  },
+  "admin": {
+    "name": "MOMO",
+    "email": "1357499128@qq.com",
+    "bio": "网站管理员，致力于为用户提供优质的阅读体验",
+    "avatar": "/default.png",
+    "socialLinks": {
+      "wechat": "momo-admin",
+      "weibo": "@MOMO炒饭店",
+      "github": "https://github.com/momo"
+    }
+  },
+  "membership": {
+    "enableMembership": true,
+    "paymentMethods": [
+      "微信支付",
+      "支付宝",
+      "银行卡"
+    ],
+    "premiumPrice": {
+      "monthly": 19.9,
+      "quarterly": 49.9,
+      "yearly": 159.9
+    },
+    "vipPrice": {
+      "monthly": 39.9,
+      "quarterly": 99.9,
+      "yearly": 299.9
+    },
+    "features": {
+      "premium": [
+        "无广告阅读",
+        "高清封面",
+        "优先客服",
+        "专属标识"
+      ],
+      "vip": [
+        "无广告阅读",
+        "高清封面",
+        "优先客服",
+        "专属标识",
+        "离线下载",
+        "专属内容",
+        "VIP专区",
+        "定制推荐"
+      ]
+    }
+  },
+  "system": {
+    "maintenanceMode": false,
+    "maintenanceMessage": "系统维护中，预计恢复时间：2小时后",
+    "registrationEnabled": true,
+    "commentEnabled": true,
+    "uploadEnabled": true,
+    "maxFileSize": 50,
+    "allowedFileTypes": [
+      "txt",
+      "jpg",
+      "jpeg",
+      "png",
+      "gif"
+    ],
+    "seoEnabled": true,
+    "analyticsEnabled": true,
+    "backupEnabled": true,
+    "lastBackup": null
+  },
+  "notifications": {
+    "emailEnabled": true,
+    "smsEnabled": false,
+    "pushEnabled": true,
+    "welcomeMessage": "欢迎来到MOMO炒饭店！开始您的阅读之旅吧~",
+    "membershipWelcome": "恭喜您成为会员！享受更多专属权益~"
+  },
+  "security": {
+    "passwordMinLength": 6,
+    "passwordRequireSpecial": false,
+    "loginAttempts": 5,
+    "lockoutDuration": 30,
+    "sessionTimeout": 24,
+    "enableTwoFactor": false,
+    "ipWhitelist": [],
+    "ipBlacklist": []
+  },
+  "meta": {
+    "version": "1.0.0",
+    "lastUpdated": "2025-08-07T06:16:36.880Z",
+    "updatedBy": "admin",
+    "backupCount": 0
+  }
+}

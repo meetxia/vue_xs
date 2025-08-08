@@ -12,7 +12,8 @@
       "Bash(rm:*)",
       "Bash(find:*)",
       "Bash(npm audit:*)",
-      "Bash(cp:*)"
+      "Bash(cp:*)",
+      "mcp__magic__21st_magic_component_builder"
     ],
     "deny": []
   }

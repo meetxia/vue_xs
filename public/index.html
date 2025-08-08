@@ -4,11 +4,14 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>MOMO炒饭店</title>
+    <link rel="icon" href="/favicon.ico" type="image/x-icon">
+    <link rel="preconnect" href="https://cdn.tailwindcss.com">
+    <link rel="dns-prefetch" href="https://cdn.tailwindcss.com">
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="css/style.css">
     <link rel="stylesheet" href="css/back-to-top.css">
     <script>
-        // 配置Tailwind CSS并禁用生产环境警告
+        // 配置Tailwind CSS
         tailwind.config = {
             theme: {
                 extend: {
@@ -21,10 +24,18 @@
                 }
             }
         };
-
-        // 禁用Tailwind CSS的生产环境警告
-        if (typeof window !== 'undefined') {
-            window.tailwindConfig = tailwind.config;
+        
+        // 禁用控制台警告
+        if (typeof console !== 'undefined') {
+            const originalWarn = console.warn;
+            console.warn = function(...args) {
+                const message = args.join(' ');
+                if (message.includes('cdn.tailwindcss.com') && 
+                    message.includes('production')) {
+                    return; // 忽略 TailwindCSS 生产环境警告
+                }
+                originalWarn.apply(console, args);
+            };
         }
     </script>
 </head>
@@ -163,15 +174,38 @@
     </div>
 
     <!-- 模块化JavaScript文件 -->
-    <script src="js/main/utils.js"></script>
-    <script src="js/main/theme-manager.js"></script>
-    <script src="js/main/user-manager.js"></script>
-    <script src="js/interaction-manager.js"></script>
-    <script src="js/main/waterfall-layout.js"></script>
-    <script src="js/main/search-manager.js"></script>
-    <script src="js/main/novel-card-renderer.js"></script>
+    <script>
+        // 性能监控和错误处理
+        window.addEventListener('error', function(e) {
+            console.error('页面错误:', e.error);
+        });
+        
+        window.addEventListener('unhandledrejection', function(e) {
+            console.error('未处理的Promise拒绝:', e.reason);
+            e.preventDefault(); // 防止错误进入控制台
+        });
+        
+        // 加载性能监控
+        window.addEventListener('load', function() {
+            if ('performance' in window) {
+                const loadTime = performance.timing.loadEventEnd - performance.timing.navigationStart;
+                console.log('页面加载完成时间:', loadTime + 'ms');
+                
+                if (loadTime > 3000) {
+                    console.warn('页面加载时间过长:', loadTime + 'ms');
+                }
+            }
+        });
+    </script>
+    <script src="js/main/utils.js" defer></script>
+    <script src="js/main/theme-manager.js" defer></script>
+    <script src="js/main/user-manager.js" defer></script>
+    <script src="js/interaction-manager.js" defer></script>
+    <script src="js/main/waterfall-layout.js" defer></script>
+    <script src="js/main/search-manager.js" defer></script>
+    <script src="js/main/novel-card-renderer.js" defer></script>
     <!-- 离线阅读脚本已移除 -->
-    <script src="js/main.js"></script>
-    <script src="js/back-to-top.js"></script>
+    <script src="js/main.js" defer></script>
+    <script src="js/back-to-top.js" defer></script>
 </body>
 </html>

@@ -1398,9 +1398,221 @@
 
             <!-- 系统设置页面 -->
             <div id="settings-section" class="content-section p-6">
-                <div class="card">
-                    <h3 class="text-lg font-semibold mb-6">系统设置</h3>
-                    <p class="text-gray-600">系统设置功能开发中...</p>
+                <!-- 设置导航选项卡 -->
+                <div class="border-b border-gray-200 mb-6">
+                    <nav class="-mb-px flex space-x-8">
+                        <button class="py-2 px-1 border-b-2 border-purple-500 text-purple-600 font-medium text-sm settings-tab-btn active"
+                                onclick="switchSettingsTab('website')" data-tab="website">
+                            🌐 网站信息
+                        </button>
+                        <button class="py-2 px-1 border-b-2 border-transparent text-gray-500 hover:text-gray-700 font-medium text-sm settings-tab-btn"
+                                onclick="switchSettingsTab('contact')" data-tab="contact">
+                            📞 联系方式
+                        </button>
+                        <button class="py-2 px-1 border-b-2 border-transparent text-gray-500 hover:text-gray-700 font-medium text-sm settings-tab-btn"
+                                onclick="switchSettingsTab('admin')" data-tab="admin">
+                            👤 管理员信息
+                        </button>
+                        <button class="py-2 px-1 border-b-2 border-transparent text-gray-500 hover:text-gray-700 font-medium text-sm settings-tab-btn"
+                                onclick="switchSettingsTab('membership')" data-tab="membership">
+                            💎 会员设置
+                        </button>
+                    </nav>
+                </div>
+
+                <!-- 网站信息设置 -->
+                <div id="website-settings-tab" class="settings-tab-content">
+                    <div class="card">
+                        <h3 class="text-lg font-semibold mb-6">🌐 网站基本信息</h3>
+
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div class="form-group">
+                                <label class="form-label">网站名称 *</label>
+                                <input type="text" id="websiteName" class="form-input" placeholder="请输入网站名称">
+                                <p class="text-sm text-gray-500 mt-1">将显示在浏览器标题栏和网站头部</p>
+                            </div>
+
+                            <div class="form-group">
+                                <label class="form-label">网站关键词</label>
+                                <input type="text" id="websiteKeywords" class="form-input" placeholder="小说,阅读,文学">
+                                <p class="text-sm text-gray-500 mt-1">用逗号分隔，有助于SEO优化</p>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">网站描述</label>
+                            <textarea id="websiteDescription" class="form-input" rows="3" placeholder="请输入网站描述"></textarea>
+                            <p class="text-sm text-gray-500 mt-1">将显示在搜索引擎结果中</p>
+                        </div>
+
+                        <div class="flex justify-end">
+                            <button onclick="saveWebsiteSettings()" class="btn btn-primary">
+                                💾 保存网站信息
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 联系方式设置 -->
+                <div id="contact-settings-tab" class="settings-tab-content" style="display: none;">
+                    <div class="card">
+                        <h3 class="text-lg font-semibold mb-6">📞 联系方式管理</h3>
+                        <p class="text-gray-600 mb-6">这些联系方式将在用户开通会员时显示</p>
+
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div class="form-group">
+                                <label class="form-label">微信号 *</label>
+                                <input type="text" id="contactWechat" class="form-input" placeholder="请输入微信号">
+                                <p class="text-sm text-gray-500 mt-1">用户开通会员时的主要联系方式</p>
+                            </div>
+
+                            <div class="form-group">
+                                <label class="form-label">邮箱地址 *</label>
+                                <input type="email" id="contactEmail" class="form-input" placeholder="service@example.com">
+                                <p class="text-sm text-gray-500 mt-1">客服邮箱，24小时内回复</p>
+                            </div>
+
+                            <div class="form-group">
+                                <label class="form-label">QQ号码</label>
+                                <input type="text" id="contactQQ" class="form-input" placeholder="请输入QQ号码">
+                                <p class="text-sm text-gray-500 mt-1">可选的联系方式</p>
+                            </div>
+
+                            <div class="form-group">
+                                <label class="form-label">客服电话</label>
+                                <input type="text" id="contactPhone" class="form-input" placeholder="400-123-4567">
+                                <p class="text-sm text-gray-500 mt-1">可选的联系方式</p>
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div class="form-group">
+                                <label class="form-label">工作时间</label>
+                                <input type="text" id="workingHours" class="form-input" placeholder="9:00-21:00">
+                                <p class="text-sm text-gray-500 mt-1">客服工作时间</p>
+                            </div>
+
+                            <div class="form-group">
+                                <label class="form-label">联系地址</label>
+                                <input type="text" id="contactAddress" class="form-input" placeholder="点击右下角客服图标">
+                                <p class="text-sm text-gray-500 mt-1">联系方式说明</p>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">客服说明</label>
+                            <textarea id="supportNote" class="form-input" rows="3" placeholder="为了确保账户安全和服务质量，我们采用人工开通方式。"></textarea>
+                            <p class="text-sm text-gray-500 mt-1">向用户说明联系方式的使用说明</p>
+                        </div>
+
+                        <div class="flex justify-end">
+                            <button onclick="saveContactSettings()" class="btn btn-primary">
+                                💾 保存联系方式
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 管理员信息设置 -->
+                <div id="admin-settings-tab" class="settings-tab-content" style="display: none;">
+                    <div class="card">
+                        <h3 class="text-lg font-semibold mb-6">👤 管理员个人信息</h3>
+
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div class="form-group">
+                                <label class="form-label">管理员昵称</label>
+                                <input type="text" id="adminName" class="form-input" placeholder="请输入管理员昵称">
+                                <p class="text-sm text-gray-500 mt-1">将显示在网站相关页面</p>
+                            </div>
+
+                            <div class="form-group">
+                                <label class="form-label">管理员邮箱</label>
+                                <input type="email" id="adminEmail" class="form-input" placeholder="admin@example.com">
+                                <p class="text-sm text-gray-500 mt-1">管理员联系邮箱</p>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">个人简介</label>
+                            <textarea id="adminBio" class="form-input" rows="3" placeholder="请输入个人简介"></textarea>
+                            <p class="text-sm text-gray-500 mt-1">管理员的个人介绍</p>
+                        </div>
+
+                        <div class="flex justify-end">
+                            <button onclick="saveAdminSettings()" class="btn btn-primary">
+                                💾 保存管理员信息
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 会员设置 -->
+                <div id="membership-settings-tab" class="settings-tab-content" style="display: none;">
+                    <div class="card">
+                        <h3 class="text-lg font-semibold mb-6">💎 会员系统设置</h3>
+
+                        <div class="form-group">
+                            <label class="flex items-center">
+                                <input type="checkbox" id="enableMembership" class="mr-2">
+                                <span class="form-label mb-0">启用会员系统</span>
+                            </label>
+                            <p class="text-sm text-gray-500 mt-1">关闭后用户无法开通会员</p>
+                        </div>
+
+                        <div id="membershipDetails" class="space-y-6">
+                            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                <div class="form-group">
+                                    <label class="form-label">高级会员月费 (元)</label>
+                                    <input type="number" id="premiumMonthly" class="form-input" step="0.01" placeholder="19.9">
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">高级会员季费 (元)</label>
+                                    <input type="number" id="premiumQuarterly" class="form-input" step="0.01" placeholder="49.9">
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">高级会员年费 (元)</label>
+                                    <input type="number" id="premiumYearly" class="form-input" step="0.01" placeholder="159.9">
+                                </div>
+                            </div>
+
+                            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                <div class="form-group">
+                                    <label class="form-label">VIP会员月费 (元)</label>
+                                    <input type="number" id="vipMonthly" class="form-input" step="0.01" placeholder="39.9">
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">VIP会员季费 (元)</label>
+                                    <input type="number" id="vipQuarterly" class="form-input" step="0.01" placeholder="99.9">
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">VIP会员年费 (元)</label>
+                                    <input type="number" id="vipYearly" class="form-input" step="0.01" placeholder="299.9">
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="flex justify-end">
+                            <button onclick="saveMembershipSettings()" class="btn btn-primary">
+                                💾 保存会员设置
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 保存成功提示 -->
+                <div id="settingsSuccessToast" class="fixed top-4 right-4 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg transform translate-x-full transition-transform duration-300 z-50">
+                    <div class="flex items-center">
+                        <span class="mr-2">✅</span>
+                        <span id="settingsSuccessMessage">设置保存成功</span>
+                    </div>
+                </div>
+
+                <!-- 保存失败提示 -->
+                <div id="settingsErrorToast" class="fixed top-4 right-4 bg-red-500 text-white px-6 py-3 rounded-lg shadow-lg transform translate-x-full transition-transform duration-300 z-50">
+                    <div class="flex items-center">
+                        <span class="mr-2">❌</span>
+                        <span id="settingsErrorMessage">设置保存失败</span>
+                    </div>
                 </div>
             </div>
         </div>
@@ -1617,7 +1829,8 @@
     <script src="js/admin/user-manager.js"></script>
     <script src="js/admin/stats-manager.js"></script>
     <script src="js/admin/tags-manager.js"></script>
-    
+    <script src="js/admin/settings-manager.js"></script>
+
     <!-- 主入口文件 -->
     <script src="js/admin.js"></script>
     

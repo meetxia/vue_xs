@@ -5,7 +5,9 @@ class NovelReader {
         this.settings = this.loadSettings();
         this.readingProgress = this.loadProgress();
 
-        // 离线管理器已移除
+        // 初始化阅读追踪器
+        this.readingTracker = null;
+        this.initReadingTracker();
 
         // 初始化分页管理器
         this.paginationManager = null;
@@ -32,6 +34,29 @@ class NovelReader {
             return null;
         }
         return id;
+    }
+
+    // 初始化阅读追踪器
+    initReadingTracker() {
+        if (typeof initReadingTracker === 'function') {
+            this.readingTracker = initReadingTracker(window.userManager);
+        } else {
+            console.warn('阅读追踪器未加载');
+        }
+    }
+
+    // 开始阅读追踪
+    startReadingTracking() {
+        if (this.readingTracker && this.novelId) {
+            this.readingTracker.startTracking(parseInt(this.novelId));
+        }
+    }
+
+    // 停止阅读追踪
+    stopReadingTracking() {
+        if (this.readingTracker) {
+            this.readingTracker.stopTracking(true);
+        }
     }
 
     // 加载用户设置
@@ -749,6 +774,11 @@ class NovelReader {
 
         // 显示小说信息卡片
         this.elements.novelInfo.style.display = 'block';
+
+        // 启动阅读追踪
+        setTimeout(() => {
+            this.startReadingTracking();
+        }, 1000); // 延迟1秒启动，确保页面渲染完成
 
         // 检查权限
         if (novel.hasAccess === false) {

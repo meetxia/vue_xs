@@ -49,7 +49,7 @@ nav {
   backdrop-filter: blur(10px);
   background-color: rgba(255, 255, 255, 0.95);
   border-bottom: 1px solid var(--border-light);
-  height: 64px; /* 固定导航栏高度 */
+  height: 80px; /* 固定导航栏高度 */
   pointer-events: auto;
 }
 
@@ -222,7 +222,7 @@ nav * {
 
 /* 标签栏固定定位 */
 .tags-bar {
-  top: 64px; /* 导航栏高度 */
+  top: 80px; /* 导航栏高度 */
   backdrop-filter: blur(10px);
   background-color: rgba(255, 255, 255, 0.95);
   width: 100%;

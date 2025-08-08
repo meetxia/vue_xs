@@ -9,6 +9,7 @@ const novelRoutes = require('./novels');
 const membershipRoutes = require('./membership');
 const commentRoutes = require('./comments');
 const tagsRoutes = require('./tags');
+const userStatsRoutes = require('./user-stats');
 
 const { DataHandler, NovelAnalyzer, AIService } = require('../utils');
 const { imageUpload, txtUpload } = require('../middleware');
@@ -19,6 +20,7 @@ router.use('/admin', adminRoutes);
 router.use('/novels', novelRoutes);
 router.use('/membership', membershipRoutes);
 router.use('/tags', tagsRoutes);
+router.use('/user', userStatsRoutes);
 
 // 评论路由需要特殊处理，因为它包含在novels路由中
 // router.use('/comments', commentRoutes);
@@ -43,6 +45,56 @@ router.get('/tags', (req, res) => {
         });
     } catch (error) {
         console.error('获取标签失败:', error);
+        res.status(500).json({
+            success: false,
+            message: '服务器内部错误'
+        });
+    }
+});
+
+// 获取网站设置信息（公开接口，仅返回联系方式等公开信息）
+router.get('/settings', (req, res) => {
+    try {
+        const fs = require('fs');
+        const path = require('path');
+        const settingsPath = path.join(__dirname, '../../data/settings.json');
+
+        // 默认设置
+        let settings = {
+            website: {
+                name: "MOMO炒饭店",
+                description: "小红书风格个人小说发布网站，提供优质的阅读体验"
+            },
+            contact: {
+                wechat: "novel-service",
+                email: "service@novel-site.com",
+                qq: "",
+                phone: "",
+                workingHours: "9:00-21:00",
+                address: "点击右下角客服图标",
+                supportNote: "为了确保账户安全和服务质量，我们采用人工开通方式。"
+            }
+        };
+
+        // 如果设置文件存在，读取设置
+        if (fs.existsSync(settingsPath)) {
+            const settingsData = fs.readFileSync(settingsPath, 'utf8');
+            const fullSettings = JSON.parse(settingsData);
+
+            // 只返回公开信息
+            settings = {
+                website: fullSettings.website || settings.website,
+                contact: fullSettings.contact || settings.contact
+            };
+        }
+
+        res.json({
+            success: true,
+            data: settings,
+            message: '获取网站设置成功'
+        });
+    } catch (error) {
+        console.error('获取网站设置失败:', error);
         res.status(500).json({
             success: false,
             message: '服务器内部错误'

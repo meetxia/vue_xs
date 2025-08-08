@@ -59,15 +59,40 @@ router.post('/upgrade', authenticateToken, (req, res) => {
         const hasValidPaymentProof = paymentProof && paymentProof.verified === true;
         
         if (!isAdmin && !hasValidPaymentProof && !adminOverride) {
+            // 动态获取联系方式信息
+            let contactInfo = {
+                wechat: 'novel-service',
+                email: 'service@novel-site.com',
+                workHours: '9:00-21:00'
+            };
+
+            try {
+                const fs = require('fs');
+                const path = require('path');
+                const settingsPath = path.join(__dirname, '../../data/settings.json');
+
+                if (fs.existsSync(settingsPath)) {
+                    const settingsData = fs.readFileSync(settingsPath, 'utf8');
+                    const settings = JSON.parse(settingsData);
+
+                    if (settings.contact) {
+                        contactInfo = {
+                            wechat: settings.contact.wechat || 'novel-service',
+                            email: settings.contact.email || 'service@novel-site.com',
+                            workHours: settings.contact.workingHours || '9:00-21:00'
+                        };
+                    }
+                }
+            } catch (error) {
+                console.error('获取联系方式设置失败:', error);
+                // 使用默认联系方式
+            }
+
             return res.status(403).json({
                 success: false,
                 message: '无权限直接开通会员。请联系客服完成支付流程。',
                 requiresPayment: true,
-                contactInfo: {
-                    wechat: 'novel-service',
-                    email: 'service@novel-site.com',
-                    workHours: '9:00-21:00'
-                }
+                contactInfo: contactInfo
             });
         }
         

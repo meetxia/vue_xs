@@ -23,20 +23,25 @@ class UserManager {
     async validateToken() {
         try {
             const response = await fetch('/api/auth/profile', {
+                method: 'GET',
                 headers: {
-                    'Authorization': `Bearer ${this.token}`
+                    'Authorization': `Bearer ${this.token}`,
+                    'Content-Type': 'application/json'
                 }
             });
 
             if (response.ok) {
                 const result = await response.json();
-                this.user = result.data;
-                return true;
-            } else {
-                localStorage.removeItem('token');
-                this.token = null;
-                return false;
+                if (result.success && result.data) {
+                    this.user = result.data;
+                    return true;
+                }
             }
+            
+            // Token invalid or expired
+            localStorage.removeItem('token');
+            this.token = null;
+            return false;
         } catch (error) {
             console.error('验证Token失败:', error);
             localStorage.removeItem('token');
@@ -50,17 +55,30 @@ class UserManager {
         
         try {
             const response = await fetch('/api/membership/status', {
+                method: 'GET',
                 headers: {
-                    'Authorization': `Bearer ${this.token}`
+                    'Authorization': `Bearer ${this.token}`,
+                    'Content-Type': 'application/json'
                 }
             });
 
             if (response.ok) {
                 const result = await response.json();
-                this.membershipInfo = result.data;
+                if (result.success && result.data) {
+                    this.membershipInfo = result.data;
+                }
+            } else if (response.status !== 404) {
+                // 404 is expected if membership API doesn't exist, don't log error
+                console.warn('获取会员信息失败:', response.status);
             }
         } catch (error) {
             console.error('获取会员信息失败:', error);
+            // Set default membership info to prevent errors
+            this.membershipInfo = {
+                type: 'free',
+                status: 'active',
+                isValid: true
+            };
         }
     }
 

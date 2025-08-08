@@ -87,6 +87,14 @@ class AdminManager {
         if (!window.statsManager) {
             console.error('统计管理器未初始化');
         }
+
+        // 初始化系统设置管理器
+        if (typeof SettingsManager !== 'undefined') {
+            window.settingsManager = new SettingsManager();
+            console.log('系统设置管理器初始化完成');
+        } else {
+            console.error('系统设置管理器未加载');
+        }
     }
 
     // 绑定全局事件

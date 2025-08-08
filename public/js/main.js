@@ -825,23 +825,146 @@ function showMembershipCenter() {
 }
 
 /**
- * 显示会员中心模态框
+ * 显示高级会员开通弹窗
  */
-function showMembershipModal() {
+function showPremiumMembershipModal(membershipType) {
     const modal = document.createElement('div');
-    modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50';
+    modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 modal-overlay';
     modal.innerHTML = `
-        <div class="bg-white rounded-lg max-w-md w-full mx-4 p-6">
-            <div class="flex justify-between items-center mb-4">
-                <h3 class="text-lg font-semibold">会员中心</h3>
-                <button onclick="closeMembershipModal()" class="text-gray-400 hover:text-gray-600">
-                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <div class="bg-white rounded-3xl max-w-md w-full mx-4 p-8 modal-content">
+            <div class="flex justify-between items-center mb-6">
+                <h3 class="text-2xl font-bold bg-gradient-to-r from-premium to-vip bg-clip-text text-transparent">
+                    开通会员
+                </h3>
+                <button onclick="closeMembershipModal()" class="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center hover:bg-gray-200 transition-colors">
+                    <svg class="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                    </svg>
+                </button>
+            </div>
+            
+            <div id="modalMembershipInfo" class="mb-6">
+                <div class="text-center mb-4">
+                    <div class="w-16 h-16 bg-gradient-to-br ${membershipType === 'premium' ? 'from-premium to-pink-500' : 'from-vip to-yellow-400'} rounded-full flex items-center justify-center mx-auto mb-4">
+                        <span class="text-2xl">${membershipType === 'premium' ? '⭐' : '💎'}</span>
+                    </div>
+                    <h4 class="text-xl font-bold ${membershipType === 'premium' ? 'text-premium' : 'text-vip'}">${membershipType === 'premium' ? '高级会员' : 'VIP会员'}</h4>
+                    <p class="text-3xl font-bold ${membershipType === 'premium' ? 'text-premium' : 'text-vip'}">¥${membershipType === 'premium' ? '19.9' : '39.9'}<span class="text-lg text-gray-500">/月</span></p>
+                </div>
+            </div>
+            
+            <div class="space-y-4 mb-6">
+                <div class="bg-gradient-to-r from-premium to-pink-500 rounded-xl p-4 text-white">
+                    <h4 class="font-semibold mb-2">💎 高级会员特权</h4>
+                    <ul class="text-sm space-y-1">
+                        <li>• 解锁大部分精选内容</li>
+                        <li>• 无广告阅读体验</li>
+                        <li>• 支持离线下载</li>
+                        <li>• 优先客服支持</li>
+                    </ul>
+                </div>
+                
+                <div class="bg-gradient-to-r from-vip to-yellow-400 rounded-xl p-4 text-white">
+                    <h4 class="font-semibold mb-2">👑 VIP会员特权</h4>
+                    <ul class="text-sm space-y-1">
+                        <li>• 解锁所有内容</li>
+                        <li>• 24小时专属客服</li>
+                        <li>• 独家VIP专区</li>
+                        <li>• 优先体验新功能</li>
+                    </ul>
+                </div>
+            </div>
+            
+            <div class="text-center">
+                <button onclick="contactCustomerService()" class="w-full py-3 bg-gradient-to-r from-premium to-vip text-white rounded-xl font-medium hover:shadow-lg transition-all duration-300 transform hover:scale-105">
+                    📞 联系客服开通
+                </button>
+                <p class="text-sm text-gray-500 mt-2">
+                    客服将为您提供专业的开通服务
+                </p>
+            </div>
+        </div>
+    `;
+    
+    document.body.appendChild(modal);
+    modal.id = 'membershipModal';
+    
+    // 显示动画
+    setTimeout(() => {
+        modal.classList.add('show');
+    }, 10);
+    
+    // 点击弹窗外部关闭
+    modal.addEventListener('click', function(e) {
+        if (e.target === modal) {
+            closeMembershipModal();
+        }
+    });
+}
+
+/**
+ * 联系客服
+ */
+async function contactCustomerService() {
+    try {
+        const response = await fetch('/api/settings');
+        const result = await response.json();
+
+        let contactInfo = '';
+        if (result.success && result.data.contact) {
+            const contact = result.data.contact;
+            contactInfo = `请联系客服开通会员：\n\n• 微信：${contact.wechat}\n• 邮件：${contact.email}`;
+
+            if (contact.qq && contact.qq.trim()) {
+                contactInfo += `\n• QQ：${contact.qq}`;
+            }
+            if (contact.phone && contact.phone.trim()) {
+                contactInfo += `\n• 电话：${contact.phone}`;
+            }
+
+            if (contact.supportNote && contact.supportNote.trim()) {
+                contactInfo += `\n\n${contact.supportNote}`;
+            } else {
+                contactInfo += '\n\n我们将为您提供安全的支付方式和专业的开通服务。';
+            }
+        } else {
+            contactInfo = '请联系客服开通会员：\n\n• 微信：novel-service\n• 邮件：service@novel-site.com\n\n我们将为您提供安全的支付方式和专业的开通服务。';
+        }
+
+        alert(contactInfo);
+        closeMembershipModal();
+    } catch (error) {
+        console.error('获取联系方式失败:', error);
+        alert('获取联系方式失败，请稍后重试');
+    }
+}
+
+/**
+ * 显示会员中心模态框（新版本）
+ */
+function showMembershipModal(membershipType = null) {
+    // 如果指定了会员类型，直接显示开通弹窗
+    if (membershipType) {
+        showPremiumMembershipModal(membershipType);
+        return;
+    }
+    
+    const modal = document.createElement('div');
+    modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 modal-overlay';
+    modal.innerHTML = `
+        <div class="bg-white rounded-3xl max-w-md w-full mx-4 p-8 modal-content">
+            <div class="flex justify-between items-center mb-6">
+                <h3 class="text-2xl font-bold bg-gradient-to-r from-premium to-vip bg-clip-text text-transparent">
+                    会员中心
+                </h3>
+                <button onclick="closeMembershipModal()" class="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center hover:bg-gray-200 transition-colors">
+                    <svg class="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
                     </svg>
                 </button>
             </div>
             <div id="membershipContent" class="text-center">
-                <div class="animate-spin w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full mx-auto"></div>
+                <div class="loading-spinner"></div>
                 <p class="mt-2 text-gray-600">加载中...</p>
             </div>
         </div>
@@ -849,6 +972,11 @@ function showMembershipModal() {
     
     document.body.appendChild(modal);
     modal.id = 'membershipModal';
+    
+    // 显示动画
+    setTimeout(() => {
+        modal.classList.add('show');
+    }, 10);
     
     // 加载会员信息
     loadMembershipModalContent();
@@ -860,7 +988,10 @@ function showMembershipModal() {
 function closeMembershipModal() {
     const modal = document.getElementById('membershipModal');
     if (modal) {
-        modal.remove();
+        modal.classList.remove('show');
+        setTimeout(() => {
+            modal.remove();
+        }, 300);
     }
 }
 
@@ -899,25 +1030,36 @@ async function loadMembershipModalContent() {
         
         let plansHtml = '';
         if (plansResult.success) {
-            plansHtml = Object.entries(plansResult.data).map(([type, plan]) => `
-                <div class="border rounded-lg p-4 mb-3">
-                    <h4 class="font-medium mb-2">${plan.name}</h4>
-                    <p class="text-sm text-gray-600 mb-3">${plan.description}</p>
-                    <div class="flex justify-between items-center">
-                        <span class="text-lg font-bold text-blue-600">¥${plan.prices[0].price}/月</span>
-                        <button onclick="upgradeMembership('${type}')" 
-                                class="px-4 py-2 bg-blue-500 text-white text-sm rounded hover:bg-blue-600 transition-colors">
-                            ${membership.type === type ? '续费' : '开通'}
-                        </button>
+            plansHtml = Object.entries(plansResult.data).map(([type, plan]) => {
+                const isCurrent = membership.type === type;
+                const buttonClass = isCurrent ? 'bg-gray-500' : (type === 'premium' ? 'bg-premium hover:bg-pink-600' : 'bg-vip hover:bg-yellow-600');
+                const buttonText = isCurrent ? '当前套餐' : '立即开通';
+                
+                return `
+                    <div class="bg-white rounded-xl p-4 mb-3 shadow-lg border border-gray-100 hover:shadow-xl transition-all duration-300">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <h4 class="font-medium text-gray-800 mb-1">${plan.name}</h4>
+                                <p class="text-sm text-gray-600">${plan.description}</p>
+                            </div>
+                            <div class="text-right">
+                                <span class="text-2xl font-bold ${type === 'premium' ? 'text-premium' : 'text-vip'}">¥${plan.prices[0].price}</span>
+                                <span class="text-sm text-gray-500 block">/月</span>
+                                <button onclick="upgradeMembership('${type}')" 
+                                        class="mt-2 px-4 py-2 ${buttonClass} text-white text-sm rounded-full transition-all duration-300 transform hover:scale-105 ${isCurrent ? '' : 'hover:shadow-lg'}">
+                                    ${buttonText}
+                                </button>
+                            </div>
+                        </div>
                     </div>
-                </div>
-            `).join('');
+                `;
+            }).join('');
         }
         
         content.innerHTML = `
             ${statusHtml}
             <div class="space-y-3">
-                <h4 class="font-medium text-left">会员套餐</h4>
+                <h4 class="font-medium text-left text-lg">会员套餐</h4>
                 ${plansHtml}
             </div>
         `;
@@ -937,9 +1079,43 @@ async function upgradeMembership(membershipType) {
     // 安全措施：禁止前端直接开通会员
     const membershipText = membershipType === 'premium' ? '高级会员' : 'VIP会员';
     const price = membershipType === 'premium' ? '19.9' : '39.9';
-    
-    alert(`${membershipText} (¥${price}/月)\n\n为确保支付安全，请联系客服开通：\n• 微信：novel-service\n• 邮件：service@novel-site.com\n\n我们将为您提供安全的支付方式和专业的开通服务。`);
-    
+
+    // 动态获取联系方式信息
+    try {
+        const response = await fetch('/api/settings');
+        const result = await response.json();
+
+        let contactInfo = '';
+        if (result.success && result.data.contact) {
+            const contact = result.data.contact;
+            contactInfo = `为确保支付安全，请联系客服开通：\n• 微信：${contact.wechat}\n• 邮件：${contact.email}`;
+
+            // 如果有QQ或电话，也显示
+            if (contact.qq && contact.qq.trim()) {
+                contactInfo += `\n• QQ：${contact.qq}`;
+            }
+            if (contact.phone && contact.phone.trim()) {
+                contactInfo += `\n• 电话：${contact.phone}`;
+            }
+
+            // 添加客服说明
+            if (contact.supportNote && contact.supportNote.trim()) {
+                contactInfo += `\n\n${contact.supportNote}`;
+            } else {
+                contactInfo += '\n\n我们将为您提供安全的支付方式和专业的开通服务。';
+            }
+        } else {
+            // 使用默认联系方式
+            contactInfo = '为确保支付安全，请联系客服开通：\n• 微信：novel-service\n• 邮件：service@novel-site.com\n\n我们将为您提供安全的支付方式和专业的开通服务。';
+        }
+
+        alert(`${membershipText} (¥${price}/月)\n\n${contactInfo}`);
+    } catch (error) {
+        console.error('获取联系方式失败:', error);
+        // 使用默认联系方式
+        alert(`${membershipText} (¥${price}/月)\n\n为确保支付安全，请联系客服开通：\n• 微信：novel-service\n• 邮件：service@novel-site.com\n\n我们将为您提供安全的支付方式和专业的开通服务。`);
+    }
+
     // 可选：跳转到会员页面查看详细信息
     if (confirm('是否查看会员套餐详情？')) {
         window.open('/membership.html', '_blank');
@@ -1199,6 +1375,8 @@ window.handleImageError = handleImageError;
 window.showMembershipCenter = showMembershipCenter;
 window.closeMembershipModal = closeMembershipModal;
 window.upgradeMembership = upgradeMembership;
+window.showPremiumMembershipModal = showPremiumMembershipModal;
+window.contactCustomerService = contactCustomerService;
 window.showLoading = showLoading;
 window.showError = showError;
 window.logout = logout;
