@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JavaScript测试页面</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        .test-result { margin: 10px 0; padding: 10px; border-radius: 5px; }
+        .success { background-color: #d4edda; color: #155724; }
+        .error { background-color: #f8d7da; color: #721c24; }
+        .info { background-color: #d1ecf1; color: #0c5460; }
+    </style>
+</head>
+<body>
+    <h1>JavaScript模块测试</h1>
+    <div id="test-results"></div>
+    
+    <script>
+        function addTestResult(message, type = 'info') {
+            const div = document.createElement('div');
+            div.className = `test-result ${type}`;
+            div.textContent = message;
+            document.getElementById('test-results').appendChild(div);
+        }
+        
+        // 测试基本JavaScript功能
+        addTestResult('开始测试JavaScript模块...', 'info');
+        
+        // 测试Utils类
+        try {
+            if (typeof Utils !== 'undefined') {
+                addTestResult('✓ Utils类已加载', 'success');
+                if (typeof Utils.debounce === 'function') {
+                    addTestResult('✓ Utils.debounce方法可用', 'success');
+                } else {
+                    addTestResult('✗ Utils.debounce方法不可用', 'error');
+                }
+            } else {
+                addTestResult('✗ Utils类未加载', 'error');
+            }
+        } catch (e) {
+            addTestResult('✗ Utils测试出错: ' + e.message, 'error');
+        }
+        
+        // 测试ThemeManager类
+        try {
+            if (typeof ThemeManager !== 'undefined') {
+                addTestResult('✓ ThemeManager类已加载', 'success');
+            } else {
+                addTestResult('✗ ThemeManager类未加载', 'error');
+            }
+        } catch (e) {
+            addTestResult('✗ ThemeManager测试出错: ' + e.message, 'error');
+        }
+        
+        // 测试UserManager类
+        try {
+            if (typeof UserManager !== 'undefined') {
+                addTestResult('✓ UserManager类已加载', 'success');
+            } else {
+                addTestResult('✗ UserManager类未加载', 'error');
+            }
+        } catch (e) {
+            addTestResult('✗ UserManager测试出错: ' + e.message, 'error');
+        }
+        
+        // 测试SearchManager类
+        try {
+            if (typeof SearchManager !== 'undefined') {
+                addTestResult('✓ SearchManager类已加载', 'success');
+            } else {
+                addTestResult('✗ SearchManager类未加载', 'error');
+            }
+        } catch (e) {
+            addTestResult('✗ SearchManager测试出错: ' + e.message, 'error');
+        }
+        
+        // 测试NovelCardRenderer类
+        try {
+            if (typeof NovelCardRenderer !== 'undefined') {
+                addTestResult('✓ NovelCardRenderer类已加载', 'success');
+            } else {
+                addTestResult('✗ NovelCardRenderer类未加载', 'error');
+            }
+        } catch (e) {
+            addTestResult('✗ NovelCardRenderer测试出错: ' + e.message, 'error');
+        }
+        
+        // 测试InteractionManager类
+        try {
+            if (typeof InteractionManager !== 'undefined') {
+                addTestResult('✓ InteractionManager类已加载', 'success');
+            } else {
+                addTestResult('✗ InteractionManager类未加载', 'error');
+            }
+        } catch (e) {
+            addTestResult('✗ InteractionManager测试出错: ' + e.message, 'error');
+        }
+        
+        // 测试WaterfallLayout类
+        try {
+            if (typeof WaterfallLayout !== 'undefined') {
+                addTestResult('✓ WaterfallLayout类已加载', 'success');
+            } else {
+                addTestResult('✗ WaterfallLayout类未加载', 'error');
+            }
+        } catch (e) {
+            addTestResult('✗ WaterfallLayout测试出错: ' + e.message, 'error');
+        }
+        
+        // 测试API连接
+        fetch('/api/novels')
+            .then(response => response.json())
+            .then(data => {
+                if (data.success && data.novels) {
+                    addTestResult(`✓ API连接正常，加载了${data.novels.length}部小说`, 'success');
+                } else {
+                    addTestResult('✗ API返回数据格式错误', 'error');
+                }
+            })
+            .catch(error => {
+                addTestResult('✗ API连接失败: ' + error.message, 'error');
+            });
+        
+        addTestResult('测试完成', 'info');
+    </script>
+    
+    <!-- 加载所有JavaScript模块 -->
+    <script src="js/main/utils.js"></script>
+    <script src="js/main/theme-manager.js"></script>
+    <script src="js/main/user-manager.js"></script>
+    <script src="js/interaction-manager.js"></script>
+    <script src="js/main/waterfall-layout.js"></script>
+    <script src="js/main/search-manager.js"></script>
+    <script src="js/main/novel-card-renderer.js"></script>
+</body>
+</html>

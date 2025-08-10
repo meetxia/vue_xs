@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SuperClaude Framework - AI编程助手可视化指南</title>
+    
+    <!-- 外部CSS库 -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- 自定义样式 -->
+    <link rel="stylesheet" href="assets/css/main.css">
+    <link rel="stylesheet" href="assets/css/components.css">
+    <link rel="stylesheet" href="assets/css/animations.css">
+</head>
+<body>
+    <!-- 导航栏 -->
+    <nav class="navbar" id="navbar">
+        <div class="nav-container">
+            <div class="nav-brand">
+                <i class="fas fa-robot brand-icon"></i>
+                <span class="brand-text">SuperClaude</span>
+                <span class="version-badge">v3.0</span>
+            </div>
+            
+            <div class="nav-menu" id="nav-menu">
+                <a href="#overview" class="nav-link active" data-section="overview">
+                    <i class="fas fa-home"></i>
+                    <span>概述</span>
+                </a>
+                <a href="#commands" class="nav-link" data-section="commands">
+                    <i class="fas fa-terminal"></i>
+                    <span>命令</span>
+                </a>
+                <a href="#personas" class="nav-link" data-section="personas">
+                    <i class="fas fa-users"></i>
+                    <span>智能人格</span>
+                </a>
+                <a href="#wave" class="nav-link" data-section="wave">
+                    <i class="fas fa-wave-square"></i>
+                    <span>Wave系统</span>
+                </a>
+                <a href="#quickstart" class="nav-link" data-section="quickstart">
+                    <i class="fas fa-rocket"></i>
+                    <span>快速入门</span>
+                </a>
+            </div>
+            
+            <div class="nav-toggle" id="nav-toggle">
+                <i class="fas fa-bars"></i>
+            </div>
+        </div>
+    </nav>
+
+    <!-- 主要内容区域 -->
+    <main class="main-content">
+        <!-- 概述部分 -->
+        <section id="overview" class="section active">
+            <div class="container">
+                <!-- 英雄区域 -->
+                <div class="hero-section">
+                    <div class="hero-content">
+                        <h1 class="hero-title">
+                            <i class="fas fa-robot hero-icon"></i>
+                            SuperClaude Framework
+                        </h1>
+                        <p class="hero-subtitle">
+                            下一代AI编程助手 - 让Claude Code变得更智能、更专业、更高效
+                        </p>
+                        <div class="hero-stats">
+                            <div class="stat-item">
+                                <div class="stat-number">16</div>
+                                <div class="stat-label">专业命令</div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="stat-number">8+</div>
+                                <div class="stat-label">智能人格</div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="stat-number">4</div>
+                                <div class="stat-label">MCP集成</div>
+                            </div>
+                        </div>
+                        <div class="hero-actions">
+                            <button class="btn btn-primary" onclick="scrollToSection('quickstart')">
+                                <i class="fas fa-rocket"></i>
+                                立即开始
+                            </button>
+                            <button class="btn btn-secondary" onclick="scrollToSection('commands')">
+                                <i class="fas fa-terminal"></i>
+                                浏览命令
+                            </button>
+                        </div>
+                    </div>
+                    <div class="hero-visual">
+                        <div class="floating-cards">
+                            <div class="floating-card card-1">
+                                <i class="fas fa-code"></i>
+                                <span>智能编程</span>
+                            </div>
+                            <div class="floating-card card-2">
+                                <i class="fas fa-brain"></i>
+                                <span>AI分析</span>
+                            </div>
+                            <div class="floating-card card-3">
+                                <i class="fas fa-rocket"></i>
+                                <span>快速开发</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 核心特性 -->
+                <div class="features-section">
+                    <h2 class="section-title">核心特性</h2>
+                    <div class="features-grid">
+                        <div class="feature-card">
+                            <div class="feature-icon">
+                                <i class="fas fa-terminal"></i>
+                            </div>
+                            <h3 class="feature-title">16个专业命令</h3>
+                            <p class="feature-description">
+                                从代码分析到功能实现，从测试到部署，覆盖开发全流程的专业命令系统
+                            </p>
+                            <div class="feature-tags">
+                                <span class="tag">开发</span>
+                                <span class="tag">分析</span>
+                                <span class="tag">质量</span>
+                            </div>
+                        </div>
+
+                        <div class="feature-card">
+                            <div class="feature-icon">
+                                <i class="fas fa-users"></i>
+                            </div>
+                            <h3 class="feature-title">智能人格系统</h3>
+                            <p class="feature-description">
+                                根据任务自动激活相应的专家人格，提供专业领域的深度支持
+                            </p>
+                            <div class="feature-tags">
+                                <span class="tag">架构师</span>
+                                <span class="tag">前端</span>
+                                <span class="tag">后端</span>
+                            </div>
+                        </div>
+
+                        <div class="feature-card">
+                            <div class="feature-icon">
+                                <i class="fas fa-wave-square"></i>
+                            </div>
+                            <h3 class="feature-title">Wave深度处理</h3>
+                            <p class="feature-description">
+                                复杂任务自动启动多阶段深度分析，确保高质量的解决方案
+                            </p>
+                            <div class="feature-tags">
+                                <span class="tag">多阶段</span>
+                                <span class="tag">深度分析</span>
+                                <span class="tag">高质量</span>
+                            </div>
+                        </div>
+
+                        <div class="feature-card">
+                            <div class="feature-icon">
+                                <i class="fas fa-plug"></i>
+                            </div>
+                            <h3 class="feature-title">MCP服务集成</h3>
+                            <p class="feature-description">
+                                集成Context7、Sequential、Magic、Playwright等外部工具服务
+                            </p>
+                            <div class="feature-tags">
+                                <span class="tag">文档查询</span>
+                                <span class="tag">UI生成</span>
+                                <span class="tag">自动化测试</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 对比展示 -->
+                <div class="comparison-section">
+                    <h2 class="section-title">SuperClaude vs 普通Claude</h2>
+                    <div class="comparison-table">
+                        <div class="comparison-header">
+                            <div class="comparison-item">特性</div>
+                            <div class="comparison-item">普通Claude</div>
+                            <div class="comparison-item highlight">SuperClaude</div>
+                        </div>
+                        <div class="comparison-row">
+                            <div class="comparison-item">命令系统</div>
+                            <div class="comparison-item">
+                                <i class="fas fa-times text-red"></i>
+                                无专业命令
+                            </div>
+                            <div class="comparison-item highlight">
+                                <i class="fas fa-check text-green"></i>
+                                16个专业命令
+                            </div>
+                        </div>
+                        <div class="comparison-row">
+                            <div class="comparison-item">专家人格</div>
+                            <div class="comparison-item">
+                                <i class="fas fa-times text-red"></i>
+                                通用回答
+                            </div>
+                            <div class="comparison-item highlight">
+                                <i class="fas fa-check text-green"></i>
+                                自动激活专业人格
+                            </div>
+                        </div>
+                        <div class="comparison-row">
+                            <div class="comparison-item">深度分析</div>
+                            <div class="comparison-item">
+                                <i class="fas fa-minus text-yellow"></i>
+                                基础分析
+                            </div>
+                            <div class="comparison-item highlight">
+                                <i class="fas fa-check text-green"></i>
+                                Wave多层分析
+                            </div>
+                        </div>
+                        <div class="comparison-row">
+                            <div class="comparison-item">工具集成</div>
+                            <div class="comparison-item">
+                                <i class="fas fa-times text-red"></i>
+                                无外部工具
+                            </div>
+                            <div class="comparison-item highlight">
+                                <i class="fas fa-check text-green"></i>
+                                MCP服务器集成
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 命令展示部分 -->
+        <section id="commands" class="section">
+            <div class="container">
+                <div class="section-header">
+                    <h2 class="section-title">16个专业命令</h2>
+                    <p class="section-subtitle">每个命令都是一个专业工具，为不同的开发场景量身定制</p>
+                </div>
+
+                <!-- 命令搜索和筛选 -->
+                <div class="commands-controls">
+                    <div class="search-box">
+                        <i class="fas fa-search search-icon"></i>
+                        <input type="text" id="command-search" placeholder="搜索命令..." class="search-input">
+                    </div>
+                    <div class="filter-tabs">
+                        <button class="filter-tab active" data-category="all">
+                            <i class="fas fa-th"></i>
+                            全部
+                        </button>
+                        <button class="filter-tab" data-category="development">
+                            <i class="fas fa-code"></i>
+                            开发类
+                        </button>
+                        <button class="filter-tab" data-category="analysis">
+                            <i class="fas fa-search"></i>
+                            分析类
+                        </button>
+                        <button class="filter-tab" data-category="quality">
+                            <i class="fas fa-shield-alt"></i>
+                            质量类
+                        </button>
+                        <button class="filter-tab" data-category="management">
+                            <i class="fas fa-tasks"></i>
+                            管理类
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 命令网格 -->
+                <div class="commands-grid" id="commands-grid">
+                    <!-- 命令卡片将通过JavaScript动态生成 -->
+                </div>
+            </div>
+        </section>
+
+        <!-- 智能人格部分 -->
+        <section id="personas" class="section">
+            <div class="container">
+                <div class="section-header">
+                    <h2 class="section-title">智能人格系统</h2>
+                    <p class="section-subtitle">根据任务自动激活相应的专家人格，提供专业领域的深度支持</p>
+                </div>
+
+                <div class="personas-showcase">
+                    <!-- 人格展示将通过JavaScript动态生成 -->
+                </div>
+            </div>
+        </section>
+
+        <!-- Wave系统部分 -->
+        <section id="wave" class="section">
+            <div class="container">
+                <div class="section-header">
+                    <h2 class="section-title">Wave深度处理系统</h2>
+                    <p class="section-subtitle">复杂任务自动启动多阶段深度分析，确保高质量的解决方案</p>
+                </div>
+
+                <div class="wave-visualization">
+                    <!-- Wave流程图将通过JavaScript动态生成 -->
+                </div>
+            </div>
+        </section>
+
+        <!-- 快速入门部分 -->
+        <section id="quickstart" class="section">
+            <div class="container">
+                <div class="section-header">
+                    <h2 class="section-title">快速入门向导</h2>
+                    <p class="section-subtitle">跟随步骤，快速掌握SuperClaude Framework</p>
+                </div>
+
+                <div class="quickstart-wizard">
+                    <!-- 快速入门步骤将通过JavaScript动态生成 -->
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- 滚动进度指示器 -->
+    <div class="scroll-progress-container">
+        <div class="scroll-progress" id="scroll-progress"></div>
+    </div>
+
+    <!-- 返回顶部按钮 -->
+    <button class="back-to-top" id="back-to-top">
+        <i class="fas fa-arrow-up"></i>
+    </button>
+
+    <!-- 快捷键提示 -->
+    <div class="keyboard-shortcuts" id="keyboard-shortcuts">
+        <div class="shortcuts-header">
+            <h4>键盘快捷键</h4>
+            <button class="close-shortcuts" onclick="toggleShortcuts()">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <div class="shortcuts-list">
+            <div class="shortcut-item">
+                <kbd>1-5</kbd>
+                <span>快速导航到各个部分</span>
+            </div>
+            <div class="shortcut-item">
+                <kbd>Ctrl</kbd> + <kbd>K</kbd>
+                <span>聚焦搜索框</span>
+            </div>
+            <div class="shortcut-item">
+                <kbd>Esc</kbd>
+                <span>关闭菜单</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- 快捷键触发按钮 -->
+    <button class="shortcuts-trigger" onclick="toggleShortcuts()" title="键盘快捷键">
+        <i class="fas fa-keyboard"></i>
+    </button>
+
+    <!-- JavaScript文件 -->
+    <script src="assets/js/data.js"></script>
+    <script src="assets/js/components.js"></script>
+    <script src="assets/js/main.js"></script>
+</body>
+</html>

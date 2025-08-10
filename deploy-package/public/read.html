@@ -1,0 +1,1281 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>阅读 - 小红书风格小说网站</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/back-to-top.css">
+
+    <!-- 字体资源 -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@300;400;500;600;700&family=Noto+Sans+SC:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+    <!-- 思源字体 CDN -->
+    <link href="https://fonts.googleapis.com/css2?family=Source+Han+Serif+SC:wght@300;400;500;600;700&family=Source+Han+Sans+SC:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary-red: #FE2C55;
+            --primary-beige: #F5E6D3;
+            --beige-light: #FAF5F0;
+            --beige-dark: #D4B5A0;
+            --text-primary: #333333;
+            --text-secondary: #666666;
+            --dark-bg: #1A1A1A;
+            --dark-card: #2A2A2A;
+        }
+
+        .theme-light {
+            background-color: var(--beige-light);
+            color: var(--text-primary);
+        }
+
+        .theme-sepia {
+            background-color: var(--primary-beige);
+            color: #5C4033;
+        }
+
+        .theme-dark {
+            background-color: var(--dark-bg);
+            color: #E0E0E0;
+        }
+
+        .theme-paper {
+            background-color: #F7F3E9;
+            color: #3C3C3C;
+        }
+
+        .theme-green {
+            background-color: #E8F5E8;
+            color: #2D5016;
+        }
+
+        .theme-blue {
+            background-color: #E6F3FF;
+            color: #1E3A8A;
+        }
+
+        .reader-container {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+
+        .novel-info {
+            background: white;
+            border-radius: 16px;
+            padding: 24px;
+            margin: 20px 0;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+            border: 1px solid #f0f0f0;
+        }
+
+        .reader-content {
+            line-height: 1.8;
+            font-size: 18px;
+            background: white;
+            border-radius: 16px;
+            padding: 32px;
+            margin: 20px 0;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+            border: 1px solid #f0f0f0;
+            word-wrap: break-word;
+            word-break: break-word;
+            white-space: pre-wrap;
+        }
+
+        /* 段落样式 */
+        .reader-content .paragraph {
+            margin-bottom: 1.5rem;
+            text-indent: 2em;
+            line-height: 1.8;
+            text-align: justify;
+            white-space: pre-wrap; /* 确保保留换行符和空格 */
+        }
+
+        /* 确保所有文本内容都正确处理换行 */
+        .reader-content p {
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+
+        /* 处理br标签的显示 */
+        .reader-content br {
+            line-height: 1.8;
+        }
+
+        /* 章节标题样式 */
+        .reader-content .chapter-title {
+            text-align: center;
+            font-weight: bold;
+            margin: 2rem 0 1.5rem 0;
+            color: #333;
+            border-bottom: 2px solid #f0f0f0;
+            padding-bottom: 0.5rem;
+        }
+
+        /* 小节标题样式 */
+        .reader-content .section-title {
+            font-weight: 600;
+            margin: 1.5rem 0 1rem 0;
+            color: #444;
+        }
+
+        /* 引用样式 */
+        .reader-content blockquote {
+            border-left: 4px solid #e2e8f0;
+            padding-left: 1rem;
+            margin: 1rem 0;
+            font-style: italic;
+            color: #666;
+            background: #f8fafc;
+            border-radius: 0 4px 4px 0;
+        }
+
+        /* 对话样式 - 通过JavaScript动态添加 */
+
+        .reader-content p {
+            margin-bottom: 1.5em;
+            text-indent: 2em;
+        }
+
+        .reader-content h1, .reader-content h2, .reader-content h3 {
+            margin: 1.5em 0 1em 0;
+            font-weight: 600;
+        }
+
+        .settings-panel {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) scale(0.9);
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.15);
+            z-index: 1000;
+            padding: 24px;
+            width: 90%;
+            max-width: 400px;
+            max-height: 80vh;
+            overflow-y: auto;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .settings-panel.active {
+            opacity: 1;
+            visibility: visible;
+            transform: translate(-50%, -50%) scale(1);
+        }
+
+        @media (min-width: 768px) {
+            .settings-panel {
+                width: 400px;
+            }
+        }
+
+        .progress-bar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            height: 3px;
+            background: var(--primary-red);
+            z-index: 999;
+            transition: width 0.1s ease;
+        }
+
+        .font-size-control {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin: 20px 0;
+        }
+
+        .theme-options {
+            display: flex;
+            gap: 10px;
+            margin: 20px 0;
+        }
+
+        .theme-btn {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            border: 2px solid transparent;
+            font-size: 20px;
+        }
+
+        .theme-btn.active {
+            border-color: var(--primary-red);
+        }
+
+        .theme-btn[data-theme="light"] {
+            background: #FAF5F0;
+        }
+
+        .theme-btn[data-theme="sepia"] {
+            background: #F5E6D3;
+        }
+
+        .theme-btn[data-theme="dark"] {
+            background: #1A1A1A;
+            color: white;
+        }
+
+        .theme-btn[data-theme="paper"] {
+            background: #F7F3E9;
+            color: #8B4513;
+        }
+
+        .theme-btn[data-theme="green"] {
+            background: #E8F5E8;
+            color: #2D5016;
+        }
+
+        .theme-btn[data-theme="blue"] {
+            background: #E6F3FF;
+            color: #1E3A8A;
+        }
+
+        /* 智能排版设置样式 */
+        .typography-settings {
+            margin: 20px 0;
+            padding-top: 20px;
+            border-top: 1px solid #e5e7eb;
+        }
+
+        .setting-group {
+            margin-bottom: 16px;
+        }
+
+        .setting-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-size: 12px;
+            color: #6b7280;
+            font-weight: 500;
+        }
+
+        .setting-group select {
+            width: 100%;
+            padding: 8px 12px;
+            border: 1px solid #d1d5db;
+            border-radius: 8px;
+            font-size: 14px;
+            background: white;
+            color: #374151;
+            transition: border-color 0.2s ease;
+        }
+
+        .setting-group select:focus {
+            outline: none;
+            border-color: var(--primary-red);
+            box-shadow: 0 0 0 3px rgba(254, 44, 85, 0.1);
+        }
+
+        .align-btn {
+            padding: 8px 12px;
+            border: 1px solid #d1d5db;
+            border-radius: 6px;
+            font-size: 12px;
+            background: white;
+            color: #6b7280;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .align-btn:hover {
+            background: #f9fafb;
+            border-color: #9ca3af;
+        }
+
+        .align-btn.active {
+            background: var(--primary-red);
+            color: white;
+            border-color: var(--primary-red);
+        }
+
+        /* 深色主题下的设置样式 */
+        .theme-dark .setting-group select {
+            background: #374151;
+            color: #e5e7eb;
+            border-color: #4b5563;
+        }
+
+        .theme-dark .align-btn {
+            background: #374151;
+            color: #e5e7eb;
+            border-color: #4b5563;
+        }
+
+        .theme-dark .align-btn:hover {
+            background: #4b5563;
+        }
+
+        /* 字体预览样式 */
+        #fontPreview {
+            transition: all 0.3s ease;
+            min-height: 60px;
+            display: flex;
+            align-items: center;
+            text-align: justify;
+            line-height: 1.6;
+        }
+
+        /* 字体大小滑块样式 */
+        #fontSizeSlider {
+            -webkit-appearance: none;
+            appearance: none;
+            height: 6px;
+            border-radius: 3px;
+            background: #e5e7eb;
+            outline: none;
+        }
+
+        #fontSizeSlider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: var(--primary-red);
+            cursor: pointer;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+
+        #fontSizeSlider::-moz-range-thumb {
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: var(--primary-red);
+            cursor: pointer;
+            border: none;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+
+        /* 主题适配 */
+        .theme-dark .novel-info,
+        .theme-dark .reader-content {
+            background: var(--dark-card);
+            color: #E0E0E0;
+            border-color: #374151;
+        }
+
+        .theme-dark .settings-panel {
+            background: var(--dark-card);
+            color: #E0E0E0;
+        }
+
+        .theme-dark header {
+            background: rgba(26, 26, 26, 0.9) !important;
+            color: #E0E0E0;
+        }
+
+        .theme-sepia .novel-info,
+        .theme-sepia .reader-content {
+            background: #FAF5F0;
+            color: #5C4033;
+        }
+
+        .theme-sepia .settings-panel {
+            background: #FAF5F0;
+            color: #5C4033;
+        }
+
+        .theme-sepia header {
+            background: rgba(250, 245, 240, 0.9) !important;
+            color: #5C4033;
+        }
+
+        /* 新主题样式 */
+        .theme-paper .novel-info,
+        .theme-paper .reader-content {
+            background: #FEFCF7;
+            color: #3C3C3C;
+            border-color: #E5DCC9;
+            box-shadow: 0 2px 12px rgba(139, 69, 19, 0.08);
+        }
+
+        .theme-paper .settings-panel {
+            background: #FEFCF7;
+            color: #3C3C3C;
+        }
+
+        .theme-paper header {
+            background: rgba(254, 252, 247, 0.9) !important;
+            color: #3C3C3C;
+        }
+
+        .theme-green .novel-info,
+        .theme-green .reader-content {
+            background: #F0F8F0;
+            color: #2D5016;
+            border-color: #C7E6C7;
+        }
+
+        .theme-green .settings-panel {
+            background: #F0F8F0;
+            color: #2D5016;
+        }
+
+        .theme-green header {
+            background: rgba(240, 248, 240, 0.9) !important;
+            color: #2D5016;
+        }
+
+        .theme-blue .novel-info,
+        .theme-blue .reader-content {
+            background: #F0F8FF;
+            color: #1E3A8A;
+            border-color: #BFDBFE;
+        }
+
+        .theme-blue .settings-panel {
+            background: #F0F8FF;
+            color: #1E3A8A;
+        }
+
+        .theme-blue header {
+            background: rgba(240, 248, 255, 0.9) !important;
+            color: #1E3A8A;
+        }
+
+        /* 自定义主题样式 */
+        .theme-custom {
+            background-color: var(--custom-bg-color, #FAF5F0);
+            color: var(--custom-text-color, #333333);
+        }
+
+        .theme-custom .novel-info,
+        .theme-custom .reader-content {
+            background: var(--custom-content-bg-color, #FFFFFF);
+            color: var(--custom-text-color, #333333);
+        }
+
+        .theme-custom .settings-panel {
+            background: var(--custom-content-bg-color, #FFFFFF);
+            color: var(--custom-text-color, #333333);
+        }
+
+        .theme-custom header {
+            background: var(--custom-bg-color, #FAF5F0) !important;
+            color: var(--custom-text-color, #333333);
+        }
+
+        /* 标签样式 */
+        .tag {
+            display: inline-block;
+            padding: 4px 12px;
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            color: #6c757d;
+            border-radius: 16px;
+            font-size: 12px;
+            font-weight: 500;
+            margin: 2px 4px 2px 0;
+            border: 1px solid #dee2e6;
+        }
+
+        /* 响应式优化 */
+        @media (max-width: 768px) {
+            .reader-container {
+                padding: 0 5px;
+            }
+            
+            .novel-info,
+            .reader-content {
+                margin: 16px 0;
+                padding: 20px;
+                border-radius: 12px;
+            }
+            
+            .reader-content {
+                font-size: 16px;
+            }
+        }
+
+        /* 评论区域样式 */
+        .comments-section {
+            margin-top: 40px;
+        }
+
+        .comment-form {
+            margin-bottom: 30px;
+        }
+
+        .comment-item {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 16px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+            border: 1px solid #f0f0f0;
+            transition: all 0.3s ease;
+        }
+
+        .comment-item:hover {
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+
+        .comment-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 12px;
+        }
+
+        .comment-user {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .comment-user img {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+        }
+
+        .comment-username {
+            font-weight: 600;
+            color: #333;
+        }
+
+        .comment-time {
+            font-size: 14px;
+            color: #999;
+        }
+
+        .comment-content {
+            color: #444;
+            line-height: 1.6;
+            margin: 12px 0;
+            white-space: pre-wrap;
+        }
+
+        .comment-actions {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            margin-top: 12px;
+        }
+
+        .comment-action {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 12px;
+            border-radius: 20px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-size: 14px;
+            color: #666;
+            background: #f8f9fa;
+        }
+
+        .comment-action:hover {
+            background: #e9ecef;
+        }
+
+        .comment-action.liked {
+            color: #e74c3c;
+            background: #fdeaea;
+        }
+
+        .comment-replies {
+            margin-top: 16px;
+            padding-left: 48px;
+            border-left: 2px solid #f0f0f0;
+        }
+
+        .reply-item {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 16px;
+            margin-bottom: 12px;
+            border: 1px solid #e9ecef;
+        }
+
+        .reply-form {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 16px;
+            margin-top: 12px;
+            display: none;
+        }
+
+        .reply-form.active {
+            display: block;
+        }
+
+        .reply-input {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            resize: none;
+            font-size: 14px;
+            outline: none;
+            transition: border-color 0.2s ease;
+        }
+
+        .reply-input:focus {
+            border-color: #e74c3c;
+        }
+
+        .reply-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 12px;
+            margin-top: 12px;
+        }
+
+        .btn-secondary {
+            padding: 8px 16px;
+            border-radius: 6px;
+            border: 1px solid #ddd;
+            background: white;
+            color: #666;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .btn-secondary:hover {
+            background: #f8f9fa;
+        }
+
+        .btn-primary {
+            padding: 8px 16px;
+            border-radius: 6px;
+            background: #e74c3c;
+            color: white;
+            border: none;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .btn-primary:hover {
+            background: #c0392b;
+        }
+
+        .comment-menu {
+            position: relative;
+        }
+
+        .comment-menu-btn {
+            padding: 4px 8px;
+            color: #999;
+            cursor: pointer;
+            border-radius: 4px;
+            transition: all 0.2s ease;
+        }
+
+        .comment-menu-btn:hover {
+            background: #f0f0f0;
+        }
+
+        .comment-menu-dropdown {
+            position: absolute;
+            top: 100%;
+            right: 0;
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            z-index: 100;
+            min-width: 120px;
+            display: none;
+        }
+
+        .comment-menu-dropdown.active {
+            display: block;
+        }
+
+        .comment-menu-item {
+            padding: 12px 16px;
+            cursor: pointer;
+            transition: background-color 0.2s ease;
+            font-size: 14px;
+        }
+
+        .comment-menu-item:hover {
+            background: #f8f9fa;
+        }
+
+        .comment-menu-item:first-child {
+            border-radius: 8px 8px 0 0;
+        }
+
+        .comment-menu-item:last-child {
+            border-radius: 0 0 8px 8px;
+        }
+
+        .comment-edit-form {
+            margin-top: 12px;
+            display: none;
+        }
+
+        .comment-edit-form.active {
+            display: block;
+        }
+
+        /* 主题适配 - 评论区域 */
+        .theme-dark .comment-item,
+        .theme-dark .reply-item,
+        .theme-dark .comment-form > div {
+            background: var(--dark-card);
+            border-color: #374151;
+            color: #E0E0E0;
+        }
+
+        .theme-dark .comment-action {
+            background: #374151;
+            color: #9CA3AF;
+        }
+
+        .theme-dark .comment-action:hover {
+            background: #4B5563;
+        }
+
+        .theme-dark .reply-form {
+            background: #374151;
+        }
+
+        .theme-dark .reply-input {
+            background: var(--dark-card);
+            border-color: #4B5563;
+            color: #E0E0E0;
+        }
+
+        .theme-dark .comment-menu-dropdown {
+            background: var(--dark-card);
+            border-color: #4B5563;
+        }
+
+        .theme-sepia .comment-item,
+        .theme-sepia .reply-item,
+        .theme-sepia .comment-form > div {
+            background: #FAF5F0;
+            color: #5C4033;
+            border-color: #E6D5C3;
+        }
+
+        .theme-sepia .comment-action {
+            background: #F0E6D2;
+            color: #8B7355;
+        }
+
+        .theme-sepia .reply-form {
+            background: #F0E6D2;
+        }
+
+        .theme-sepia .reply-input {
+            background: #FAF5F0;
+            border-color: #D4B5A0;
+            color: #5C4033;
+        }
+
+        /* 分页导航样式 */
+        .pagination-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 20px;
+            padding: 40px 0;
+            border-top: 1px solid #e5e7eb;
+            margin-top: 40px;
+        }
+
+        .pagination-info {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 14px;
+            color: #6b7280;
+        }
+
+        .pagination-nav {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .pagination-btn {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 20px;
+            border: 1px solid #d1d5db;
+            border-radius: 8px;
+            background: white;
+            color: #374151;
+            text-decoration: none;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.2s ease;
+            cursor: pointer;
+        }
+
+        .pagination-btn:hover:not(.disabled) {
+            background: #f9fafb;
+            border-color: #9ca3af;
+            transform: translateY(-1px);
+        }
+
+        .pagination-btn.disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            pointer-events: none;
+        }
+
+        .pagination-btn .icon {
+            font-size: 16px;
+        }
+
+        .page-jump {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 14px;
+        }
+
+        .page-jump input {
+            width: 60px;
+            padding: 6px 8px;
+            border: 1px solid #d1d5db;
+            border-radius: 4px;
+            text-align: center;
+            font-size: 14px;
+        }
+
+        .page-jump button {
+            padding: 6px 12px;
+            border: 1px solid #d1d5db;
+            border-radius: 4px;
+            background: white;
+            color: #374151;
+            cursor: pointer;
+            font-size: 12px;
+            transition: all 0.2s ease;
+        }
+
+        .page-jump button:hover {
+            background: #f9fafb;
+        }
+
+        /* 主题适配 - 分页 */
+        .theme-dark .pagination-container {
+            border-color: #374151;
+        }
+
+        .theme-dark .pagination-btn {
+            background: var(--dark-card);
+            color: #e5e7eb;
+            border-color: #4b5563;
+        }
+
+        .theme-dark .pagination-btn:hover:not(.disabled) {
+            background: #4b5563;
+            border-color: #6b7280;
+        }
+
+        .theme-dark .page-jump input,
+        .theme-dark .page-jump button {
+            background: var(--dark-card);
+            color: #e5e7eb;
+            border-color: #4b5563;
+        }
+
+        .theme-dark .page-jump button:hover {
+            background: #4b5563;
+        }
+
+        .theme-sepia .pagination-btn {
+            background: #faf5f0;
+            color: #5c4033;
+            border-color: #d4b5a0;
+        }
+
+        .theme-sepia .pagination-btn:hover:not(.disabled) {
+            background: #f0e6d2;
+        }
+
+        .theme-sepia .page-jump input,
+        .theme-sepia .page-jump button {
+            background: #faf5f0;
+            color: #5c4033;
+            border-color: #d4b5a0;
+        }
+
+        /* 响应式优化 */
+        @media (max-width: 640px) {
+            .pagination-container {
+                flex-direction: column;
+                gap: 16px;
+                padding: 30px 0;
+            }
+
+            .pagination-nav {
+                width: 100%;
+                justify-content: space-between;
+            }
+
+            .pagination-btn {
+                flex: 1;
+                justify-content: center;
+                padding: 12px 16px;
+            }
+
+            .page-jump {
+                order: -1;
+            }
+        }
+    </style>
+</head>
+<body class="theme-light reading-page">
+    <!-- 阅读进度条 -->
+    <div class="progress-bar" id="progressBar"></div>
+
+    <!-- 顶部工具栏 -->
+    <header class="sticky top-0 bg-white/80 backdrop-blur-sm shadow-sm z-50 px-4 py-3">
+        <div class="flex items-center justify-between max-w-4xl mx-auto">
+            <button onclick="history.back()" class="text-2xl hover:text-red-500 transition-colors">
+                ←
+            </button>
+            <h1 class="text-lg font-medium truncate mx-4" id="novelTitle">正在加载...</h1>
+            <div class="flex items-center space-x-2">
+                <!-- 离线状态指示器已移除 -->
+
+                <!-- 阅读数据统计按钮 -->
+                <button id="analyticsBtn" class="text-xl hover:text-blue-500 transition-colors" title="阅读统计">
+                    📊
+                </button>
+                <!-- TTS语音朗读按钮 -->
+                <button id="ttsBtn" class="text-xl hover:text-green-500 transition-colors" title="语音朗读">
+                    🔊
+                </button>
+                <!-- 全文搜索按钮 -->
+                <button id="searchBtn" class="text-xl hover:text-purple-500 transition-colors" title="全文搜索">
+                    🔍
+                </button>
+                <!-- 阅读笔记按钮 -->
+                <button id="notesBtn" class="text-xl hover:text-orange-500 transition-colors" title="阅读笔记">
+                    📝
+                </button>
+                <!-- 设置按钮 -->
+                <button id="settingsBtn" class="text-xl hover:text-red-500 transition-colors">
+                    ⚙️
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- 阅读设置面板 -->
+    <div class="settings-panel" id="settingsPanel">
+        <div class="flex items-center justify-between mb-6">
+            <h3 class="text-lg font-medium">阅读设置</h3>
+            <button id="closeSettings" class="w-8 h-8 bg-gray-100 hover:bg-gray-200 rounded-full flex items-center justify-center text-xl font-bold text-gray-600 hover:text-gray-800 transition-colors">×</button>
+        </div>
+
+        <!-- 字体大小控制 -->
+        <div class="font-size-control">
+            <button id="fontSizeDown" class="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center hover:bg-gray-200">
+                A-
+            </button>
+            <span id="fontSizeLabel">16px</span>
+            <button id="fontSizeUp" class="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center hover:bg-gray-200">
+                A+
+            </button>
+        </div>
+
+        <!-- 智能排版设置 -->
+        <div class="typography-settings">
+            <h4 class="text-sm font-medium mb-3 text-gray-700">智能排版</h4>
+
+            <!-- 行距设置 -->
+            <div class="setting-group mb-4">
+                <label class="text-xs text-gray-600 mb-2 block">行距</label>
+                <select id="lineHeightSelect" class="w-full p-2 border border-gray-200 rounded-lg text-sm">
+                    <option value="auto">智能调整</option>
+                    <option value="1.5">紧凑 (1.5)</option>
+                    <option value="1.8">标准 (1.8)</option>
+                    <option value="2.0">舒适 (2.0)</option>
+                    <option value="2.2">宽松 (2.2)</option>
+                </select>
+            </div>
+
+            <!-- 字距设置 -->
+            <div class="setting-group mb-4">
+                <label class="text-xs text-gray-600 mb-2 block">字距</label>
+                <select id="letterSpacingSelect" class="w-full p-2 border border-gray-200 rounded-lg text-sm">
+                    <option value="auto">智能调整</option>
+                    <option value="normal">标准</option>
+                    <option value="0.5">稍宽 (0.5px)</option>
+                    <option value="1">较宽 (1px)</option>
+                    <option value="1.5">很宽 (1.5px)</option>
+                </select>
+            </div>
+
+            <!-- 字体选择 -->
+            <div class="setting-group mb-4">
+                <label class="text-xs text-gray-600 mb-2 block">字体</label>
+                <select id="fontFamilySelect" class="w-full p-2 border border-gray-200 rounded-lg text-sm">
+                    <option value="system">系统默认</option>
+                    <option value="serif">宋体 (衬线)</option>
+                    <option value="sans-serif">黑体 (无衬线)</option>
+                    <option value="source-han-serif">思源宋体</option>
+                    <option value="source-han-sans">思源黑体</option>
+                    <option value="noto-serif">Noto宋体</option>
+                    <option value="noto-sans">Noto黑体</option>
+                    <option value="fang-song">仿宋</option>
+                    <option value="kai-ti">楷体</option>
+                </select>
+            </div>
+
+            <!-- 字体粗细 -->
+            <div class="setting-group mb-4">
+                <label class="text-xs text-gray-600 mb-2 block">字体粗细</label>
+                <select id="fontWeightSelect" class="w-full p-2 border border-gray-200 rounded-lg text-sm">
+                    <option value="300">细体 (300)</option>
+                    <option value="400">标准 (400)</option>
+                    <option value="500">中等 (500)</option>
+                    <option value="600">半粗 (600)</option>
+                    <option value="700">粗体 (700)</option>
+                </select>
+            </div>
+
+            <!-- 字体大小精确控制 -->
+            <div class="setting-group mb-4">
+                <label class="text-xs text-gray-600 mb-2 block">字体大小</label>
+                <div class="flex items-center gap-3">
+                    <input type="range" id="fontSizeSlider" min="12" max="24" step="0.5" value="16" class="flex-1">
+                    <span id="fontSizeValue" class="text-sm font-mono w-12 text-center">16px</span>
+                </div>
+            </div>
+
+            <!-- 字体预览 -->
+            <div class="setting-group mb-4">
+                <label class="text-xs text-gray-600 mb-2 block">字体预览</label>
+                <div id="fontPreview" class="p-3 border border-gray-200 rounded-lg bg-gray-50 text-sm leading-relaxed">
+                    春江潮水连海平，海上明月共潮生。滟滟随波千万里，何处春江无月明！
+                </div>
+            </div>
+
+            <!-- 对齐方式 -->
+            <div class="setting-group mb-4">
+                <label class="text-xs text-gray-600 mb-2 block">对齐方式</label>
+                <div class="flex gap-2">
+                    <button class="align-btn flex-1 p-2 border border-gray-200 rounded text-xs hover:bg-gray-50" data-align="left">左对齐</button>
+                    <button class="align-btn flex-1 p-2 border border-gray-200 rounded text-xs hover:bg-gray-50 active" data-align="justify">两端对齐</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 主题选择 -->
+        <div class="theme-section">
+            <h4 class="text-sm font-medium mb-3 text-gray-700">阅读主题</h4>
+            <div class="theme-options">
+                <div class="theme-btn active" data-theme="light" title="白天模式">☀️</div>
+                <div class="theme-btn" data-theme="sepia" title="护眼模式">📜</div>
+                <div class="theme-btn" data-theme="dark" title="夜间模式">🌙</div>
+                <div class="theme-btn" data-theme="paper" title="纸质感">📄</div>
+                <div class="theme-btn" data-theme="green" title="护眼绿">🌿</div>
+                <div class="theme-btn" data-theme="blue" title="海洋蓝">🌊</div>
+            </div>
+
+            <!-- 自定义主题 -->
+            <div class="custom-theme-section mt-4">
+                <button id="customThemeBtn" class="w-full p-2 border border-gray-200 rounded-lg text-sm hover:bg-gray-50 flex items-center justify-center gap-2">
+                    🎨 自定义主题
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 设置面板遮罩 -->
+    <div class="fixed inset-0 bg-black/50 backdrop-blur-sm opacity-0 invisible transition-all duration-300 z-[999]" id="settingsOverlay"></div>
+
+    <!-- 自定义主题面板 -->
+    <div class="settings-panel" id="customThemePanel" style="opacity: 0; visibility: hidden; transform: translate(-50%, -50%) scale(0.9);">
+        <div class="flex items-center justify-between mb-6">
+            <h3 class="text-lg font-medium">自定义主题</h3>
+            <button id="closeCustomTheme" class="w-8 h-8 bg-gray-100 hover:bg-gray-200 rounded-full flex items-center justify-center text-xl font-bold text-gray-600 hover:text-gray-800 transition-colors">×</button>
+        </div>
+
+        <!-- 背景颜色 -->
+        <div class="setting-group mb-4">
+            <label class="text-xs text-gray-600 mb-2 block">背景颜色</label>
+            <div class="flex items-center gap-3">
+                <input type="color" id="bgColorPicker" value="#FAF5F0" class="w-12 h-8 border border-gray-200 rounded cursor-pointer">
+                <input type="text" id="bgColorInput" value="#FAF5F0" class="flex-1 p-2 border border-gray-200 rounded text-sm font-mono">
+            </div>
+        </div>
+
+        <!-- 文字颜色 -->
+        <div class="setting-group mb-4">
+            <label class="text-xs text-gray-600 mb-2 block">文字颜色</label>
+            <div class="flex items-center gap-3">
+                <input type="color" id="textColorPicker" value="#333333" class="w-12 h-8 border border-gray-200 rounded cursor-pointer">
+                <input type="text" id="textColorInput" value="#333333" class="flex-1 p-2 border border-gray-200 rounded text-sm font-mono">
+            </div>
+        </div>
+
+        <!-- 内容区域背景 -->
+        <div class="setting-group mb-4">
+            <label class="text-xs text-gray-600 mb-2 block">内容区域背景</label>
+            <div class="flex items-center gap-3">
+                <input type="color" id="contentBgColorPicker" value="#FFFFFF" class="w-12 h-8 border border-gray-200 rounded cursor-pointer">
+                <input type="text" id="contentBgColorInput" value="#FFFFFF" class="flex-1 p-2 border border-gray-200 rounded text-sm font-mono">
+            </div>
+        </div>
+
+        <!-- 预设颜色方案 -->
+        <div class="setting-group mb-4">
+            <label class="text-xs text-gray-600 mb-2 block">预设方案</label>
+            <div class="grid grid-cols-3 gap-2">
+                <button class="preset-color-btn p-2 rounded border text-xs" data-preset="warm" style="background: #FFF8DC; color: #8B4513;">暖色调</button>
+                <button class="preset-color-btn p-2 rounded border text-xs" data-preset="cool" style="background: #F0F8FF; color: #4682B4;">冷色调</button>
+                <button class="preset-color-btn p-2 rounded border text-xs" data-preset="vintage" style="background: #F5F5DC; color: #696969;">复古风</button>
+                <button class="preset-color-btn p-2 rounded border text-xs" data-preset="forest" style="background: #F0FFF0; color: #228B22;">森林绿</button>
+                <button class="preset-color-btn p-2 rounded border text-xs" data-preset="sunset" style="background: #FFE4E1; color: #CD5C5C;">夕阳红</button>
+                <button class="preset-color-btn p-2 rounded border text-xs" data-preset="ocean" style="background: #E0FFFF; color: #008B8B;">海洋蓝</button>
+            </div>
+        </div>
+
+        <!-- 操作按钮 -->
+        <div class="flex gap-3 mt-6">
+            <button id="applyCustomTheme" class="flex-1 bg-red-500 text-white p-2 rounded-lg hover:bg-red-600 transition-colors">应用主题</button>
+            <button id="resetCustomTheme" class="px-4 bg-gray-100 text-gray-700 p-2 rounded-lg hover:bg-gray-200 transition-colors">重置</button>
+        </div>
+    </div>
+
+    <!-- 主要内容区域 -->
+    <div class="reader-container">
+        <!-- 小说信息卡片 -->
+        <div class="novel-info" id="novelInfo" style="display: none;">
+            <h1 class="text-2xl font-bold mb-3" id="novelTitleMain">小说标题</h1>
+            <div class="flex items-center gap-4 text-sm text-gray-600 mb-4">
+                <span class="flex items-center gap-1">
+                    👁 <span id="novelViews">0</span> 阅读
+                </span>
+                <span class="flex items-center gap-1">
+                    📅 <span id="publishTime">发布时间</span>
+                </span>
+            </div>
+            <div class="flex flex-wrap gap-2 mb-4" id="novelTags">
+                <!-- 标签将通过JS动态生成 -->
+            </div>
+            <p class="text-gray-700 leading-relaxed" id="novelSummary">小说简介将在这里显示...</p>
+        </div>
+
+        <!-- 正文内容 -->
+        <main class="reader-content" id="novelContent">
+            <div class="text-center py-20">
+                <div class="animate-spin w-8 h-8 border-2 border-red-500 border-t-transparent rounded-full mx-auto mb-4"></div>
+                <p class="text-gray-500">正在加载小说内容...</p>
+            </div>
+        </main>
+
+        <!-- 分页导航 -->
+        <div class="pagination-container" id="paginationContainer" style="display: none;">
+            <div class="pagination-nav">
+                <button class="pagination-btn" id="prevPageBtn">
+                    <span class="icon">←</span>
+                    上一页
+                </button>
+                <button class="pagination-btn" id="nextPageBtn">
+                    下一页
+                    <span class="icon">→</span>
+                </button>
+            </div>
+            
+            <div class="pagination-info">
+                <span>第 <span id="currentPageNum">1</span> 页 / 共 <span id="totalPagesNum">1</span> 页</span>
+            </div>
+            
+            <div class="page-jump">
+                <span>跳转到</span>
+                <input type="number" id="pageJumpInput" min="1" value="1">
+                <button id="pageJumpBtn">确定</button>
+            </div>
+        </div>
+
+        <!-- 评论区域 -->
+        <div class="comments-section" id="commentsSection" style="display: none;">
+            <!-- 评论统计和排序 -->
+            <div class="comments-header">
+                <div class="flex items-center justify-between mb-6">
+                    <h3 class="text-xl font-bold">评论 (<span id="commentCount">0</span>)</h3>
+                    <div class="flex items-center gap-4">
+                        <select id="commentSort" class="px-3 py-2 border border-gray-300 rounded-lg text-sm">
+                            <option value="time">最新</option>
+                            <option value="likes">最热</option>
+                            <option value="replies">最多回复</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 发表评论 -->
+            <div class="comment-form" id="commentForm">
+                <div class="bg-white rounded-lg p-6 mb-6 shadow-sm border">
+                    <div class="flex items-start gap-4">
+                        <img id="userAvatar" src="assets/default-avatar.svg" alt="用户头像" class="w-10 h-10 rounded-full">
+                        <div class="flex-1">
+                            <textarea 
+                                id="commentInput" 
+                                placeholder="写下你的想法..." 
+                                class="w-full p-3 border border-gray-300 rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                                rows="3"
+                                maxlength="1000"
+                            ></textarea>
+                            <div class="flex items-center justify-between mt-3">
+                                <span class="text-sm text-gray-500">
+                                    <span id="charCount">0</span>/1000
+                                </span>
+                                <div class="flex items-center gap-3">
+                                    <button id="cancelComment" class="px-4 py-2 text-gray-600 hover:text-gray-800 transition-colors" style="display: none;">
+                                        取消
+                                    </button>
+                                    <button id="submitComment" class="px-6 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors">
+                                        发布评论
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 评论列表 -->
+            <div class="comments-list" id="commentsList">
+                <!-- 评论项将通过JS动态生成 -->
+            </div>
+
+            <!-- 加载更多 -->
+            <div class="text-center mt-6">
+                <button id="loadMoreComments" class="px-6 py-3 border border-gray-300 rounded-lg text-gray-600 hover:bg-gray-50 transition-colors" style="display: none;">
+                    加载更多评论
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 离线阅读脚本已移除 -->
+    <script src="js/main/utils.js"></script>
+    <script src="js/main/user-manager.js"></script>
+    <script src="js/interaction-manager.js"></script>
+    <script src="js/reading-tracker.js"></script>
+    <script src="js/pagination-manager.js"></script>
+    <script src="js/reader.js"></script>
+    <script src="js/smart-reader.js"></script>
+    <script src="js/comments.js"></script>
+    <script src="js/back-to-top.js"></script>
+</body>
+</html>

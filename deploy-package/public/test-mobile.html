@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>移动端功能测试</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .test-result {
+            padding: 10px;
+            margin: 5px 0;
+            border-radius: 5px;
+        }
+        .test-pass {
+            background-color: #d4edda;
+            color: #155724;
+        }
+        .test-fail {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 p-4">
+    <div class="max-w-md mx-auto bg-white rounded-lg shadow-lg p-6">
+        <h1 class="text-xl font-bold mb-4">移动端功能测试</h1>
+        
+        <!-- 主题切换测试 -->
+        <div class="mb-4">
+            <h2 class="font-semibold mb-2">主题切换测试</h2>
+            <button id="testThemeToggle" class="bg-blue-500 text-white px-4 py-2 rounded">
+                🌙 切换主题
+            </button>
+            <div id="themeResult" class="test-result"></div>
+        </div>
+        
+        <!-- 搜索栏测试 -->
+        <div class="mb-4">
+            <h2 class="font-semibold mb-2">搜索栏测试</h2>
+            <button id="testSearchToggle" class="bg-green-500 text-white px-4 py-2 rounded">
+                🔍 切换搜索
+            </button>
+            <div id="searchBar" class="mt-2 hidden">
+                <input type="text" placeholder="测试搜索..." class="w-full px-3 py-2 border rounded">
+            </div>
+            <div id="searchResult" class="test-result"></div>
+        </div>
+        
+        <!-- 汉堡菜单测试 -->
+        <div class="mb-4">
+            <h2 class="font-semibold mb-2">汉堡菜单测试</h2>
+            <button id="testHamburgerToggle" class="bg-purple-500 text-white px-4 py-2 rounded">
+                ☰ 切换菜单
+            </button>
+            <div id="hamburgerMenu" class="mt-2 bg-gray-50 p-3 rounded hidden">
+                <p>测试菜单内容</p>
+            </div>
+            <div id="hamburgerResult" class="test-result"></div>
+        </div>
+        
+        <!-- 触摸反馈测试 -->
+        <div class="mb-4">
+            <h2 class="font-semibold mb-2">触摸反馈测试</h2>
+            <button id="testTouchFeedback" class="bg-red-500 text-white px-4 py-2 rounded active:scale-95 transition-transform">
+                👆 触摸反馈
+            </button>
+            <div id="touchResult" class="test-result"></div>
+        </div>
+        
+        <div class="mt-6 p-4 bg-blue-50 rounded">
+            <h3 class="font-semibold mb-2">测试说明：</h3>
+            <ul class="text-sm space-y-1">
+                <li>• 点击各个按钮测试功能</li>
+                <li>• 绿色表示功能正常</li>
+                <li>• 红色表示功能异常</li>
+                <li>• 在移动设备上测试触摸反馈</li>
+            </ul>
+        </div>
+    </div>
+
+    <script>
+        let currentTheme = 'light';
+        
+        // 主题切换测试
+        document.getElementById('testThemeToggle').addEventListener('click', function() {
+            const body = document.body;
+            const result = document.getElementById('themeResult');
+            
+            try {
+                if (currentTheme === 'light') {
+                    body.classList.add('dark');
+                    body.style.backgroundColor = '#1f2937';
+                    body.style.color = '#e5e7eb';
+                    currentTheme = 'dark';
+                    this.textContent = '☀️ 切换主题';
+                } else {
+                    body.classList.remove('dark');
+                    body.style.backgroundColor = '';
+                    body.style.color = '';
+                    currentTheme = 'light';
+                    this.textContent = '🌙 切换主题';
+                }
+                
+                result.className = 'test-result test-pass';
+                result.textContent = '✅ 主题切换功能正常';
+            } catch (error) {
+                result.className = 'test-result test-fail';
+                result.textContent = '❌ 主题切换功能异常: ' + error.message;
+            }
+        });
+        
+        // 搜索栏测试
+        document.getElementById('testSearchToggle').addEventListener('click', function() {
+            const searchBar = document.getElementById('searchBar');
+            const result = document.getElementById('searchResult');
+            
+            try {
+                if (searchBar.classList.contains('hidden')) {
+                    searchBar.classList.remove('hidden');
+                    searchBar.classList.add('show');
+                    this.textContent = '🔍 隐藏搜索';
+                } else {
+                    searchBar.classList.add('hidden');
+                    searchBar.classList.remove('show');
+                    this.textContent = '🔍 显示搜索';
+                }
+                
+                result.className = 'test-result test-pass';
+                result.textContent = '✅ 搜索栏切换功能正常';
+            } catch (error) {
+                result.className = 'test-result test-fail';
+                result.textContent = '❌ 搜索栏切换功能异常: ' + error.message;
+            }
+        });
+        
+        // 汉堡菜单测试
+        document.getElementById('testHamburgerToggle').addEventListener('click', function() {
+            const menu = document.getElementById('hamburgerMenu');
+            const result = document.getElementById('hamburgerResult');
+            
+            try {
+                if (menu.classList.contains('hidden')) {
+                    menu.classList.remove('hidden');
+                    this.textContent = '☰ 隐藏菜单';
+                } else {
+                    menu.classList.add('hidden');
+                    this.textContent = '☰ 显示菜单';
+                }
+                
+                result.className = 'test-result test-pass';
+                result.textContent = '✅ 汉堡菜单功能正常';
+            } catch (error) {
+                result.className = 'test-result test-fail';
+                result.textContent = '❌ 汉堡菜单功能异常: ' + error.message;
+            }
+        });
+        
+        // 触摸反馈测试
+        document.getElementById('testTouchFeedback').addEventListener('click', function() {
+            const result = document.getElementById('touchResult');
+            
+            try {
+                // 模拟触摸反馈
+                this.style.transform = 'scale(0.95)';
+                setTimeout(() => {
+                    this.style.transform = '';
+                }, 150);
+                
+                result.className = 'test-result test-pass';
+                result.textContent = '✅ 触摸反馈功能正常';
+            } catch (error) {
+                result.className = 'test-result test-fail';
+                result.textContent = '❌ 触摸反馈功能异常: ' + error.message;
+            }
+        });
+        
+        // 页面加载完成提示
+        window.addEventListener('load', function() {
+            console.log('移动端测试页面加载完成');
+        });
+    </script>
+</body>
+</html>

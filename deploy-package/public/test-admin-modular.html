@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>管理后台模块化测试</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .test-result {
+            padding: 10px;
+            margin: 5px 0;
+            border-radius: 5px;
+        }
+        .test-pass {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .test-fail {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .test-warning {
+            background-color: #fff3cd;
+            color: #856404;
+            border: 1px solid #ffeaa7;
+        }
+    </style>
+</head>
+<body class="bg-gray-100">
+    <div class="container mx-auto py-8 px-4">
+        <h1 class="text-3xl font-bold mb-8 text-center">管理后台模块化重构测试</h1>
+        
+        <div class="bg-white rounded-lg shadow-lg p-6">
+            <h2 class="text-xl font-semibold mb-4">模块加载测试</h2>
+            <div id="moduleTests"></div>
+            
+            <h2 class="text-xl font-semibold mb-4 mt-8">功能测试</h2>
+            <div id="functionTests"></div>
+            
+            <h2 class="text-xl font-semibold mb-4 mt-8">整体测试结果</h2>
+            <div id="overallResult" class="text-center text-lg font-bold p-4 rounded-lg"></div>
+            
+            <div class="mt-6 text-center">
+                <button onclick="runTests()" class="bg-blue-500 text-white px-6 py-2 rounded hover:bg-blue-600">
+                    重新运行测试
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 模块化管理后台脚本 - 按依赖顺序加载 -->
+    
+    <!-- 核心模块 -->
+    <script src="js/admin/utils.js"></script>
+    <script src="js/admin/api-client.js"></script>
+    
+    <!-- 功能模块 -->
+    <script src="js/admin/ui-manager.js"></script>
+    <script src="js/admin/editor-manager.js"></script>
+    <script src="js/admin/draft-manager.js"></script>
+    <script src="js/admin/novel-manager.js"></script>
+    <script src="js/admin/user-manager.js"></script>
+    <script src="js/admin/stats-manager.js"></script>
+    
+    <!-- 主入口文件 -->
+    <script src="js/admin.js"></script>
+
+    <script>
+        // 测试函数
+        function runTests() {
+            const moduleTests = document.getElementById('moduleTests');
+            const functionTests = document.getElementById('functionTests');
+            const overallResult = document.getElementById('overallResult');
+            
+            moduleTests.innerHTML = '';
+            functionTests.innerHTML = '';
+            
+            let passedTests = 0;
+            let totalTests = 0;
+            
+            // 模块加载测试
+            const modules = [
+                { name: 'Utils', obj: 'utils' },
+                { name: 'API Client', obj: 'apiClient' },
+                { name: 'UI Manager', obj: 'uiManager' },
+                { name: 'Editor Manager', obj: 'editorManager' },
+                { name: 'Draft Manager', obj: 'draftManager' },
+                { name: 'Novel Manager', obj: 'novelManager' },
+                { name: 'User Manager', obj: 'userManager' },
+                { name: 'Stats Manager', obj: 'statsManager' }
+            ];
+            
+            modules.forEach(module => {
+                totalTests++;
+                const exists = window[module.obj] !== undefined;
+                const result = document.createElement('div');
+                result.className = `test-result ${exists ? 'test-pass' : 'test-fail'}`;
+                result.textContent = `${module.name}: ${exists ? '✓ 加载成功' : '✗ 加载失败'}`;
+                moduleTests.appendChild(result);
+                if (exists) passedTests++;
+            });
+            
+            // 功能测试
+            const functionTests_list = [
+                {
+                    name: '工具函数测试',
+                    test: () => {
+                        return typeof window.utils?.formatDate === 'function' &&
+                               typeof window.utils?.showMessage === 'function' &&
+                               typeof window.utils?.getWordCount === 'function';
+                    }
+                },
+                {
+                    name: 'API客户端测试',
+                    test: () => {
+                        return typeof window.apiClient?.get === 'function' &&
+                               typeof window.apiClient?.post === 'function' &&
+                               typeof window.apiClient?.getAuthHeaders === 'function';
+                    }
+                },
+                {
+                    name: 'UI管理器测试',
+                    test: () => {
+                        return typeof window.uiManager?.showModal === 'function' &&
+                               typeof window.uiManager?.closeModal === 'function' &&
+                               typeof window.uiManager?.showLoading === 'function';
+                    }
+                },
+                {
+                    name: '草稿管理器测试',
+                    test: () => {
+                        return typeof window.draftManager?.saveDraft === 'function' &&
+                               typeof window.draftManager?.loadDrafts === 'function' &&
+                               Array.isArray(window.draftManager?.drafts);
+                    }
+                },
+                {
+                    name: '小说管理器测试',
+                    test: () => {
+                        return typeof window.novelManager?.loadNovels === 'function' &&
+                               typeof window.novelManager?.publishNovel === 'function' &&
+                               typeof window.novelManager?.editNovel === 'function';
+                    }
+                },
+                {
+                    name: '用户管理器测试',
+                    test: () => {
+                        return typeof window.userManager?.loadUsers === 'function' &&
+                               typeof window.userManager?.viewUserDetail === 'function' &&
+                               typeof window.userManager?.toggleUserStatus === 'function';
+                    }
+                },
+                {
+                    name: '统计管理器测试',
+                    test: () => {
+                        return typeof window.statsManager?.loadStats === 'function' &&
+                               typeof window.statsManager?.updateStatsDisplay === 'function' &&
+                               typeof window.statsManager?.exportStats === 'function';
+                    }
+                },
+                {
+                    name: '全局函数兼容性测试',
+                    test: () => {
+                        return typeof saveDraft === 'function' &&
+                               typeof publishNovel === 'function' &&
+                               typeof viewUserDetail === 'function' &&
+                               typeof closePreview === 'function';
+                    }
+                }
+            ];
+            
+            functionTests_list.forEach(test => {
+                totalTests++;
+                try {
+                    const passed = test.test();
+                    const result = document.createElement('div');
+                    result.className = `test-result ${passed ? 'test-pass' : 'test-fail'}`;
+                    result.textContent = `${test.name}: ${passed ? '✓ 通过' : '✗ 失败'}`;
+                    functionTests.appendChild(result);
+                    if (passed) passedTests++;
+                } catch (error) {
+                    const result = document.createElement('div');
+                    result.className = 'test-result test-fail';
+                    result.textContent = `${test.name}: ✗ 错误 - ${error.message}`;
+                    functionTests.appendChild(result);
+                }
+            });
+            
+            // 整体结果
+            const successRate = (passedTests / totalTests * 100).toFixed(1);
+            overallResult.className = `test-result ${passedTests === totalTests ? 'test-pass' : 
+                                       successRate >= 80 ? 'test-warning' : 'test-fail'}`;
+            overallResult.textContent = `测试完成：${passedTests}/${totalTests} 通过 (${successRate}%)`;
+            
+            // 添加详细信息
+            const details = document.createElement('div');
+            details.className = 'mt-4 text-sm text-gray-600';
+            details.innerHTML = `
+                <p><strong>测试说明：</strong></p>
+                <ul class="list-disc list-inside mt-2">
+                    <li>模块加载测试：检查所有核心模块是否正确加载到全局作用域</li>
+                    <li>功能测试：验证各模块的核心方法是否可用</li>
+                    <li>兼容性测试：确保原有的全局函数仍然可用</li>
+                </ul>
+                <p class="mt-2"><strong>建议：</strong>如果测试通过率低于80%，请检查脚本加载顺序和模块依赖关系。</p>
+            `;
+            overallResult.appendChild(details);
+        }
+        
+        // 页面加载完成后自动运行测试
+        document.addEventListener('DOMContentLoaded', () => {
+            // 等待所有模块加载完成
+            setTimeout(runTests, 1000);
+        });
+    </script>
+</body>
+</html>

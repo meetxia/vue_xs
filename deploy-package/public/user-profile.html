@@ -1,0 +1,783 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>个人中心 - MOMO的小说站</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/user-profile.css">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'xhs-red': '#FE2C55',
+                        'beige': '#F5E6D3',
+                        'beige-light': '#FAF5F0',
+                        'beige-dark': '#D4B5A0'
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-beige-light min-h-screen">
+    <!-- 顶部导航栏 -->
+    <nav class="sticky top-0 bg-white shadow-sm z-50 border-b border-gray-100">
+        <div class="container mx-auto px-4 py-3 flex items-center justify-between">
+            <!-- Logo -->
+            <div class="text-xhs-red font-bold text-xl">
+                <a href="index.html" class="hover:opacity-80 transition-opacity">MOMO的小说站</a>
+            </div>
+
+            <!-- 导航链接 -->
+            <div class="hidden md:flex items-center space-x-6">
+                <a href="index.html" class="text-gray-600 hover:text-xhs-red transition-colors">首页</a>
+                <a href="user-profile.html" class="text-xhs-red font-medium">个人中心</a>
+            </div>
+
+            <!-- 右侧功能区 -->
+            <div id="navRightSection" class="flex items-center space-x-3">
+                <!-- 用户状态区域 -->
+                <div id="userStatusArea">
+                    <!-- 通过JavaScript动态更新 -->
+                </div>
+
+                <!-- 主题切换按钮 -->
+                <button id="themeToggle" class="p-2 rounded-full hover:bg-gray-100 transition-colors">
+                    🌙
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- 个人中心主体内容 -->
+    <div class="container mx-auto px-4 py-8">
+        <!-- 用户信息卡片 -->
+        <div class="bg-white rounded-xl shadow-sm p-6 mb-8">
+            <div class="flex flex-col md:flex-row items-center md:items-start space-y-4 md:space-y-0 md:space-x-6">
+                <!-- 头像区域 -->
+                <div class="relative">
+                    <div id="userAvatar" class="w-24 h-24 rounded-full bg-gray-200 flex items-center justify-center overflow-hidden">
+                        <!-- 头像将通过JavaScript加载 -->
+                        <span class="text-gray-500">👤</span>
+                    </div>
+                    <button id="changeAvatarBtn" class="absolute bottom-0 right-0 bg-xhs-red text-white rounded-full w-8 h-8 flex items-center justify-center hover:bg-red-600 transition-colors">
+                        📷
+                    </button>
+                </div>
+                
+                <!-- 用户基本信息 -->
+                <div class="flex-1 text-center md:text-left">
+                    <div class="flex items-center justify-center md:justify-start gap-3 mb-2">
+                        <h1 id="userName" class="text-2xl font-bold text-gray-900">加载中...</h1>
+                        <div id="userMembershipBadge">
+                            <!-- VIP标识将通过JavaScript加载 -->
+                        </div>
+                    </div>
+                    <p id="userEmail" class="text-gray-600 mb-3">邮箱加载中...</p>
+                    <div class="flex flex-wrap justify-center md:justify-start gap-2 mb-4">
+                        <span class="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm">📚 阅读爱好者</span>
+                        <span class="px-3 py-1 bg-green-100 text-green-800 rounded-full text-sm">🌟 新用户</span>
+                    </div>
+                    <div class="flex flex-wrap justify-center md:justify-start gap-6 text-sm text-gray-600">
+                        <div class="text-center">
+                            <div class="font-semibold text-gray-900" id="readingTime">0</div>
+                            <div>阅读时长(小时)</div>
+                        </div>
+                        <div class="text-center">
+                            <div class="font-semibold text-gray-900" id="favoriteCount">0</div>
+                            <div>收藏作品</div>
+                        </div>
+                        <div class="text-center">
+                            <div class="font-semibold text-gray-900" id="likeCount">0</div>
+                            <div>点赞数</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 操作按钮 -->
+                <div class="flex flex-col space-y-2">
+                    <button id="editProfileBtn" class="px-4 py-2 bg-xhs-red text-white rounded-lg hover:bg-red-600 transition-colors">
+                        编辑资料
+                    </button>
+                    <button id="settingsBtn" class="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors">
+                        设置
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 功能标签页 -->
+        <div class="bg-white rounded-xl shadow-sm">
+            <!-- 标签页导航 -->
+            <div class="border-b border-gray-200">
+                <nav class="flex overflow-x-auto">
+                    <button class="tab-btn active px-6 py-4 text-sm font-medium whitespace-nowrap border-b-2 border-xhs-red text-xhs-red" data-tab="profile">
+                        个人资料
+                    </button>
+                    <button class="tab-btn px-6 py-4 text-sm font-medium whitespace-nowrap border-b-2 border-transparent text-gray-500 hover:text-gray-700" data-tab="reading-stats">
+                        阅读统计
+                    </button>
+                    <button class="tab-btn px-6 py-4 text-sm font-medium whitespace-nowrap border-b-2 border-transparent text-gray-500 hover:text-gray-700" data-tab="works">
+                        我的作品
+                    </button>
+                    <button class="tab-btn px-6 py-4 text-sm font-medium whitespace-nowrap border-b-2 border-transparent text-gray-500 hover:text-gray-700" data-tab="interactions">
+                        互动历史
+                    </button>
+                    <button class="tab-btn px-6 py-4 text-sm font-medium whitespace-nowrap border-b-2 border-transparent text-gray-500 hover:text-gray-700" data-tab="settings">
+                        个性化设置
+                    </button>
+                    <button class="tab-btn px-6 py-4 text-sm font-medium whitespace-nowrap border-b-2 border-transparent text-gray-500 hover:text-gray-700" data-tab="privacy">
+                        隐私设置
+                    </button>
+                    <button class="tab-btn px-6 py-4 text-sm font-medium whitespace-nowrap border-b-2 border-transparent text-gray-500 hover:text-gray-700" data-tab="achievements">
+                        成就系统
+                    </button>
+                </nav>
+            </div>
+
+            <!-- 标签页内容 -->
+            <div class="p-6">
+                <!-- 个人资料标签页 -->
+                <div id="profile" class="tab-content active">
+                    <h3 class="text-lg font-semibold mb-4">个人资料管理</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">昵称</label>
+                            <input type="text" id="profileUsername" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-xhs-red" placeholder="输入昵称">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">邮箱</label>
+                            <input type="email" id="profileEmail" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-xhs-red" placeholder="输入邮箱">
+                        </div>
+                        <div class="md:col-span-2">
+                            <label class="block text-sm font-medium text-gray-700 mb-2">个人简介</label>
+                            <textarea id="profileBio" rows="3" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-xhs-red" placeholder="写点什么介绍自己..."></textarea>
+                        </div>
+                        <div class="md:col-span-2">
+                            <label class="block text-sm font-medium text-gray-700 mb-2">兴趣标签</label>
+                            <div class="flex flex-wrap gap-2 mb-3" id="interestTags">
+                                <!-- 兴趣标签将通过JavaScript动态生成 -->
+                            </div>
+                            <div class="flex flex-wrap gap-2">
+                                <button class="interest-tag px-3 py-1 border border-gray-300 rounded-full text-sm hover:bg-gray-50" data-tag="言情">言情</button>
+                                <button class="interest-tag px-3 py-1 border border-gray-300 rounded-full text-sm hover:bg-gray-50" data-tag="玄幻">玄幻</button>
+                                <button class="interest-tag px-3 py-1 border border-gray-300 rounded-full text-sm hover:bg-gray-50" data-tag="现代">现代</button>
+                                <button class="interest-tag px-3 py-1 border border-gray-300 rounded-full text-sm hover:bg-gray-50" data-tag="古代">古代</button>
+                                <button class="interest-tag px-3 py-1 border border-gray-300 rounded-full text-sm hover:bg-gray-50" data-tag="校园">校园</button>
+                                <button class="interest-tag px-3 py-1 border border-gray-300 rounded-full text-sm hover:bg-gray-50" data-tag="悬疑">悬疑</button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mt-6 flex justify-end">
+                        <button id="saveProfileBtn" class="px-6 py-2 bg-xhs-red text-white rounded-lg hover:bg-red-600 transition-colors">
+                            保存更改
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 阅读统计标签页 -->
+                <div id="reading-stats" class="tab-content hidden">
+                    <h3 class="text-lg font-semibold mb-4">阅读数据统计</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                        <div class="bg-gradient-to-r from-blue-500 to-blue-600 text-white p-6 rounded-lg">
+                            <div class="text-2xl font-bold" id="totalReadingTime">0小时</div>
+                            <div class="text-blue-100">总阅读时长</div>
+                        </div>
+                        <div class="bg-gradient-to-r from-green-500 to-green-600 text-white p-6 rounded-lg">
+                            <div class="text-2xl font-bold" id="booksRead">0本</div>
+                            <div class="text-green-100">已读完书籍</div>
+                        </div>
+                        <div class="bg-gradient-to-r from-purple-500 to-purple-600 text-white p-6 rounded-lg">
+                            <div class="text-2xl font-bold" id="readingStreak">0天</div>
+                            <div class="text-purple-100">连续阅读</div>
+                        </div>
+                    </div>
+                    
+                    <!-- 阅读偏好分析 -->
+                    <div class="mb-8">
+                        <h4 class="text-md font-semibold mb-4">阅读偏好分析</h4>
+                        <div class="bg-gray-50 p-4 rounded-lg">
+                            <div id="readingPreferences">
+                                <!-- 阅读偏好图表区域 -->
+                                <p class="text-gray-600">正在加载阅读偏好数据...</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 最近阅读记录 -->
+                    <div>
+                        <h4 class="text-md font-semibold mb-4">最近阅读</h4>
+                        <div class="space-y-3" id="recentReading">
+                            <!-- 最近阅读记录将通过JavaScript动态生成 -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 我的作品标签页 -->
+                <div id="works" class="tab-content hidden">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="text-lg font-semibold">我的作品</h3>
+                        <button id="addWorkBtn" class="px-4 py-2 bg-xhs-red text-white rounded-lg hover:bg-red-600 transition-colors">
+                            + 发布新作品
+                        </button>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" id="userWorks">
+                        <!-- 用户作品将通过JavaScript动态生成 -->
+                        <div class="text-center py-12 md:col-span-2 lg:col-span-3">
+                            <div class="text-4xl mb-4">📝</div>
+                            <p class="text-gray-500">还没有发布任何作品</p>
+                            <button class="mt-4 px-4 py-2 bg-xhs-red text-white rounded-lg hover:bg-red-600 transition-colors">
+                                开始创作
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 互动历史标签页 -->
+                <div id="interactions" class="tab-content hidden">
+                    <div class="flex flex-col lg:flex-row justify-between items-start lg:items-center mb-6 gap-4">
+                        <div>
+                            <h3 class="text-lg font-semibold">互动历史</h3>
+                            <p class="text-sm text-gray-500 mt-1">查看您的点赞、收藏、评论等互动记录</p>
+                        </div>
+                        <div class="flex flex-wrap gap-2">
+                            <select id="interactionFilter" class="border border-gray-300 rounded px-3 py-2 text-sm focus:ring-2 focus:ring-xhs-red focus:border-transparent">
+                                <option value="all">全部互动</option>
+                                <option value="today">今天</option>
+                                <option value="week">本周</option>
+                                <option value="month">本月</option>
+                                <option value="year">今年</option>
+                            </select>
+                            <select id="interactionType" class="border border-gray-300 rounded px-3 py-2 text-sm focus:ring-2 focus:ring-xhs-red focus:border-transparent">
+                                <option value="all">所有类型</option>
+                                <option value="likes">点赞</option>
+                                <option value="favorites">收藏</option>
+                                <option value="comments">评论</option>
+                                <option value="views">浏览</option>
+                            </select>
+                            <button id="refreshInteractions" class="px-4 py-2 bg-xhs-red text-white rounded-lg hover:bg-red-600 transition-colors text-sm">
+                                🔄 刷新
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- 互动统计概览 -->
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+                        <div class="stats-card bg-gradient-to-r from-red-500 to-pink-500 text-white p-4 rounded-lg text-center">
+                            <div class="text-2xl font-bold" id="totalLikes">0</div>
+                            <div class="text-red-100 text-sm flex items-center justify-center mt-1">
+                                <span class="mr-1">❤️</span>点赞总数
+                            </div>
+                        </div>
+                        <div class="stats-card bg-gradient-to-r from-yellow-500 to-orange-500 text-white p-4 rounded-lg text-center">
+                            <div class="text-2xl font-bold" id="totalFavorites">0</div>
+                            <div class="text-yellow-100 text-sm flex items-center justify-center mt-1">
+                                <span class="mr-1">⭐</span>收藏总数
+                            </div>
+                        </div>
+                        <div class="stats-card bg-gradient-to-r from-blue-500 to-indigo-500 text-white p-4 rounded-lg text-center">
+                            <div class="text-2xl font-bold" id="totalComments">0</div>
+                            <div class="text-blue-100 text-sm flex items-center justify-center mt-1">
+                                <span class="mr-1">💬</span>评论总数
+                            </div>
+                        </div>
+                        <div class="stats-card bg-gradient-to-r from-green-500 to-emerald-500 text-white p-4 rounded-lg text-center">
+                            <div class="text-2xl font-bold" id="interactionScore">0</div>
+                            <div class="text-green-100 text-sm flex items-center justify-center mt-1">
+                                <span class="mr-1">📊</span>活跃度
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 互动活动时间线 -->
+                    <div class="mb-8">
+                        <div class="flex items-center justify-between mb-4">
+                            <h4 class="text-md font-semibold flex items-center">
+                                <span class="mr-2">📅</span>
+                                最近活动时间线
+                            </h4>
+                            <div class="flex gap-2">
+                                <button id="timelineView" class="px-3 py-1 bg-xhs-red text-white rounded text-sm">时间线</button>
+                                <button id="gridView" class="px-3 py-1 border border-gray-300 text-gray-700 rounded text-sm">网格</button>
+                            </div>
+                        </div>
+                        <div id="interactionTimeline" class="bg-white rounded-lg border border-gray-200 p-4 max-h-96 overflow-y-auto">
+                            <!-- 时间线内容将通过JavaScript动态生成 -->
+                            <div class="text-center py-8">
+                                <div class="text-4xl mb-4">⏰</div>
+                                <p class="text-gray-500">正在加载互动历史...</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 详细互动记录 -->
+                    <div class="grid grid-cols-1 xl:grid-cols-3 gap-6">
+                        <!-- 点赞记录 -->
+                        <div class="bg-white rounded-lg border border-gray-200 overflow-hidden">
+                            <div class="bg-gradient-to-r from-red-50 to-pink-50 p-4 border-b border-gray-200">
+                                <div class="flex items-center justify-between">
+                                    <h4 class="text-md font-semibold flex items-center">
+                                        <span class="mr-2 text-red-500">❤️</span>
+                                        点赞记录
+                                        <span id="likeCount" class="ml-2 text-sm text-gray-500 bg-white px-2 py-1 rounded-full">(0)</span>
+                                    </h4>
+                                    <button id="toggleLikes" class="text-sm text-xhs-red hover:underline">
+                                        展开全部
+                                    </button>
+                                </div>
+                                <div class="text-xs text-gray-500 mt-2">
+                                    今日: <span id="todayLikes">0</span> | 本周: <span id="weekLikes">0</span>
+                                </div>
+                            </div>
+                            <div id="likeHistory" class="max-h-80 overflow-y-auto">
+                                <!-- 点赞记录将通过JavaScript动态生成 -->
+                                <div class="flex items-center justify-center py-12">
+                                    <div class="text-gray-400 text-center">
+                                        <div class="text-4xl mb-2">❤️</div>
+                                        <p class="text-sm">暂无点赞记录</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 收藏列表 -->
+                        <div class="bg-white rounded-lg border border-gray-200 overflow-hidden">
+                            <div class="bg-gradient-to-r from-yellow-50 to-orange-50 p-4 border-b border-gray-200">
+                                <div class="flex items-center justify-between">
+                                    <h4 class="text-md font-semibold flex items-center">
+                                        <span class="mr-2 text-yellow-500">⭐</span>
+                                        收藏列表
+                                        <span id="favoriteCount" class="ml-2 text-sm text-gray-500 bg-white px-2 py-1 rounded-full">(0)</span>
+                                    </h4>
+                                    <button id="toggleFavorites" class="text-sm text-xhs-red hover:underline">
+                                        展开全部
+                                    </button>
+                                </div>
+                                <div class="text-xs text-gray-500 mt-2">
+                                    今日: <span id="todayFavorites">0</span> | 本周: <span id="weekFavorites">0</span>
+                                </div>
+                            </div>
+                            <div id="favoriteList" class="max-h-80 overflow-y-auto">
+                                <!-- 收藏列表将通过JavaScript动态生成 -->
+                                <div class="flex items-center justify-center py-12">
+                                    <div class="text-gray-400 text-center">
+                                        <div class="text-4xl mb-2">⭐</div>
+                                        <p class="text-sm">暂无收藏作品</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 评论历史 -->
+                        <div class="bg-white rounded-lg border border-gray-200 overflow-hidden">
+                            <div class="bg-gradient-to-r from-blue-50 to-indigo-50 p-4 border-b border-gray-200">
+                                <div class="flex items-center justify-between">
+                                    <h4 class="text-md font-semibold flex items-center">
+                                        <span class="mr-2 text-blue-500">💬</span>
+                                        评论历史
+                                        <span id="commentCount" class="ml-2 text-sm text-gray-500 bg-white px-2 py-1 rounded-full">(0)</span>
+                                    </h4>
+                                    <button id="toggleComments" class="text-sm text-xhs-red hover:underline">
+                                        展开全部
+                                    </button>
+                                </div>
+                                <div class="text-xs text-gray-500 mt-2">
+                                    今日: <span id="todayComments">0</span> | 本周: <span id="weekComments">0</span>
+                                </div>
+                            </div>
+                            <div id="commentHistory" class="max-h-80 overflow-y-auto">
+                                <!-- 评论历史将通过JavaScript动态生成 -->
+                                <div class="flex items-center justify-center py-12">
+                                    <div class="text-gray-400 text-center">
+                                        <div class="text-4xl mb-2">💬</div>
+                                        <p class="text-sm">暂无评论记录</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 个性化设置标签页 -->
+                <div id="settings" class="tab-content hidden">
+                    <div class="flex justify-between items-center mb-6">
+                        <h3 class="text-lg font-semibold">个性化设置</h3>
+                        <div class="flex space-x-2">
+                            <button id="exportSettingsBtn" class="px-4 py-2 border border-blue-300 text-blue-700 rounded-lg hover:bg-blue-50 transition-colors">
+                                导出设置
+                            </button>
+                            <button id="importSettingsBtn" class="px-4 py-2 border border-green-300 text-green-700 rounded-lg hover:bg-green-50 transition-colors">
+                                导入设置
+                            </button>
+                            <button id="saveSettingsBtn" class="px-4 py-2 bg-xhs-red text-white rounded-lg hover:bg-red-600 transition-colors">
+                                保存设置
+                            </button>
+                            <button id="resetSettingsBtn" class="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors">
+                                重置默认
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="space-y-6">
+                        <!-- 主题设置 -->
+                        <div class="settings-section">
+                            <h4 class="text-md font-semibold mb-4 flex items-center">
+                                <span class="mr-2">🎨</span>
+                                主题色彩与外观
+                            </h4>
+                            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-3">主题色彩</label>
+                                    <div class="flex flex-wrap gap-3">
+                                        <button class="theme-color w-10 h-10 rounded-full bg-red-500 border-3 border-transparent hover:scale-110 transition-all duration-200" data-color="#FE2C55" data-theme="default" title="默认红色"></button>
+                                        <button class="theme-color w-10 h-10 rounded-full bg-blue-500 border-3 border-transparent hover:scale-110 transition-all duration-200" data-color="#3B82F6" data-theme="blue" title="蓝色"></button>
+                                        <button class="theme-color w-10 h-10 rounded-full bg-green-500 border-3 border-transparent hover:scale-110 transition-all duration-200" data-color="#10B981" data-theme="green" title="绿色"></button>
+                                        <button class="theme-color w-10 h-10 rounded-full bg-purple-500 border-3 border-transparent hover:scale-110 transition-all duration-200" data-color="#8B5CF6" data-theme="purple" title="紫色"></button>
+                                        <button class="theme-color w-10 h-10 rounded-full bg-pink-500 border-3 border-transparent hover:scale-110 transition-all duration-200" data-color="#EC4899" data-theme="pink" title="粉色"></button>
+                                        <button class="theme-color w-10 h-10 rounded-full bg-orange-500 border-3 border-transparent hover:scale-110 transition-all duration-200" data-color="#F59E0B" data-theme="orange" title="橙色"></button>
+                                    </div>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-3">显示模式</label>
+                                    <div class="space-y-3">
+                                        <label class="flex items-center justify-between">
+                                            <span class="flex items-center">
+                                                <span class="text-sm font-medium">夜间模式</span>
+                                                <span class="ml-2 text-xs text-gray-500">减少眼部疲劳</span>
+                                            </span>
+                                            <div class="relative">
+                                                <input type="checkbox" id="darkModeToggle" class="sr-only">
+                                                <div class="block bg-gray-300 w-14 h-8 rounded-full"></div>
+                                                <div class="dot absolute left-1 top-1 bg-white w-6 h-6 rounded-full transition"></div>
+                                            </div>
+                                        </label>
+                                        <label class="flex items-center justify-between">
+                                            <span class="flex items-center">
+                                                <span class="text-sm font-medium">自动夜间模式</span>
+                                                <span class="ml-2 text-xs text-gray-500">跟随系统设置</span>
+                                            </span>
+                                            <input type="checkbox" name="autoNightMode" class="reading-preference text-xhs-red">
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 字体与布局设置 -->
+                        <div class="settings-section">
+                            <h4 class="text-md font-semibold mb-4 flex items-center">
+                                <span class="mr-2">📝</span>
+                                字体与布局
+                            </h4>
+                            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-3">字体大小</label>
+                                    <div class="grid grid-cols-2 gap-3">
+                                        <label class="preference-card text-center cursor-pointer">
+                                            <input type="radio" name="fontSize" value="small" class="sr-only">
+                                            <div class="text-sm mb-1">小号字体</div>
+                                            <div class="text-xs text-gray-500">适合阅读密集内容</div>
+                                        </label>
+                                        <label class="preference-card text-center cursor-pointer">
+                                            <input type="radio" name="fontSize" value="medium" class="sr-only" checked>
+                                            <div class="text-base mb-1">中号字体</div>
+                                            <div class="text-xs text-gray-500">推荐默认大小</div>
+                                        </label>
+                                        <label class="preference-card text-center cursor-pointer">
+                                            <input type="radio" name="fontSize" value="large" class="sr-only">
+                                            <div class="text-lg mb-1">大号字体</div>
+                                            <div class="text-xs text-gray-500">舒适阅读体验</div>
+                                        </label>
+                                        <label class="preference-card text-center cursor-pointer">
+                                            <input type="radio" name="fontSize" value="extra-large" class="sr-only">
+                                            <div class="text-xl mb-1">超大字体</div>
+                                            <div class="text-xs text-gray-500">最佳可读性</div>
+                                        </label>
+                                    </div>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-3">布局选项</label>
+                                    <div class="space-y-3">
+                                        <label class="flex items-center justify-between">
+                                            <span class="flex items-center">
+                                                <span class="text-sm font-medium">紧凑模式</span>
+                                                <span class="ml-2 text-xs text-gray-500">减少页面间距</span>
+                                            </span>
+                                            <input type="checkbox" name="compactMode" class="reading-preference text-xhs-red">
+                                        </label>
+                                        <label class="flex items-center justify-between">
+                                            <span class="flex items-center">
+                                                <span class="text-sm font-medium">全屏模式</span>
+                                                <span class="ml-2 text-xs text-gray-500">沉浸式阅读</span>
+                                            </span>
+                                            <input type="checkbox" name="fullscreenMode" class="reading-preference text-xhs-red">
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 阅读体验设置 -->
+                        <div class="settings-section">
+                            <h4 class="text-md font-semibold mb-4 flex items-center">
+                                <span class="mr-2">📚</span>
+                                阅读体验
+                            </h4>
+                            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                                <div class="space-y-4">
+                                    <div class="notification-item">
+                                        <div class="flex-1">
+                                            <div class="flex items-center">
+                                                <span class="text-sm font-medium">自动保存进度</span>
+                                                <span class="ml-2 text-xs bg-green-100 text-green-800 px-2 py-1 rounded">推荐</span>
+                                            </div>
+                                            <p class="text-xs text-gray-500 mt-1">实时记录您的阅读位置</p>
+                                        </div>
+                                        <input type="checkbox" name="autoSaveProgress" class="reading-preference text-xhs-red" checked>
+                                    </div>
+                                    <div class="notification-item">
+                                        <div class="flex-1">
+                                            <div class="text-sm font-medium">智能推荐</div>
+                                            <p class="text-xs text-gray-500 mt-1">基于阅读历史推荐相似作品</p>
+                                        </div>
+                                        <input type="checkbox" name="recommendSimilar" class="reading-preference text-xhs-red" checked>
+                                    </div>
+                                    <div class="notification-item">
+                                        <div class="flex-1">
+                                            <div class="text-sm font-medium">更新提醒</div>
+                                            <p class="text-xs text-gray-500 mt-1">有新章节时及时通知</p>
+                                        </div>
+                                        <input type="checkbox" name="updateNotification" class="reading-preference text-xhs-red" checked>
+                                    </div>
+                                </div>
+                                <div class="space-y-4">
+                                    <div class="notification-item">
+                                        <div class="flex-1">
+                                            <div class="text-sm font-medium">音效提示</div>
+                                            <p class="text-xs text-gray-500 mt-1">操作时播放提示音</p>
+                                        </div>
+                                        <input type="checkbox" name="enableSounds" class="reading-preference text-xhs-red">
+                                    </div>
+                                    <div class="notification-item">
+                                        <div class="flex-1">
+                                            <div class="text-sm font-medium">阅读时长显示</div>
+                                            <p class="text-xs text-gray-500 mt-1">显示本次阅读时间</p>
+                                        </div>
+                                        <input type="checkbox" name="showReadingTime" class="reading-preference text-xhs-red" checked>
+                                    </div>
+                                    <div class="notification-item">
+                                        <div class="flex-1">
+                                            <div class="text-sm font-medium">阅读统计</div>
+                                            <p class="text-xs text-gray-500 mt-1">收集阅读数据用于分析</p>
+                                        </div>
+                                        <input type="checkbox" name="enableAnalytics" class="reading-preference text-xhs-red" checked>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 高级功能设置 -->
+                        <div class="settings-section">
+                            <h4 class="text-md font-semibold mb-4 flex items-center">
+                                <span class="mr-2">⚙️</span>
+                                高级功能
+                            </h4>
+                            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                                <div class="space-y-4">
+                                    <div class="notification-item">
+                                        <div class="flex-1">
+                                            <div class="text-sm font-medium">实验性功能</div>
+                                            <p class="text-xs text-gray-500 mt-1">启用测试版新功能</p>
+                                        </div>
+                                        <input type="checkbox" name="experimentalFeatures" class="reading-preference text-xhs-red">
+                                    </div>
+                                    <div class="notification-item">
+                                        <div class="flex-1">
+                                            <div class="text-sm font-medium">快捷键</div>
+                                            <p class="text-xs text-gray-500 mt-1">启用键盘快捷操作</p>
+                                        </div>
+                                        <input type="checkbox" name="enableShortcuts" class="reading-preference text-xhs-red" checked>
+                                    </div>
+                                </div>
+                                <div class="space-y-4">
+                                    <div class="notification-item">
+                                        <div class="flex-1">
+                                            <div class="text-sm font-medium">离线阅读</div>
+                                            <p class="text-xs text-gray-500 mt-1">缓存章节支持离线</p>
+                                        </div>
+                                        <input type="checkbox" name="offlineReading" class="reading-preference text-xhs-red">
+                                    </div>
+                                    <div class="notification-item">
+                                        <div class="flex-1">
+                                            <div class="text-sm font-medium">数据同步</div>
+                                            <p class="text-xs text-gray-500 mt-1">多设备间同步设置</p>
+                                        </div>
+                                        <input type="checkbox" name="cloudSync" class="reading-preference text-xhs-red" checked>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 数据管理 -->
+                        <div class="settings-section">
+                            <h4 class="text-md font-semibold mb-4 flex items-center">
+                                <span class="mr-2">💾</span>
+                                数据管理
+                            </h4>
+                            <div class="space-y-4">
+                                <div class="bg-blue-50 p-4 rounded-lg border border-blue-200">
+                                    <h5 class="font-medium text-blue-900 mb-2">导出个人数据</h5>
+                                    <p class="text-sm text-blue-700 mb-3">下载您的所有个人数据，包括阅读历史、设置等</p>
+                                    <button id="exportDataBtn" class="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors">
+                                        导出数据
+                                    </button>
+                                    <div id="exportStatus" class="hidden"></div>
+                                </div>
+                                <div class="bg-orange-50 p-4 rounded-lg border border-orange-200">
+                                    <h5 class="font-medium text-orange-900 mb-2">清除缓存数据</h5>
+                                    <p class="text-sm text-orange-700 mb-3">清除本地缓存的阅读数据和临时文件</p>
+                                    <button id="clearCacheBtn" class="px-4 py-2 bg-orange-500 text-white rounded hover:bg-orange-600 transition-colors">
+                                        清除缓存
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 隐藏的文件输入 -->
+                <input type="file" id="importFileInput" accept=".json" style="display: none;">
+
+                <!-- 隐私设置标签页 -->
+                <div id="privacy" class="tab-content hidden">
+                    <div class="flex justify-between items-center mb-6">
+                        <h3 class="text-lg font-semibold">隐私控制</h3>
+                        <button onclick="userProfile.savePersonalSettings()" class="px-4 py-2 bg-xhs-red text-white rounded-lg hover:bg-red-600 transition-colors">
+                            保存设置
+                        </button>
+                    </div>
+                    <div class="space-y-6">
+                        <div class="bg-gray-50 p-4 rounded-lg">
+                            <h4 class="text-md font-semibold mb-4 flex items-center">
+                                <span class="mr-2">👁️</span>
+                                个人信息可见性
+                            </h4>
+                            <div class="space-y-4">
+                                <div class="flex items-center justify-between">
+                                    <div>
+                                        <span class="font-medium">头像和昵称</span>
+                                        <p class="text-sm text-gray-500">控制其他用户是否可以看到您的基本信息</p>
+                                    </div>
+                                    <select name="profileVisibility" class="privacy-setting border border-gray-300 rounded px-3 py-2 bg-white">
+                                        <option value="public">公开</option>
+                                        <option value="friends">仅朋友</option>
+                                        <option value="private">私密</option>
+                                    </select>
+                                </div>
+                                <div class="flex items-center justify-between">
+                                    <div>
+                                        <span class="font-medium">阅读历史</span>
+                                        <p class="text-sm text-gray-500">控制阅读记录的可见范围</p>
+                                    </div>
+                                    <select name="readingHistoryVisibility" class="privacy-setting border border-gray-300 rounded px-3 py-2 bg-white">
+                                        <option value="public">公开</option>
+                                        <option value="friends">仅朋友</option>
+                                        <option value="private">私密</option>
+                                    </select>
+                                </div>
+                                <div class="flex items-center justify-between">
+                                    <div>
+                                        <span class="font-medium">收藏列表</span>
+                                        <p class="text-sm text-gray-500">控制收藏作品的可见性</p>
+                                    </div>
+                                    <select name="favoriteListVisibility" class="privacy-setting border border-gray-300 rounded px-3 py-2 bg-white">
+                                        <option value="public">公开</option>
+                                        <option value="friends">仅朋友</option>
+                                        <option value="private">私密</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="bg-gray-50 p-4 rounded-lg">
+                            <h4 class="text-md font-semibold mb-4 flex items-center">
+                                <span class="mr-2">🔒</span>
+                                数据控制
+                            </h4>
+                            <div class="space-y-3">
+                                <label class="flex items-center">
+                                    <input type="checkbox" name="allowDataCollection" class="privacy-setting text-xhs-red" checked>
+                                    <span class="ml-2 text-sm">允许收集使用数据以改善服务</span>
+                                </label>
+                                <label class="flex items-center">
+                                    <input type="checkbox" name="allowPersonalization" class="privacy-setting text-xhs-red" checked>
+                                    <span class="ml-2 text-sm">允许基于阅读历史的个性化推荐</span>
+                                </label>
+                                <label class="flex items-center">
+                                    <input type="checkbox" name="allowEmailNotifications" class="privacy-setting text-xhs-red">
+                                    <span class="ml-2 text-sm">接收邮件通知</span>
+                                </label>
+                            </div>
+                        </div>
+                        
+                        <div class="bg-red-50 border border-red-200 p-4 rounded-lg">
+                            <h4 class="text-md font-semibold mb-3 text-red-700 flex items-center">
+                                <span class="mr-2">⚠️</span>
+                                数据管理
+                            </h4>
+                            <div class="space-y-3">
+                                <button class="w-full px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors">
+                                    导出我的数据
+                                </button>
+                                <button onclick="userProfile.showDeleteAccountModal()" class="w-full px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors">
+                                    删除账户
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 成就系统标签页 -->
+                <div id="achievements" class="tab-content hidden">
+                    <h3 class="text-lg font-semibold mb-4">成就系统</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" id="achievementsList">
+                        <!-- 成就将通过JavaScript动态生成 -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 模态框：编辑头像 -->
+    <div id="avatarModal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden">
+        <div class="flex items-center justify-center min-h-screen p-4">
+            <div class="bg-white rounded-lg p-6 w-full max-w-md">
+                <h3 class="text-lg font-semibold mb-4">更换头像</h3>
+                <div class="mb-4">
+                    <input type="file" id="avatarInput" accept="image/*" class="hidden">
+                    <button id="selectImageBtn" class="w-full px-4 py-2 border-2 border-dashed border-gray-300 rounded-lg hover:border-xhs-red transition-colors">
+                        点击选择图片
+                    </button>
+                </div>
+                <div id="avatarPreview" class="mb-4 hidden">
+                    <img id="previewImage" class="w-24 h-24 rounded-full mx-auto">
+                </div>
+                <div class="flex justify-end space-x-3">
+                    <button id="cancelAvatarBtn" class="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors">
+                        取消
+                    </button>
+                    <button id="saveAvatarBtn" class="px-4 py-2 bg-xhs-red text-white rounded-lg hover:bg-red-600 transition-colors">
+                        保存
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/main.js"></script>
+    <script src="js/user-profile.js"></script>
+</body>
+</html>

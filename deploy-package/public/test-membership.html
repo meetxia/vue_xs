@@ -1,0 +1,492 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>会员管理功能测试</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        .success {
+            background-color: #d4edda;
+            border-color: #c3e6cb;
+            color: #155724;
+        }
+        .error {
+            background-color: #f8d7da;
+            border-color: #f5c6cb;
+            color: #721c24;
+        }
+        .info {
+            background-color: #d1ecf1;
+            border-color: #bee5eb;
+            color: #0c5460;
+        }
+        button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        input, select, textarea {
+            padding: 8px;
+            margin: 5px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            width: 200px;
+        }
+        textarea {
+            width: 300px;
+            height: 80px;
+        }
+        pre {
+            background-color: #f8f9fa;
+            padding: 10px;
+            border-radius: 4px;
+            overflow-x: auto;
+            max-height: 300px;
+        }
+        .user-card {
+            display: inline-block;
+            margin: 10px;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            background: white;
+            min-width: 250px;
+        }
+        .membership-badge {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 500;
+            margin: 2px;
+        }
+        .membership-free {
+            background: #f3f4f6;
+            color: #6b7280;
+        }
+        .membership-premium {
+            background: #dbeafe;
+            color: #1d4ed8;
+        }
+        .membership-vip {
+            background: #fef3c7;
+            color: #d97706;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>会员管理功能测试</h1>
+        
+        <div class="test-section info">
+            <h3>测试说明</h3>
+            <p>这个页面用于测试会员管理功能是否正常工作。</p>
+            <p><strong>功能包括：</strong></p>
+            <ul>
+                <li>获取用户列表并显示会员状态</li>
+                <li>更新用户会员类型和状态</li>
+                <li>设置会员到期时间</li>
+                <li>记录操作日志</li>
+            </ul>
+        </div>
+
+        <div class="test-section">
+            <h3>1. 管理员登录</h3>
+            <div>
+                <input type="text" id="username" placeholder="用户名" value="admin">
+                <input type="password" id="password" placeholder="密码" value="123456">
+                <button onclick="testLogin()">登录</button>
+            </div>
+            <div id="loginResult"></div>
+        </div>
+
+        <div class="test-section">
+            <h3>2. 获取用户列表</h3>
+            <button onclick="loadUsers()">加载用户列表</button>
+            <div id="usersResult"></div>
+        </div>
+
+        <div class="test-section">
+            <h3>3. 会员管理测试</h3>
+            <div>
+                <label>选择用户ID: </label>
+                <select id="selectedUserId">
+                    <option value="">请先加载用户列表</option>
+                </select>
+            </div>
+            <div>
+                <label>会员类型: </label>
+                <select id="membershipType">
+                    <option value="free">免费用户</option>
+                    <option value="premium">高级会员</option>
+                    <option value="vip">VIP会员</option>
+                </select>
+            </div>
+            <div>
+                <label>会员状态: </label>
+                <select id="membershipStatus">
+                    <option value="active">有效</option>
+                    <option value="suspended">已暂停</option>
+                    <option value="expired">已过期</option>
+                </select>
+            </div>
+            <div>
+                <label>到期时间: </label>
+                <input type="datetime-local" id="membershipEndDate">
+                <button onclick="setQuickDuration(1)">1个月</button>
+                <button onclick="setQuickDuration(3)">3个月</button>
+                <button onclick="setQuickDuration(12)">1年</button>
+            </div>
+            <div>
+                <label>操作备注: </label>
+                <textarea id="operationNote" placeholder="请输入操作原因或备注..."></textarea>
+            </div>
+            <div>
+                <button onclick="updateMembership()">更新会员状态</button>
+            </div>
+            <div id="membershipResult"></div>
+        </div>
+
+        <div class="test-section">
+            <h3>4. 查看用户活动日志</h3>
+            <div>
+                <button onclick="viewUserActivity()">查看选中用户的活动日志</button>
+            </div>
+            <div id="activityResult"></div>
+        </div>
+    </div>
+
+    <script>
+        let adminToken = null;
+        let users = [];
+
+        // 管理员登录
+        async function testLogin() {
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            const resultDiv = document.getElementById('loginResult');
+            
+            try {
+                const response = await fetch('/api/admin/login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ username, password })
+                });
+                
+                const result = await response.json();
+                
+                if (response.ok && result.success) {
+                    adminToken = result.data.token;
+                    localStorage.setItem('adminToken', adminToken);
+                    
+                    resultDiv.innerHTML = `
+                        <div class="success">
+                            <h4>登录成功！</h4>
+                            <p>Token已保存，可以进行后续测试</p>
+                        </div>
+                    `;
+                } else {
+                    resultDiv.innerHTML = `
+                        <div class="error">
+                            <h4>登录失败</h4>
+                            <p>错误信息: ${result.message}</p>
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `
+                    <div class="error">
+                        <h4>请求失败</h4>
+                        <p>错误: ${error.message}</p>
+                    </div>
+                `;
+            }
+        }
+
+        // 加载用户列表
+        async function loadUsers() {
+            const token = adminToken || localStorage.getItem('adminToken');
+            const resultDiv = document.getElementById('usersResult');
+            
+            if (!token) {
+                resultDiv.innerHTML = `
+                    <div class="error">
+                        <p>请先登录</p>
+                    </div>
+                `;
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/admin/users?limit=10', {
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                const result = await response.json();
+                
+                if (response.ok && result.success) {
+                    users = result.data.users;
+                    
+                    // 更新用户选择下拉框
+                    const userSelect = document.getElementById('selectedUserId');
+                    userSelect.innerHTML = '<option value="">请选择用户</option>';
+                    users.forEach(user => {
+                        userSelect.innerHTML += `<option value="${user.id}">${user.username} (${user.email})</option>`;
+                    });
+                    
+                    // 显示用户列表
+                    const usersHtml = users.map(user => {
+                        const membership = user.membership || { type: 'free', status: 'active' };
+                        const membershipClass = `membership-${membership.type}`;
+                        const membershipText = {
+                            'free': '免费用户',
+                            'premium': '高级会员',
+                            'vip': 'VIP会员'
+                        }[membership.type] || '未知';
+                        
+                        const endDate = membership.endDate ? new Date(membership.endDate).toLocaleString('zh-CN') : '永久';
+                        
+                        return `
+                            <div class="user-card">
+                                <h4>${user.username}</h4>
+                                <p>邮箱: ${user.email}</p>
+                                <p>ID: ${user.id}</p>
+                                <div>
+                                    <span class="membership-badge ${membershipClass}">
+                                        ${membershipText}
+                                    </span>
+                                </div>
+                                <p>状态: ${membership.status}</p>
+                                <p>到期: ${endDate}</p>
+                            </div>
+                        `;
+                    }).join('');
+                    
+                    resultDiv.innerHTML = `
+                        <div class="success">
+                            <h4>用户列表加载成功！</h4>
+                            <p>总用户数: ${users.length}</p>
+                            <div style="margin-top: 15px;">
+                                ${usersHtml}
+                            </div>
+                        </div>
+                    `;
+                } else {
+                    resultDiv.innerHTML = `
+                        <div class="error">
+                            <h4>加载用户列表失败</h4>
+                            <p>错误信息: ${result.message}</p>
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `
+                    <div class="error">
+                        <h4>请求失败</h4>
+                        <p>错误: ${error.message}</p>
+                    </div>
+                `;
+            }
+        }
+
+        // 设置快速到期时间
+        function setQuickDuration(months) {
+            const now = new Date();
+            const endDate = new Date(now.getTime() + months * 30 * 24 * 60 * 60 * 1000);
+            const localDateTime = new Date(endDate.getTime() - endDate.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
+            document.getElementById('membershipEndDate').value = localDateTime;
+        }
+
+        // 更新会员状态
+        async function updateMembership() {
+            const token = adminToken || localStorage.getItem('adminToken');
+            const userId = document.getElementById('selectedUserId').value;
+            const membershipType = document.getElementById('membershipType').value;
+            const membershipStatus = document.getElementById('membershipStatus').value;
+            const membershipEndDate = document.getElementById('membershipEndDate').value;
+            const operationNote = document.getElementById('operationNote').value;
+            const resultDiv = document.getElementById('membershipResult');
+            
+            if (!token) {
+                resultDiv.innerHTML = `<div class="error"><p>请先登录</p></div>`;
+                return;
+            }
+            
+            if (!userId) {
+                resultDiv.innerHTML = `<div class="error"><p>请选择用户</p></div>`;
+                return;
+            }
+
+            const updateData = {
+                membership: {
+                    type: membershipType,
+                    status: membershipStatus,
+                    startDate: new Date().toISOString(),
+                    autoRenew: false
+                }
+            };
+            
+            if (membershipType !== 'free' && membershipEndDate) {
+                updateData.membership.endDate = new Date(membershipEndDate).toISOString();
+            }
+            
+            if (operationNote) {
+                updateData.operationNote = operationNote;
+            }
+
+            try {
+                const response = await fetch(`/api/admin/users/${userId}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(updateData)
+                });
+                
+                const result = await response.json();
+                
+                if (response.ok && result.success) {
+                    resultDiv.innerHTML = `
+                        <div class="success">
+                            <h4>会员状态更新成功！</h4>
+                            <pre>${JSON.stringify(result.data.membership, null, 2)}</pre>
+                        </div>
+                    `;
+                    
+                    // 重新加载用户列表
+                    loadUsers();
+                } else {
+                    resultDiv.innerHTML = `
+                        <div class="error">
+                            <h4>更新失败</h4>
+                            <p>错误信息: ${result.message}</p>
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `
+                    <div class="error">
+                        <h4>请求失败</h4>
+                        <p>错误: ${error.message}</p>
+                    </div>
+                `;
+            }
+        }
+
+        // 查看用户活动日志
+        async function viewUserActivity() {
+            const token = adminToken || localStorage.getItem('adminToken');
+            const userId = document.getElementById('selectedUserId').value;
+            const resultDiv = document.getElementById('activityResult');
+            
+            if (!token) {
+                resultDiv.innerHTML = `<div class="error"><p>请先登录</p></div>`;
+                return;
+            }
+            
+            if (!userId) {
+                resultDiv.innerHTML = `<div class="error"><p>请选择用户</p></div>`;
+                return;
+            }
+
+            try {
+                const response = await fetch(`/api/admin/users/${userId}/activity?limit=10`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                const result = await response.json();
+                
+                if (response.ok && result.success) {
+                    const activities = result.data.activities || [];
+                    
+                    if (activities.length > 0) {
+                        const activitiesHtml = activities.map(activity => `
+                            <div style="margin-bottom: 10px; padding: 10px; border: 1px solid #ddd; border-radius: 4px;">
+                                <strong>${activity.action}</strong><br>
+                                <small>${new Date(activity.timestamp).toLocaleString('zh-CN')}</small><br>
+                                ${activity.details}
+                            </div>
+                        `).join('');
+                        
+                        resultDiv.innerHTML = `
+                            <div class="success">
+                                <h4>用户活动日志</h4>
+                                <div>${activitiesHtml}</div>
+                            </div>
+                        `;
+                    } else {
+                        resultDiv.innerHTML = `
+                            <div class="info">
+                                <p>该用户暂无活动记录</p>
+                            </div>
+                        `;
+                    }
+                } else {
+                    resultDiv.innerHTML = `
+                        <div class="error">
+                            <h4>获取活动日志失败</h4>
+                            <p>错误信息: ${result.message}</p>
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `
+                    <div class="error">
+                        <h4>请求失败</h4>
+                        <p>错误: ${error.message}</p>
+                    </div>
+                `;
+            }
+        }
+
+        // 页面加载时检查登录状态
+        window.onload = function() {
+            const token = localStorage.getItem('adminToken');
+            if (token) {
+                adminToken = token;
+                document.getElementById('loginResult').innerHTML = `
+                    <div class="info">
+                        <p>检测到已保存的登录状态</p>
+                    </div>
+                `;
+            }
+        };
+    </script>
+</body>
+</html>

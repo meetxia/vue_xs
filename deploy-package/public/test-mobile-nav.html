@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>移动端导航栏测试 - MOMO的小说站</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="css/style.css">
+    <style>
+        /* 测试用的响应式指示器 */
+        .screen-indicator {
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            background: rgba(0,0,0,0.8);
+            color: white;
+            padding: 5px 10px;
+            border-radius: 5px;
+            font-size: 12px;
+            z-index: 9999;
+        }
+        
+        .test-section {
+            margin: 20px 0;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+        }
+        
+        .test-title {
+            font-weight: bold;
+            margin-bottom: 10px;
+            color: #333;
+        }
+    </style>
+</head>
+<body class="bg-beige-light min-h-screen">
+    <!-- 屏幕尺寸指示器 -->
+    <div class="screen-indicator" id="screenIndicator">
+        屏幕宽度: <span id="screenWidth"></span>px
+    </div>
+
+    <!-- 顶部导航栏 -->
+    <nav class="sticky top-0 bg-white shadow-sm z-50 border-b border-gray-100">
+        <div class="container mx-auto px-4 py-3 flex items-center justify-between">
+            <!-- Logo -->
+            <div class="text-xhs-red font-bold text-xl">MOMO的小说站</div>
+
+            <!-- 桌面端搜索框 -->
+            <div class="hidden md:flex flex-1 mx-4 max-w-md">
+                <input
+                    type="text"
+                    id="searchInput"
+                    placeholder="搜索小说..."
+                    class="w-full px-4 py-2 rounded-full border border-gray-200 focus:outline-none focus:border-xhs-red"
+                />
+            </div>
+
+            <!-- 右侧功能区 -->
+            <div id="navRightSection" class="flex items-center space-x-3">
+                <!-- 用户状态区域 -->
+                <div id="userStatusArea">
+                    <!-- 模拟已登录用户 -->
+                </div>
+
+                <!-- 搜索按钮（移动端） -->
+                <button id="mobileSearchBtn" class="md:hidden p-2 rounded-full hover:bg-gray-100 transition-colors">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                    </svg>
+                </button>
+
+                <!-- 主题切换按钮 -->
+                <button id="themeToggle" class="p-2 rounded-full hover:bg-gray-100 transition-colors">
+                    🌙
+                </button>
+
+                <!-- 汉堡菜单按钮（移动端） -->
+                <button id="hamburgerBtn" class="lg:hidden p-2 rounded-full hover:bg-gray-100 transition-colors">
+                    <svg id="hamburgerIcon" class="w-6 h-6 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
+                    </svg>
+                </button>
+            </div>
+        </div>
+
+        <!-- 汉堡菜单（移动端） -->
+        <div id="hamburgerMenu" class="lg:hidden bg-white border-t border-gray-100 transform -translate-y-full opacity-0 transition-all duration-300 ease-in-out overflow-hidden">
+            <div id="mobileMenuContent" class="container mx-auto px-4 py-4 space-y-2">
+                <!-- 移动端菜单内容将通过JavaScript动态更新 -->
+            </div>
+        </div>
+    </nav>
+
+    <!-- 主要内容区域 -->
+    <div class="container mx-auto px-4 py-8">
+        <div class="test-section">
+            <div class="test-title">移动端导航栏优化测试</div>
+            <p>本页面用于测试移动端导航栏的优化效果：</p>
+            <ul class="list-disc list-inside mt-2 space-y-1">
+                <li>移动端隐藏用户头像显示</li>
+                <li>移动端隐藏VIP会员标识</li>
+                <li>桌面端保持正常显示</li>
+                <li>移动端菜单简化用户信息显示</li>
+            </ul>
+        </div>
+
+        <div class="test-section">
+            <div class="test-title">测试说明</div>
+            <p>请调整浏览器窗口大小或使用开发者工具的设备模拟器来测试不同屏幕尺寸下的效果：</p>
+            <ul class="list-disc list-inside mt-2 space-y-1">
+                <li><strong>桌面端 (≥769px):</strong> 显示完整的用户头像和VIP标识</li>
+                <li><strong>平板端 (≤768px):</strong> 隐藏桌面端用户菜单，显示简化的移动端菜单</li>
+                <li><strong>手机端 (≤480px):</strong> 进一步优化间距和字体大小</li>
+            </ul>
+        </div>
+
+        <div class="test-section">
+            <div class="test-title">当前状态</div>
+            <p>用户状态: <span id="userStatus">未登录</span></p>
+            <p>屏幕类型: <span id="screenType">桌面端</span></p>
+            <button onclick="toggleUserStatus()" class="mt-2 px-4 py-2 bg-xhs-red text-white rounded hover:bg-red-600 transition-colors">
+                切换登录状态
+            </button>
+        </div>
+    </div>
+
+    <script src="js/main.js"></script>
+    <script>
+        // 屏幕尺寸监测
+        function updateScreenInfo() {
+            const width = window.innerWidth;
+            document.getElementById('screenWidth').textContent = width;
+            
+            let screenType = '';
+            if (width >= 1024) {
+                screenType = '大屏桌面端';
+            } else if (width >= 769) {
+                screenType = '小屏桌面端';
+            } else if (width >= 481) {
+                screenType = '平板端';
+            } else {
+                screenType = '手机端';
+            }
+            document.getElementById('screenType').textContent = screenType;
+        }
+
+        // 模拟用户登录状态切换
+        let isLoggedIn = false;
+        function toggleUserStatus() {
+            isLoggedIn = !isLoggedIn;
+            document.getElementById('userStatus').textContent = isLoggedIn ? '已登录' : '未登录';
+            
+            if (isLoggedIn) {
+                // 模拟登录用户
+                const mockUser = {
+                    username: '测试用户',
+                    avatar: 'default.png',
+                    membership: { type: 'vip', isValid: true }
+                };
+                
+                if (window.userManager) {
+                    window.userManager.user = mockUser;
+                    window.userManager.updateUI();
+                }
+            } else {
+                // 模拟登出
+                if (window.userManager) {
+                    window.userManager.user = null;
+                    window.userManager.updateUI();
+                }
+            }
+        }
+
+        // 汉堡菜单切换
+        document.getElementById('hamburgerBtn').addEventListener('click', function() {
+            const menu = document.getElementById('hamburgerMenu');
+            const icon = document.getElementById('hamburgerIcon');
+            
+            if (menu.style.transform === 'translateY(0px)') {
+                menu.style.transform = 'translateY(-100%)';
+                menu.style.opacity = '0';
+                icon.style.transform = 'rotate(0deg)';
+            } else {
+                menu.style.transform = 'translateY(0px)';
+                menu.style.opacity = '1';
+                icon.style.transform = 'rotate(90deg)';
+            }
+        });
+
+        // 初始化
+        window.addEventListener('resize', updateScreenInfo);
+        window.addEventListener('load', function() {
+            updateScreenInfo();
+            
+            // 初始化用户管理器
+            if (window.UserManager) {
+                window.userManager = new UserManager();
+                window.userManager.init();
+            }
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>返回顶部组件测试</title>
+    <link rel="stylesheet" href="css/back-to-top.css">
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Microsoft YaHei', sans-serif;
+            line-height: 1.6;
+        }
+        
+        .test-content {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            padding: 40px;
+            border-radius: 12px;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.1);
+            margin-bottom: 30px;
+        }
+        
+        .section {
+            margin-bottom: 600px;
+            padding: 40px 0;
+            border-bottom: 1px solid #eee;
+        }
+        
+        h1 {
+            color: #FF2442;
+            text-align: center;
+            margin-bottom: 40px;
+        }
+        
+        h2 {
+            color: #FF6B9D;
+            margin-bottom: 20px;
+        }
+        
+        p {
+            margin-bottom: 20px;
+            color: #666;
+        }
+        
+        .highlight {
+            background: linear-gradient(135deg, #FF2442 0%, #FF6B9D 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+        
+        .back-link {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            background: #f0f0f0;
+            padding: 10px 20px;
+            border-radius: 20px;
+            text-decoration: none;
+            color: #666;
+            font-size: 14px;
+            transition: all 0.3s ease;
+        }
+        
+        .back-link:hover {
+            background: #e0e0e0;
+            transform: translateY(-1px);
+        }
+    </style>
+</head>
+<body>
+    <a href="index.html" class="back-link">← 返回首页</a>
+    
+    <div class="test-content">
+        <h1>🔝 返回顶部组件测试页面</h1>
+        
+        <div class="highlight">
+            <h3>测试说明</h3>
+            <p>这是一个专门用于测试返回顶部组件的页面。向下滚动超过400px后，右下角会出现一个小红书风格的返回顶部按钮。</p>
+        </div>
+        
+        <div class="section">
+            <h2>第一部分 - 组件特性</h2>
+            <p>返回顶部组件具有以下特性：</p>
+            <ul>
+                <li>🎨 <strong>小红书风格设计</strong>：采用品牌色渐变背景，圆形按钮设计</li>
+                <li>⚡ <strong>智能显示/隐藏</strong>：滚动超过400px自动显示，回到顶部附近自动隐藏</li>
+                <li>🚀 <strong>平滑滚动动画</strong>：使用easeInOutCubic缓动函数，提供流畅的滚动体验</li>
+                <li>📱 <strong>响应式适配</strong>：在不同屏幕尺寸下自动调整大小和位置</li>
+                <li>♿ <strong>无障碍支持</strong>：支持键盘操作和屏幕阅读器</li>
+                <li>🔧 <strong>防冲突设计</strong>：智能检测已存在按钮，避免重复创建</li>
+            </ul>
+        </div>
+        
+        <div class="section">
+            <h2>第二部分 - 技术实现</h2>
+            <p>组件采用面向对象的设计模式，主要包含以下功能：</p>
+            <ul>
+                <li><code>createButton()</code> - 动态创建按钮元素和SVG图标</li>
+                <li><code>bindEvents()</code> - 绑定点击、键盘、滚动事件</li>
+                <li><code>updateVisibility()</code> - 根据滚动位置控制显示/隐藏</li>
+                <li><code>scrollToTop()</code> - 执行平滑滚动到顶部动画</li>
+                <li><code>throttledUpdateVisibility()</code> - 节流处理滚动事件</li>
+            </ul>
+        </div>
+        
+        <div class="section">
+            <h2>第三部分 - 样式设计</h2>
+            <p>CSS样式重点关注用户体验和视觉效果：</p>
+            <ul>
+                <li>🎨 渐变背景色：#FF2442 到 #FF6B9D</li>
+                <li>🌟 悬停效果：颜色变化 + 上移动画</li>
+                <li>💫 点击反馈：缩放动画</li>
+                <li>🎯 高对比度模式支持</li>
+                <li>⚡ 减少动画模式兼容</li>
+            </ul>
+        </div>
+        
+        <div class="section">
+            <h2>第四部分 - 兼容性测试</h2>
+            <p>组件已在以下页面进行集成测试：</p>
+            <ul>
+                <li>✅ index.html - 首页（瀑布流布局）</li>
+                <li>✅ read.html - 阅读页面（长内容滚动）</li>
+                <li>✅ admin.html - 管理后台（复杂交互）</li>
+                <li>✅ login.html - 登录页面（简单布局）</li>
+            </ul>
+        </div>
+        
+        <div class="section">
+            <h2>第五部分 - 性能优化</h2>
+            <p>为了确保最佳性能，组件实现了多项优化：</p>
+            <ul>
+                <li>⚡ 滚动事件节流（100ms）</li>
+                <li>🎯 使用 requestAnimationFrame 优化动画</li>
+                <li>💾 CSS transform 硬件加速</li>
+                <li>🔄 智能防重复初始化</li>
+                <li>🧹 组件销毁时自动清理资源</li>
+            </ul>
+        </div>
+        
+        <div class="section">
+            <h2>测试完成</h2>
+            <div class="highlight">
+                <p>🎉 恭喜！如果你能看到右下角的返回顶部按钮，说明组件已成功集成并正常工作。</p>
+                <p>点击按钮试试看，你应该能看到流畅的滚动回顶部动画效果。</p>
+            </div>
+        </div>
+    </div>
+    
+    <script src="js/back-to-top.js"></script>
+</body>
+</html>

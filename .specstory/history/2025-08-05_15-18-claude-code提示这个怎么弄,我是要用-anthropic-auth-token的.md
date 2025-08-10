@@ -4,7 +4,7 @@
 
 _**User**_
 
-Claude code提示这个怎么弄，我是要用 ANTHROPIC_AUTH_TOKEN的
+你好，你是什么模型？
 
 ---
 

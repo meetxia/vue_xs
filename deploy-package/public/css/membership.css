@@ -1,0 +1,563 @@
+/* 会员页面专用样式 */
+
+/* 基础变量 */
+:root {
+    --premium-gradient: linear-gradient(135deg, #FF6B6B 0%, #FF8E8E 50%, #FFB6C1 100%);
+    --vip-gradient: linear-gradient(135deg, #FFD700 0%, #FFED4E 50%, #FFF59D 100%);
+    --card-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+    --card-hover-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+    --glow-premium: 0 0 20px rgba(255, 107, 107, 0.3);
+    --glow-vip: 0 0 20px rgba(255, 215, 0, 0.3);
+}
+
+/* 会员卡片高级效果 */
+.membership-card {
+    position: relative;
+    background: white;
+    border-radius: 24px;
+    overflow: hidden;
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: var(--card-shadow);
+}
+
+.membership-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+    transition: left 0.6s;
+}
+
+.membership-card:hover::before {
+    left: 100%;
+}
+
+.membership-card:hover {
+    transform: translateY(-8px) scale(1.02);
+    box-shadow: var(--card-hover-shadow);
+}
+
+.premium-card {
+    border: 2px solid #FF6B6B;
+    background: linear-gradient(135deg, #fff 0%, #fff5f5 100%);
+}
+
+.premium-card:hover {
+    box-shadow: var(--glow-premium), var(--card-hover-shadow);
+}
+
+.vip-card {
+    border: 2px solid #FFD700;
+    background: linear-gradient(135deg, #fffbf0 0%, #fff8dc 100%);
+}
+
+.vip-card:hover {
+    box-shadow: var(--glow-vip), var(--card-hover-shadow);
+}
+
+/* 徽章动画效果 */
+.membership-badge {
+    position: relative;
+    background: var(--premium-gradient);
+    color: white;
+    padding: 8px 16px;
+    border-radius: 20px;
+    font-weight: 600;
+    font-size: 14px;
+    box-shadow: 0 4px 15px rgba(255, 107, 107, 0.3);
+    animation: badge-pulse 2s ease-in-out infinite;
+}
+
+.membership-badge.vip {
+    background: var(--vip-gradient);
+    box-shadow: 0 4px 15px rgba(255, 215, 0, 0.3);
+}
+
+@keyframes badge-pulse {
+    0%, 100% {
+        transform: scale(1);
+    }
+    50% {
+        transform: scale(1.05);
+    }
+}
+
+/* 价格展示效果 */
+.price-display {
+    position: relative;
+    font-size: 3rem;
+    font-weight: 800;
+    background: var(--premium-gradient);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.price-display.vip {
+    background: var(--vip-gradient);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+/* 特性列表动画 */
+.feature-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.feature-list li {
+    position: relative;
+    padding: 12px 0 12px 40px;
+    margin: 8px 0;
+    border-radius: 12px;
+    transition: all 0.3s ease;
+    opacity: 0;
+    transform: translateX(-20px);
+    animation: slideIn 0.5s ease forwards;
+}
+
+.feature-list li:nth-child(1) { animation-delay: 0.1s; }
+.feature-list li:nth-child(2) { animation-delay: 0.2s; }
+.feature-list li:nth-child(3) { animation-delay: 0.3s; }
+.feature-list li:nth-child(4) { animation-delay: 0.4s; }
+.feature-list li:nth-child(5) { animation-delay: 0.5s; }
+.feature-list li:nth-child(6) { animation-delay: 0.6s; }
+
+@keyframes slideIn {
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+.feature-list li::before {
+    content: '✓';
+    position: absolute;
+    left: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 24px;
+    height: 24px;
+    background: linear-gradient(135deg, #4CAF50, #66BB6A);
+    color: white;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    font-size: 14px;
+    box-shadow: 0 2px 8px rgba(76, 175, 80, 0.3);
+}
+
+.feature-list li:hover {
+    background: rgba(76, 175, 80, 0.05);
+    transform: translateX(5px);
+}
+
+.premium-card .feature-list li::before {
+    background: var(--premium-gradient);
+    box-shadow: 0 2px 8px rgba(255, 107, 107, 0.3);
+}
+
+.vip-card .feature-list li::before {
+    background: var(--vip-gradient);
+    box-shadow: 0 2px 8px rgba(255, 215, 0, 0.3);
+}
+
+/* 按钮高级效果 */
+.membership-btn {
+    position: relative;
+    padding: 16px 32px;
+    border: none;
+    border-radius: 16px;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    overflow: hidden;
+    transition: all 0.3s ease;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.membership-btn::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+    transition: left 0.6s;
+}
+
+.membership-btn:hover::before {
+    left: 100%;
+}
+
+.membership-btn.premium {
+    background: var(--premium-gradient);
+    color: white;
+    box-shadow: 0 8px 25px rgba(255, 107, 107, 0.3);
+}
+
+.membership-btn.premium:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 12px 35px rgba(255, 107, 107, 0.4);
+}
+
+.membership-btn.vip {
+    background: var(--vip-gradient);
+    color: white;
+    box-shadow: 0 8px 25px rgba(255, 215, 0, 0.3);
+}
+
+.membership-btn.vip:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 12px 35px rgba(255, 215, 0, 0.4);
+}
+
+/* 弹窗动画 */
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(8px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.3s ease;
+}
+
+.modal-overlay.show {
+    opacity: 1;
+    visibility: visible;
+}
+
+.modal-content {
+    background: white;
+    border-radius: 24px;
+    padding: 32px;
+    max-width: 500px;
+    width: 90%;
+    max-height: 90vh;
+    overflow-y: auto;
+    transform: scale(0.8) translateY(50px);
+    opacity: 0;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 25px 50px rgba(0, 0, 0, 0.2);
+}
+
+.modal-overlay.show .modal-content {
+    transform: scale(1) translateY(0);
+    opacity: 1;
+}
+
+/* 特性对比表格 */
+.comparison-table {
+    background: white;
+    border-radius: 20px;
+    overflow: hidden;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+}
+
+.comparison-table table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.comparison-table th,
+.comparison-table td {
+    padding: 16px;
+    text-align: left;
+    border-bottom: 1px solid #f0f0f0;
+}
+
+.comparison-table th {
+    background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
+    font-weight: 600;
+    color: #333;
+}
+
+.comparison-table tr:hover {
+    background: rgba(0, 0, 0, 0.02);
+}
+
+.comparison-table .feature-icon {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    margin-right: 8px;
+    font-size: 12px;
+    font-weight: bold;
+}
+
+.comparison-table .available {
+    background: linear-gradient(135deg, #4CAF50, #66BB6A);
+    color: white;
+}
+
+.comparison-table .unavailable {
+    background: linear-gradient(135deg, #f44336, #ef5350);
+    color: white;
+}
+
+/* 联系卡片 */
+.contact-card {
+    background: white;
+    border-radius: 20px;
+    padding: 24px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+.contact-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 4px;
+    background: var(--premium-gradient);
+}
+
+.contact-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 15px 40px rgba(0, 0, 0, 0.15);
+}
+
+.contact-card.wechat::before {
+    background: linear-gradient(135deg, #07C160, #25D366);
+}
+
+.contact-card.email::before {
+    background: linear-gradient(135deg, #EA4335, #FBBC05);
+}
+
+.contact-card.qq::before {
+    background: linear-gradient(135deg, #12B7F5, #58D68D);
+}
+
+.contact-card.phone::before {
+    background: linear-gradient(135deg, #FF6B6B, #FF8E8E);
+}
+
+/* 背景动画效果 */
+.animated-bg {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: -1;
+    background: linear-gradient(135deg, #FAF5F0 0%, #F5E6D3 25%, #FAF5F0 50%, #F5E6D3 75%, #FAF5F0 100%);
+    background-size: 400% 400%;
+    animation: gradientShift 15s ease infinite;
+}
+
+@keyframes gradientShift {
+    0% {
+        background-position: 0% 50%;
+    }
+    50% {
+        background-position: 100% 50%;
+    }
+    100% {
+        background-position: 0% 50%;
+    }
+}
+
+/* 浮动元素 */
+.floating-element {
+    position: absolute;
+    border-radius: 50%;
+    pointer-events: none;
+    animation: float 6s ease-in-out infinite;
+}
+
+.floating-element.premium {
+    background: radial-gradient(circle, rgba(255, 107, 107, 0.1) 0%, transparent 70%);
+}
+
+.floating-element.vip {
+    background: radial-gradient(circle, rgba(255, 215, 0, 0.1) 0%, transparent 70%);
+}
+
+/* 响应式设计 */
+@media (max-width: 768px) {
+    .membership-card {
+        margin: 0 10px;
+    }
+    
+    .price-display {
+        font-size: 2.5rem;
+    }
+    
+    .feature-list li {
+        padding: 10px 0 10px 35px;
+        font-size: 14px;
+    }
+    
+    .comparison-table {
+        font-size: 14px;
+    }
+    
+    .comparison-table th,
+    .comparison-table td {
+        padding: 12px 8px;
+    }
+    
+    .contact-card {
+        margin: 0 10px;
+    }
+    
+    .modal-content {
+        padding: 24px;
+        margin: 20px;
+    }
+}
+
+@media (max-width: 480px) {
+    .price-display {
+        font-size: 2rem;
+    }
+    
+    .membership-btn {
+        padding: 12px 24px;
+        font-size: 14px;
+    }
+    
+    .feature-list li {
+        padding: 8px 0 8px 30px;
+        font-size: 13px;
+    }
+    
+    .comparison-table {
+        font-size: 12px;
+    }
+    
+    .comparison-table th,
+    .comparison-table td {
+        padding: 8px 6px;
+    }
+}
+
+/* 加载动画 */
+.loading-spinner {
+    width: 40px;
+    height: 40px;
+    border: 4px solid #f3f4f6;
+    border-top: 4px solid var(--premium-gradient);
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin: 0 auto;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* 特殊效果 */
+.glow-text {
+    text-shadow: 0 0 20px rgba(255, 107, 107, 0.5);
+}
+
+.shimmer {
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+    background-size: 1000px 100%;
+    animation: shimmer 2s linear infinite;
+}
+
+@keyframes shimmer {
+    0% {
+        background-position: -1000px 0;
+    }
+    100% {
+        background-position: 1000px 0;
+    }
+}
+
+/* 暗色主题适配 */
+.dark-theme .membership-card {
+    background: #2a2a2a;
+    border-color: #404040;
+}
+
+.dark-theme .premium-card {
+    background: linear-gradient(135deg, #2a2a2a 0%, #3a2a2a 100%);
+}
+
+.dark-theme .vip-card {
+    background: linear-gradient(135deg, #2a2a2a 0%, #3a3a2a 100%);
+}
+
+.dark-theme .contact-card {
+    background: #2a2a2a;
+}
+
+.dark-theme .comparison-table {
+    background: #2a2a2a;
+}
+
+.dark-theme .comparison-table th {
+    background: linear-gradient(135deg, #3a3a3a 0%, #2a2a2a 100%);
+    color: #e0e0e0;
+}
+
+.dark-theme .comparison-table td {
+    border-color: #404040;
+    color: #e0e0e0;
+}
+
+.dark-theme .comparison-table tr:hover {
+    background: rgba(255, 255, 255, 0.05);
+}
+
+/* 无障碍设计 */
+.membership-card:focus-within {
+    outline: 3px solid var(--premium-gradient);
+    outline-offset: 2px;
+}
+
+.membership-btn:focus {
+    outline: 3px solid var(--premium-gradient);
+    outline-offset: 2px;
+}
+
+.contact-card:focus-within {
+    outline: 3px solid var(--premium-gradient);
+    outline-offset: 2px;
+}
+
+/* 打印样式 */
+@media print {
+    .membership-card,
+    .contact-card,
+    .comparison-table {
+        box-shadow: none;
+        border: 1px solid #ccc;
+    }
+    
+    .membership-btn,
+    .floating-element,
+    .animated-bg {
+        display: none;
+    }
+}

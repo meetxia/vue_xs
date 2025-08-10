@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>筛选功能测试</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .form-input {
+            width: 100%;
+            padding: 8px 12px;
+            border: 2px solid #e5e7eb;
+            border-radius: 6px;
+            font-size: 14px;
+            transition: border-color 0.3s ease;
+        }
+        .form-input:focus {
+            outline: none;
+            border-color: #3b82f6;
+        }
+        .btn {
+            padding: 8px 16px;
+            border-radius: 6px;
+            font-weight: 500;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease;
+            cursor: pointer;
+            border: none;
+            font-size: 14px;
+        }
+        .btn-primary {
+            background: #3b82f6;
+            color: white;
+        }
+        .btn-primary:hover {
+            background: #2563eb;
+        }
+        .btn-secondary {
+            background: #6b7280;
+            color: white;
+        }
+        .btn-secondary:hover {
+            background: #4b5563;
+        }
+        .btn-sm {
+            padding: 4px 8px;
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body class="bg-gray-50 p-8">
+    <div class="max-w-6xl mx-auto">
+        <h1 class="text-2xl font-bold mb-6">筛选功能测试页面</h1>
+        
+        <!-- 筛选容器 -->
+        <div id="filterContainer">
+            <!-- 筛选UI将通过JavaScript生成 -->
+        </div>
+        
+        <!-- 作品列表容器 -->
+        <div id="novelsList" class="bg-white rounded-lg p-6">
+            <p class="text-gray-500 text-center">选择筛选条件后，这里将显示筛选结果</p>
+        </div>
+    </div>
+
+    <!-- 模拟一些数据 -->
+    <script>
+        // 模拟作品数据
+        window.mockNovels = [
+            {
+                id: '1',
+                title: '测试小说1',
+                summary: '这是一部测试小说',
+                tags: ['#爱情', '#都市'],
+                status: 'published',
+                accessLevel: 'free',
+                category: '都市小说',
+                author: '测试作者1',
+                views: 1000,
+                createdAt: new Date().toISOString()
+            },
+            {
+                id: '2',
+                title: '测试小说2',
+                summary: '这是另一部测试小说',
+                tags: ['#悬疑', '#奇幻'],
+                status: 'draft',
+                accessLevel: 'premium',
+                category: '奇幻小说',
+                author: '测试作者2',
+                views: 500,
+                createdAt: new Date().toISOString()
+            },
+            {
+                id: '3',
+                title: '测试小说3',
+                summary: '第三部测试小说',
+                tags: ['#校园', '#青春'],
+                status: 'published',
+                accessLevel: 'vip',
+                category: '青春小说',
+                author: '测试作者3',
+                views: 1500,
+                createdAt: new Date().toISOString()
+            }
+        ];
+
+        // 模拟分类数据
+        window.mockCategories = [
+            { name: '都市小说' },
+            { name: '奇幻小说' },
+            { name: '青春小说' }
+        ];
+
+        // 模拟API响应
+        window.fetch = window.originalFetch || window.fetch;
+        window.originalFetch = window.fetch;
+        
+        window.fetch = function(url, options) {
+            console.log('模拟API调用:', url);
+            
+            if (url.includes('/api/novels/filter')) {
+                const urlObj = new URL(url, window.location.origin);
+                const params = urlObj.searchParams;
+                
+                let filteredNovels = [...window.mockNovels];
+                
+                // 应用筛选
+                if (params.get('category')) {
+                    filteredNovels = filteredNovels.filter(novel => 
+                        novel.category === params.get('category')
+                    );
+                }
+                
+                if (params.get('status')) {
+                    filteredNovels = filteredNovels.filter(novel => 
+                        novel.status === params.get('status')
+                    );
+                }
+                
+                if (params.get('accessLevel')) {
+                    filteredNovels = filteredNovels.filter(novel => 
+                        novel.accessLevel === params.get('accessLevel')
+                    );
+                }
+                
+                if (params.get('tags')) {
+                    const requiredTags = params.get('tags').split(',');
+                    filteredNovels = filteredNovels.filter(novel => 
+                        requiredTags.every(tag => novel.tags.includes(tag))
+                    );
+                }
+                
+                return Promise.resolve({
+                    ok: true,
+                    json: () => Promise.resolve({
+                        success: true,
+                        novels: filteredNovels
+                    })
+                });
+            }
+            
+            if (url.includes('/api/categories')) {
+                return Promise.resolve({
+                    ok: true,
+                    json: () => Promise.resolve({
+                        success: true,
+                        categories: window.mockCategories
+                    })
+                });
+            }
+            
+            if (url.includes('/api/novels') && !url.includes('/filter')) {
+                return Promise.resolve({
+                    ok: true,
+                    json: () => Promise.resolve({
+                        success: true,
+                        novels: window.mockNovels
+                    })
+                });
+            }
+            
+            return window.originalFetch(url, options);
+        };
+
+        // 模拟UX管理器
+        window.uxManager = {
+            showToast: function(message, type = 'success', duration = 3000) {
+                console.log(`Toast [${type}]: ${message}`);
+                
+                // 创建简单的toast显示
+                const toast = document.createElement('div');
+                toast.className = `fixed top-4 right-4 px-4 py-2 rounded-lg text-white z-50 ${
+                    type === 'success' ? 'bg-green-500' : 
+                    type === 'error' ? 'bg-red-500' : 
+                    type === 'warning' ? 'bg-yellow-500' : 'bg-blue-500'
+                }`;
+                toast.textContent = message;
+                document.body.appendChild(toast);
+                
+                setTimeout(() => {
+                    toast.remove();
+                }, duration);
+            }
+        };
+    </script>
+    
+    <!-- 引入筛选管理器 -->
+    <script src="js/filter-manager.js"></script>
+
+    <script>
+        // 测试初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('页面加载完成，开始测试筛选功能');
+            
+            // 等待一下再初始化
+            setTimeout(() => {
+                if (window.filterManager) {
+                    console.log('筛选管理器已加载');
+                    // 手动触发UI渲染
+                    window.filterManager.renderFilterUI();
+                } else {
+                    console.error('筛选管理器未加载');
+                }
+            }, 500);
+        });
+    </script>
+</body>
+</html>

@@ -638,8 +638,8 @@ lsof -i :3000
 kill -9 <PID>
 
 # 或者修改端口启动
-set PORT=3001 && npm start  # Windows
-PORT=3001 npm start         # Linux/Mac
+set PORT=3000 && npm start  # Windows
+PORT=3000 npm start         # Linux/Mac
 ```
 
 #### 依赖安装失败

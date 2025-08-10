@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>汉堡菜单测试</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .debug-info {
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            background: rgba(0,0,0,0.8);
+            color: white;
+            padding: 10px;
+            border-radius: 5px;
+            font-size: 12px;
+            z-index: 9999;
+        }
+    </style>
+</head>
+<body class="bg-gray-100">
+    <div class="debug-info">
+        <div>屏幕宽度: <span id="screenWidth"></span>px</div>
+        <div>断点: <span id="breakpoint"></span></div>
+        <div>汉堡按钮: <span id="hamburgerStatus"></span></div>
+    </div>
+
+    <!-- 导航栏 -->
+    <nav class="bg-white shadow-sm border-b border-gray-100 sticky top-0 z-50">
+        <div class="container mx-auto px-4 py-3 flex items-center justify-between">
+            <!-- Logo -->
+            <div class="flex items-center space-x-3">
+                <h1 class="text-xl font-bold text-gray-800">MOMO的小说站</h1>
+            </div>
+
+            <!-- 桌面端导航 -->
+            <div class="hidden lg:flex items-center space-x-6">
+                <a href="#" class="text-gray-600 hover:text-red-500">首页</a>
+                <a href="#" class="text-gray-600 hover:text-red-500">分类</a>
+                <a href="#" class="text-gray-600 hover:text-red-500">排行</a>
+            </div>
+
+            <!-- 右侧按钮区域 -->
+            <div class="flex items-center space-x-3">
+                <!-- 主题切换按钮 -->
+                <button class="p-2 rounded-full hover:bg-gray-100 transition-colors">
+                    🌙
+                </button>
+
+                <!-- 汉堡菜单按钮（移动端） -->
+                <button id="hamburgerBtn" class="lg:hidden p-2 rounded-full hover:bg-gray-100 transition-colors border-2 border-red-500">
+                    <svg id="hamburgerIcon" class="w-6 h-6 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
+                    </svg>
+                </button>
+            </div>
+        </div>
+
+        <!-- 汉堡菜单（移动端） -->
+        <div id="hamburgerMenu" class="lg:hidden bg-white border-t border-gray-100 transform -translate-y-full opacity-0 transition-all duration-300 ease-in-out overflow-hidden">
+            <div class="container mx-auto px-4 py-4 space-y-2">
+                <a href="#" class="flex items-center px-4 py-3 text-gray-700 hover:text-red-500 hover:bg-gray-50 rounded-lg transition-colors">
+                    <span class="mr-3">🏠</span>
+                    首页
+                </a>
+                <a href="#" class="flex items-center px-4 py-3 text-gray-700 hover:text-red-500 hover:bg-gray-50 rounded-lg transition-colors">
+                    <span class="mr-3">❤️</span>
+                    我的收藏
+                </a>
+                <a href="#" class="flex items-center px-4 py-3 text-gray-700 hover:text-red-500 hover:bg-gray-50 rounded-lg transition-colors">
+                    <span class="mr-3">📚</span>
+                    阅读历史
+                </a>
+                <a href="offline-manager.html" class="flex items-center px-4 py-3 text-gray-700 hover:text-red-500 hover:bg-gray-50 rounded-lg transition-colors">
+                    <span class="mr-3">📥</span>
+                    离线管理
+                </a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- 主要内容 -->
+    <div class="container mx-auto px-4 py-8">
+        <div class="bg-white rounded-lg shadow-sm p-6">
+            <h2 class="text-2xl font-bold mb-4">汉堡菜单测试</h2>
+            <p class="text-gray-600 mb-4">请调整浏览器窗口大小来测试响应式汉堡菜单：</p>
+            
+            <div class="space-y-2 text-sm">
+                <div><strong>大屏幕 (≥1024px):</strong> 汉堡按钮应该隐藏，显示桌面导航</div>
+                <div><strong>中小屏幕 (&lt;1024px):</strong> 汉堡按钮应该显示，桌面导航隐藏</div>
+                <div><strong>点击汉堡按钮:</strong> 应该展开/收起移动端菜单</div>
+            </div>
+
+            <div class="mt-6 p-4 bg-blue-50 rounded-lg">
+                <h3 class="font-semibold mb-2">测试步骤：</h3>
+                <ol class="list-decimal list-inside space-y-1 text-sm">
+                    <li>在桌面端（宽屏）查看 - 汉堡按钮应该隐藏</li>
+                    <li>缩小浏览器窗口到移动端尺寸 - 汉堡按钮应该显示</li>
+                    <li>点击汉堡按钮 - 菜单应该展开显示</li>
+                    <li>再次点击 - 菜单应该收起</li>
+                    <li>点击菜单外部 - 菜单应该自动收起</li>
+                </ol>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 更新调试信息
+        function updateDebugInfo() {
+            const width = window.innerWidth;
+            document.getElementById('screenWidth').textContent = width;
+            
+            let breakpoint = '';
+            if (width >= 1024) breakpoint = 'lg (≥1024px)';
+            else if (width >= 768) breakpoint = 'md (768-1023px)';
+            else if (width >= 640) breakpoint = 'sm (640-767px)';
+            else breakpoint = 'xs (<640px)';
+            
+            document.getElementById('breakpoint').textContent = breakpoint;
+            
+            const hamburgerBtn = document.getElementById('hamburgerBtn');
+            const isVisible = window.getComputedStyle(hamburgerBtn).display !== 'none';
+            document.getElementById('hamburgerStatus').textContent = isVisible ? '显示' : '隐藏';
+        }
+
+        // 汉堡菜单功能
+        function toggleHamburgerMenu() {
+            const hamburgerMenu = document.getElementById('hamburgerMenu');
+            const hamburgerIcon = document.getElementById('hamburgerIcon');
+
+            if (hamburgerMenu && hamburgerIcon) {
+                const isOpen = hamburgerMenu.classList.contains('show');
+
+                if (isOpen) {
+                    hamburgerMenu.classList.remove('show');
+                    hamburgerIcon.classList.remove('open');
+                } else {
+                    hamburgerMenu.classList.add('show');
+                    hamburgerIcon.classList.add('open');
+                }
+            }
+        }
+
+        // 事件监听
+        document.getElementById('hamburgerBtn').addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            toggleHamburgerMenu();
+        });
+
+        // 点击外部关闭菜单
+        document.addEventListener('click', (e) => {
+            const hamburgerMenu = document.getElementById('hamburgerMenu');
+            const hamburgerBtn = document.getElementById('hamburgerBtn');
+            
+            if (hamburgerMenu && hamburgerBtn) {
+                if (!hamburgerBtn.contains(e.target) && !hamburgerMenu.contains(e.target)) {
+                    hamburgerMenu.classList.remove('show');
+                    document.getElementById('hamburgerIcon').classList.remove('open');
+                }
+            }
+        });
+
+        // 窗口大小改变时更新调试信息
+        window.addEventListener('resize', updateDebugInfo);
+        
+        // 页面加载完成后初始化
+        document.addEventListener('DOMContentLoaded', () => {
+            updateDebugInfo();
+            
+            // 添加show类的CSS样式
+            const style = document.createElement('style');
+            style.textContent = `
+                #hamburgerMenu.show {
+                    transform: translateY(0) !important;
+                    opacity: 1 !important;
+                }
+                #hamburgerIcon.open {
+                    transform: rotate(45deg);
+                }
+            `;
+            document.head.appendChild(style);
+        });
+    </script>
+</body>
+</html>
