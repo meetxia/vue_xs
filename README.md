@@ -1,6 +1,7 @@
 # 🚀 MOMO炒饭店小说网站 - Vue 3 重构版
 
 **项目根目录：** `H:\momo-ruanjiansheji\axs_html\deploy-package\vue_xs\`  
+**Git仓库：** https://github.com/meetxia/vue_xs.git  
 **开发模式：** 本地XAMPP开发 → 打包 → 宝塔服务器部署  
 **技术栈：** Vue 3 + Fastify + Prisma + MySQL  
 **团队规模：** 3人全栈团队  
@@ -40,7 +41,20 @@ vue_xs/
 - ✅ Git
 - ✅ VS Code
 
-### 第一步：克隆/创建项目
+### 第一步：克隆项目
+
+```powershell
+# 克隆仓库
+git clone https://github.com/meetxia/vue_xs.git
+
+# 进入项目目录
+cd vue_xs
+
+# 用VS Code打开
+code .
+```
+
+**或者本地开发：**
 
 ```powershell
 # 进入项目根目录
