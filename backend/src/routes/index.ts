@@ -5,6 +5,7 @@
 
 import { FastifyInstance } from 'fastify'
 import authRoutes from './auth.routes'
+import novelRoutes from './novel.routes'
 
 export default async function routes(fastify: FastifyInstance) {
   // 健康检查
@@ -19,8 +20,10 @@ export default async function routes(fastify: FastifyInstance) {
   // 注册认证路由
   fastify.register(authRoutes, { prefix: '/api/auth' })
   
+  // 注册小说路由
+  fastify.register(novelRoutes, { prefix: '/api/novels' })
+  
   // TODO: 注册其他路由
-  // fastify.register(userRoutes, { prefix: '/api/users' })
-  // fastify.register(novelRoutes, { prefix: '/api/novels' })
+  // fastify.register(commentRoutes, { prefix: '/api/comments' })
 }
 
