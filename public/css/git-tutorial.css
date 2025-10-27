@@ -1,0 +1,129 @@
+/* 基础样式与布局 */
+:root {
+  --bg: #0f172a;
+  --panel: #111827;
+  --muted: #9ca3af;
+  --text: #e5e7eb;
+  --primary: #22c55e;
+  --secondary: #60a5fa;
+  --danger: #ef4444;
+  --border: #1f2937;
+  --accent: #f59e0b;
+}
+
+* { box-sizing: border-box; }
+html, body { height: 100%; }
+body {
+  margin: 0;
+  font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Noto Sans, Ubuntu,
+    Cantarell, Helvetica Neue, Arial, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+  color: var(--text);
+  background: linear-gradient(180deg, #0b1220, #0b1220 200px, #0a0f1d 100%);
+}
+
+.container { max-width: 1200px; margin: 0 auto; padding: 0 16px; }
+
+.app-header {
+  border-bottom: 1px solid var(--border);
+  background: rgba(17, 24, 39, 0.6);
+  position: sticky; top: 0; backdrop-filter: blur(6px); z-index: 10;
+}
+.app-header h1 { margin: 12px 0 6px; font-size: 20px; }
+.app-header .subtitle { margin: 0 0 12px; color: var(--muted); font-size: 14px; }
+
+.app-footer {
+  border-top: 1px solid var(--border);
+  color: var(--muted);
+  padding: 16px 0; margin-top: 24px;
+}
+
+/* Intro */
+.intro { padding: 16px 0; }
+.callout {
+  border: 1px solid var(--border);
+  background: #0b1220;
+  border-radius: 10px;
+  padding: 12px 14px;
+}
+.quick-actions { margin-top: 10px; display: flex; gap: 10px; }
+
+/* 按钮 */
+.btn { cursor: pointer; border: 1px solid var(--border); color: var(--text);
+  background: #111827; padding: 8px 12px; border-radius: 8px; transition: 0.15s ease; }
+.btn:hover { transform: translateY(-1px); background: #0f1b33; }
+.btn:active { transform: translateY(0); }
+.btn-secondary { border-color: #18314f; color: #c8e1ff; background: #0e1a2b; }
+.btn-danger { border-color: #3b1212; background: #1a0d0d; color: #ffb4b4; }
+.btn-mini { padding: 4px 8px; font-size: 12px; }
+
+/* 主布局 */
+.layout { display: grid; grid-template-columns: 260px 1fr 360px; gap: 12px; align-items: start; }
+.steps-panel {
+  position: sticky; top: 72px; max-height: calc(100vh - 90px); overflow: auto;
+  border: 1px solid var(--border); background: var(--panel); border-radius: 10px; padding: 12px;
+}
+.steps-panel h2 { margin: 0 0 10px; font-size: 16px; }
+.steps-list { list-style: none; margin: 0; padding: 0; }
+.steps-list li { padding: 8px 10px; border-radius: 8px; color: var(--muted); cursor: default; }
+.steps-list li.active { background: #0e1a2b; color: #e2ebff; border: 1px solid #18314f; }
+.progress { height: 6px; background: #0b1220; border: 1px solid var(--border); border-radius: 6px; margin-top: 8px; }
+.progress-bar { height: 100%; background: linear-gradient(90deg, #60a5fa, #22c55e); border-radius: 6px; transition: width .3s ease; }
+
+/* 工作台 */
+.workbench { border: 1px solid var(--border); background: var(--panel); border-radius: 10px; padding: 12px; }
+.panels { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+.panel { border: 1px solid var(--border); background: #0b1220; border-radius: 10px; padding: 10px; }
+.panel h3 { margin: 0 0 8px; font-size: 14px; color: #c8e1ff; }
+.toolbar { display: flex; gap: 8px; }
+.toolbar input { flex: 1; padding: 8px 10px; border-radius: 8px; border: 1px solid var(--border); background: #0a1324; color: var(--text); }
+
+.file-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.file-item { display: flex; align-items: center; justify-content: space-between; gap: 6px; border: 1px solid var(--border); background: #0a1324; border-radius: 8px; padding: 8px; }
+.file-item .name { cursor: pointer; }
+.file-item .tags { display: flex; gap: 6px; }
+.tag { font-size: 12px; border: 1px dashed #25426b; color: #c8e1ff; padding: 2px 6px; border-radius: 6px; }
+.tag.changed { color: #ffd38a; border-color: #5e4517; }
+.tag.staged { color: #b6ffb4; border-color: #245a25; }
+
+/* 编辑区 */
+.editor { margin-top: 12px; border: 1px solid var(--border); background: #0b1220; border-radius: 10px; overflow: hidden; }
+.editor-header { display: flex; align-items: center; justify-content: space-between; padding: 8px 10px; border-bottom: 1px solid var(--border); background: #0e1a2b; }
+#editor-content { width: 100%; min-height: 180px; background: #0a1324; color: var(--text); border: 0; outline: none; padding: 12px; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; }
+
+/* 终端 */
+.terminal { margin-top: 12px; border: 1px solid var(--border); background: #0b1220; border-radius: 10px; overflow: hidden; }
+.terminal-header { display: flex; align-items: center; justify-content: space-between; padding: 8px 10px; border-bottom: 1px solid var(--border); background: #0e1a2b; }
+.terminal-output { margin: 0; padding: 10px; height: 180px; overflow: auto; background: #0a1324; color: #d6deff; }
+.terminal-input { display: flex; gap: 8px; align-items: center; padding: 8px 10px; border-top: 1px solid var(--border); }
+.terminal-input .prompt { color: #9ca3af; }
+.terminal-input input { flex: 1; padding: 8px 10px; border-radius: 8px; border: 1px solid var(--border); background: #0a1324; color: var(--text); }
+
+/* 右侧课程内容 */
+.lesson { border: 1px solid var(--border); background: var(--panel); border-radius: 10px; padding: 12px; }
+.lesson-content h3 { margin: 8px 0; font-size: 16px; color: #c8e1ff; }
+.lesson-content p { margin: 6px 0; color: var(--muted); }
+.lesson-content code { background: #0a1324; border: 1px solid var(--border); border-radius: 6px; padding: 2px 6px; }
+.lesson-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+
+/* 场景演练 */
+.practice { margin-top: 16px; }
+.cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+.card { border: 1px solid var(--border); background: #0b1220; border-radius: 10px; padding: 10px; }
+.card h3 { margin: 6px 0 6px; font-size: 14px; color: #c8e1ff; }
+.card p { margin: 0 0 8px; color: var(--muted); }
+
+/* FAQ */
+.faq { margin-top: 16px; }
+.faq details { border: 1px solid var(--border); background: #0b1220; border-radius: 10px; padding: 10px; margin-bottom: 8px; }
+
+/* 响应式 */
+@media (max-width: 1100px) {
+  .layout { grid-template-columns: 220px 1fr; }
+  .lesson { grid-column: 1 / -1; }
+}
+@media (max-width: 860px) {
+  .layout { grid-template-columns: 1fr; }
+  .steps-panel { position: static; max-height: unset; }
+  .panels { grid-template-columns: 1fr; }
+  .cards { grid-template-columns: 1fr; }
+} 

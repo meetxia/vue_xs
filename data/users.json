@@ -3,7 +3,7 @@
     {
       "id": 1,
       "username": "admin",
-      "password": "$2b$10$BLEKM/7NIG4I4xaKqi/AAuD9UBz56Lci/p2eUbFFPtrjSGmYrUnvu",
+      "password": "123456",
       "email": "admin@example.com",
       "avatar": "default.png",
       "registerTime": "2024-01-01T00:00:00.000Z",

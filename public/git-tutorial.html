@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Git 可视化互动教程（新手友好）</title>
+  <link rel="stylesheet" href="./css/git-tutorial.css" />
+</head>
+<body>
+  <header class="app-header">
+    <div class="container">
+      <h1>Git 可视化互动教程（新手友好）</h1>
+      <p class="subtitle">零基础也能学会：边看边做、即时反馈、可视化理解 Git 的核心概念</p>
+    </div>
+  </header>
+
+  <main class="container">
+    <section class="intro">
+      <div class="callout">
+        <p><strong>说明</strong>：本页使用“本地模拟仓库”，你在页面内输入的命令 <strong>不会修改你电脑的真实环境</strong>。当你学会后，可将相同命令复制到系统终端中执行。</p>
+        <p><strong>建议</strong>：在学习的同时，打开系统终端（PowerShell 或 Terminal），把这里的命令复制过去实际体验。</p>
+      </div>
+      <div class="quick-actions">
+        <button id="btn-reset" class="btn btn-secondary">重置模拟环境</button>
+        <button id="btn-fill-demo" class="btn">填充示例项目</button>
+      </div>
+    </section>
+
+    <section class="layout">
+      <aside class="steps-panel">
+        <h2>学习路径</h2>
+        <ol id="steps-list" class="steps-list">
+          <li data-step="1" class="active">配置用户名与邮箱</li>
+          <li data-step="2">初始化仓库与首次提交</li>
+          <li data-step="3">查看状态与提交历史</li>
+          <li data-step="4">分支创建、切换与合并</li>
+          <li data-step="5">连接远程与推拉代码</li>
+          <li data-step="6">练习：解决一次合并冲突</li>
+        </ol>
+        <div class="progress">
+          <div id="progress-bar" class="progress-bar" style="width: 0%"></div>
+        </div>
+      </aside>
+
+      <section class="workbench">
+        <div class="panels">
+          <div class="panel">
+            <h3>工作区（Working Directory）</h3>
+            <div class="toolbar">
+              <input id="new-file-name" type="text" placeholder="新建文件名，如: readme.txt" />
+              <button id="btn-create-file" class="btn">新建文件</button>
+            </div>
+            <ul id="working-files" class="file-list"></ul>
+          </div>
+
+          <div class="panel">
+            <h3>暂存区（Staging Area）</h3>
+            <ul id="staging-files" class="file-list"></ul>
+          </div>
+
+          <div class="panel">
+            <h3>提交历史与分支</h3>
+            <div id="branch-info" class="branch-info"></div>
+            <ul id="commit-history" class="commit-list"></ul>
+          </div>
+        </div>
+
+        <div class="editor">
+          <div class="editor-header">
+            <span id="editor-filename">未选择文件</span>
+            <div>
+              <button id="btn-stage-current" class="btn btn-secondary">暂存当前文件</button>
+              <button id="btn-discard-current" class="btn btn-danger">丢弃未保存</button>
+              <button id="btn-save-current" class="btn">保存到工作区</button>
+            </div>
+          </div>
+          <textarea id="editor-content" placeholder="在此编辑文件内容...（保存后才算修改到工作区）"></textarea>
+        </div>
+
+        <div class="terminal">
+          <div class="terminal-header">
+            <span>模拟终端（只在页面内生效）</span>
+            <div class="terminal-actions">
+              <button data-cmd="help" class="btn btn-secondary btn-mini">help</button>
+              <button data-cmd="git status" class="btn btn-secondary btn-mini">git status</button>
+              <button data-cmd="git log --oneline" class="btn btn-secondary btn-mini">git log --oneline</button>
+              <button data-cmd="clear" class="btn btn-secondary btn-mini">clear</button>
+            </div>
+          </div>
+          <pre id="terminal-output" class="terminal-output"></pre>
+          <div class="terminal-input">
+            <span class="prompt">$</span>
+            <input id="terminal-input" type="text" placeholder="输入命令，如：git init 或 git add ." />
+            <button id="terminal-run" class="btn">运行</button>
+          </div>
+        </div>
+      </section>
+
+      <section class="lesson">
+        <div id="lesson-content" class="lesson-content">
+          <!-- 由 JS 动态填充每一步的讲解、示例命令与检测按钮 -->
+        </div>
+      </section>
+    </section>
+
+    <section class="practice">
+      <h2>场景演练</h2>
+      <div class="cards">
+        <div class="card">
+          <h3>① 初始化 + 首次提交</h3>
+          <p>从零开始，完成仓库初始化与第一条提交。</p>
+          <button id="practice-init" class="btn">开始练习</button>
+        </div>
+        <div class="card">
+          <h3>② 分支开发并合并</h3>
+          <p>创建功能分支，提交更改，合并回主分支。</p>
+          <button id="practice-branch" class="btn">开始练习</button>
+        </div>
+        <div class="card">
+          <h3>③ 合并冲突处理</h3>
+          <p>模拟远程与本地同时修改同一行，练习解决冲突。</p>
+          <button id="practice-conflict" class="btn btn-danger">开始练习</button>
+        </div>
+      </div>
+    </section>
+
+    <section class="faq">
+      <h2>常见问题</h2>
+      <details>
+        <summary>这里的命令会修改我电脑的真实仓库吗？</summary>
+        <p>不会。本教程内置了 <strong>纯前端模拟</strong>，所有更改仅存在于页面内存中。</p>
+      </details>
+      <details>
+        <summary>我如何把这里学到的命令应用到真实项目？</summary>
+        <p>当你在这里熟练后，打开 PowerShell/Terminal，把命令逐条输入即可。记得先 <code>cd</code> 到你的项目目录。</p>
+      </details>
+      <details>
+        <summary>遇到错误怎么办？</summary>
+        <p>先用 <code>git status</code> 看当前状态，回想你刚执行了哪些命令；多用 <code>git log</code> 与分支图理解当前位置。</p>
+      </details>
+    </section>
+  </main>
+
+  <footer class="app-footer">
+    <div class="container">
+      <p>祝学习顺利！多练习、多提交，Git 会越来越顺手。</p>
+    </div>
+  </footer>
+
+  <script src="./js/git-tutorial.js"></script>
+</body>
+</html> 
